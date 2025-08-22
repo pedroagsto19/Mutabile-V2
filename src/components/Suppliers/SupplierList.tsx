@@ -42,6 +42,19 @@ export function SupplierList({ onSupplierSelect }: SupplierListProps) {
     ));
   };
 
+  const renderCifrao = (rating: number) => {
+    return Array.from({ length: 5 }, (_, i) => (
+      <span
+        key={i}
+        className={`text-lg font-bold ${
+          i < rating ? 'text-green-600' : 'text-gray-300'
+        }`}
+      >
+        $
+      </span>
+    ));
+  };
+
   const getAverageRating = (supplier: any) => {
     return (supplier.ratings.quality + supplier.ratings.price) / 2;
   };
@@ -180,9 +193,6 @@ export function SupplierList({ onSupplierSelect }: SupplierListProps) {
                   Preço
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Média
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Projetos
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -238,16 +248,8 @@ export function SupplierList({ onSupplierSelect }: SupplierListProps) {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center">
-                        {renderStars(supplier.ratings.price)}
+                        {renderCifrao(supplier.ratings.price)}
                         <span className="ml-2 text-sm text-gray-600">({supplier.ratings.price})</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center">
-                        {renderStars(Math.round(avgRating))}
-                        <span className="ml-2 text-sm font-medium text-gray-900">
-                          {avgRating.toFixed(1)}
-                        </span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
