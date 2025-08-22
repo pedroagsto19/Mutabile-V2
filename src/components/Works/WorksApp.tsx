@@ -5,6 +5,7 @@ import { ProjectsTable } from '../Projects/ProjectsTable';
 import { ProjectDetail } from '../Projects/ProjectDetail';
 import { ProjectForm } from '../Projects/ProjectForm';
 import { ProtectedRoute } from '../Auth/ProtectedRoute';
+import { SupplierApp } from '../Suppliers/SupplierApp';
 
 interface WorksAppProps {
   onBackToMenu: () => void;
@@ -48,6 +49,8 @@ export function WorksApp({ onBackToMenu }: WorksAppProps) {
           onBack={handleBackToProjects}
         />
       );
+    case 'fornecedores':
+      return <SupplierApp onBackToMenu={onBackToMenu} />;
     }
 
     switch (currentView) {

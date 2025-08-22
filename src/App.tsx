@@ -4,6 +4,7 @@ import { WorksApp } from './components/Works/WorksApp';
 import { LoginForm } from './components/Auth/LoginForm';
 import { ProjectProvider } from './context/ProjectContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { SupplierApp } from './components/Suppliers/SupplierApp';
 
 function AppContent() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -56,6 +57,8 @@ function AppContent() {
           <WorksApp onBackToMenu={handleBackToMenu} />
         </ProjectProvider>
       );
+    case 'fornecedores':
+      return <SupplierApp onBackToMenu={handleBackToMenu} />;
     default:
       return (
         <MainMenu 

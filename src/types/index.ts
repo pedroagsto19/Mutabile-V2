@@ -1,5 +1,6 @@
 // Re-export auth types
 export type { User } from './auth';
+export type { Supplier, SupplierFilters } from './supplier';
 
 export interface Project {
   id: string;

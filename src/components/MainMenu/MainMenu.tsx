@@ -48,7 +48,7 @@ export function MainMenu({ onModuleSelect, currentUser }: MainMenuProps) {
       description: 'Cadastro e gestão de fornecedores',
       icon: Users,
       color: 'bg-green-500',
-      available: false
+      available: true
     },
     {
       id: 'vendas',
