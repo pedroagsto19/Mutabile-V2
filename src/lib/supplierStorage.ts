@@ -15,6 +15,7 @@ export interface LocalSupplier {
   ratings: {
     quality: number;
     price: number;
+    recommendation: number;
   };
   linkedProjects: string[];
   createdAt: string;

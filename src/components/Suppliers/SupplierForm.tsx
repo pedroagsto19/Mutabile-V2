@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../UI/Button';
 import { Modal } from '../UI/Modal';
-import { Star } from 'lucide-react';
 import { useSupplier } from '../../context/SupplierContext';
 import { useProject } from '../../context/ProjectContext';
 import type { Supplier } from '../../types/supplier';
@@ -12,6 +11,36 @@ interface SupplierFormProps {
   onClose: () => void;
   supplier?: Supplier | null;
 }
+
+const brazilianStates = [
+  { code: 'AC', name: 'Acre' },
+  { code: 'AL', name: 'Alagoas' },
+  { code: 'AP', name: 'Amapá' },
+  { code: 'AM', name: 'Amazonas' },
+  { code: 'BA', name: 'Bahia' },
+  { code: 'CE', name: 'Ceará' },
+  { code: 'DF', name: 'Distrito Federal' },
+  { code: 'ES', name: 'Espírito Santo' },
+  { code: 'GO', name: 'Goiás' },
+  { code: 'MA', name: 'Maranhão' },
+  { code: 'MT', name: 'Mato Grosso' },
+  { code: 'MS', name: 'Mato Grosso do Sul' },
+  { code: 'MG', name: 'Minas Gerais' },
+  { code: 'PA', name: 'Pará' },
+  { code: 'PB', name: 'Paraíba' },
+  { code: 'PR', name: 'Paraná' },
+  { code: 'PE', name: 'Pernambuco' },
+  { code: 'PI', name: 'Piauí' },
+  { code: 'RJ', name: 'Rio de Janeiro' },
+  { code: 'RN', name: 'Rio Grande do Norte' },
+  { code: 'RS', name: 'Rio Grande do Sul' },
+  { code: 'RO', name: 'Rondônia' },
+  { code: 'RR', name: 'Roraima' },
+  { code: 'SC', name: 'Santa Catarina' },
+  { code: 'SP', name: 'São Paulo' },
+  { code: 'SE', name: 'Sergipe' },
+  { code: 'TO', name: 'Tocantins' }
+];
 
 export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
   const { addSupplier, updateSupplier } = useSupplier();
@@ -24,66 +53,97 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
     location: {
       city: '',
       state: '',
-      country: ''
+      country: 'Brasil'
     },
     website: '',
     mainContact: '',
     description: '',
     ratings: {
       quality: 5,
-      price: 5
+      price: 5,
+      recommendation: 5
     },
     linkedProjects: [] as string[]
   });
 
+  const [countryType, setCountryType] = useState<'brasil' | 'outros'>('brasil');
+
   // Update form data when supplier changes
   useEffect(() => {
     if (supplier) {
+      const isBrazil = supplier.location.country === 'Brasil';
+      setCountryType(isBrazil ? 'brasil' : 'outros');
+      
       setFormData({
         name: supplier.name,
         cnpj: supplier.cnpj || '',
         location: {
           city: supplier.location.city || '',
           state: supplier.location.state || '',
-          country: supplier.location.country || ''
+          country: supplier.location.country || 'Brasil'
         },
         website: supplier.website || '',
         mainContact: supplier.mainContact || '',
         description: supplier.description || '',
-        ratings: supplier.ratings,
+        ratings: {
+          quality: supplier.ratings.quality,
+          price: supplier.ratings.price,
+          recommendation: (supplier.ratings as any).recommendation || 5
+        },
         linkedProjects: supplier.linkedProjects
       });
     } else {
       // Reset form for new supplier
+      setCountryType('brasil');
       setFormData({
         name: '',
         cnpj: '',
         location: {
           city: '',
           state: '',
-          country: ''
+          country: 'Brasil'
         },
         website: '',
         mainContact: '',
         description: '',
         ratings: {
           quality: 5,
-          price: 5
+          price: 5,
+          recommendation: 5
         },
         linkedProjects: []
       });
     }
   }, [supplier, isOpen]);
 
+  const normalizeUrl = (url: string) => {
+    if (!url) return '';
+    
+    // Remove espaços em branco
+    url = url.trim();
+    
+    // Se não começar com http:// ou https://, adicionar https://
+    if (!url.match(/^https?:\/\//)) {
+      url = 'https://' + url;
+    }
+    
+    return url;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
+      const supplierData = {
+        ...formData,
+        website: normalizeUrl(formData.website)
+      };
+
       if (supplier) {
-        updateSupplier(supplier.id, formData);
+        updateSupplier(supplier.id, supplierData);
         toast.success('Fornecedor atualizado com sucesso!');
       } else {
-        addSupplier(formData);
+        addSupplier(supplierData);
         toast.success('Fornecedor cadastrado com sucesso!');
       }
       onClose();
@@ -92,21 +152,30 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
     }
   };
 
-  const renderCifrao = (rating: number) => {
-    return Array.from({ length: 5 }, (_, i) => (
-      <span
-        key={i}
-        className={`text-lg font-bold ${
-          i < rating ? 'text-green-600' : 'text-gray-300'
-        }`}
-        style={{ marginRight: '0.25rem' }}
-      >
-        $
-      </span>
-    ));
+  const handleCountryTypeChange = (type: 'brasil' | 'outros') => {
+    setCountryType(type);
+    if (type === 'brasil') {
+      setFormData(prev => ({
+        ...prev,
+        location: {
+          ...prev.location,
+          country: 'Brasil',
+          state: ''
+        }
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        location: {
+          ...prev.location,
+          country: '',
+          state: ''
+        }
+      }));
+    }
   };
 
-  const renderStarRating = (rating: number, onChange: (rating: number) => void) => {
+  const renderStarRating = (rating: number, onChange: (rating: number) => void, emoji: string) => {
     return (
       <div className="flex items-center space-x-1">
         {Array.from({ length: 5 }, (_, i) => (
@@ -114,13 +183,11 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
             key={i}
             type="button"
             onClick={() => onChange(i + 1)}
-            className="focus:outline-none"
+            className="focus:outline-none text-2xl"
           >
-            <Star
-              className={`h-6 w-6 ${
-                i < rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
-              } hover:text-yellow-400 transition-colors`}
-            />
+            <span className={i < rating ? 'opacity-100' : 'opacity-30'}>
+              {emoji}
+            </span>
           </button>
         ))}
         <span className="ml-2 text-sm text-gray-600">({rating})</span>
@@ -164,7 +231,7 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              CNPJ *
+              CPF/CNPJ *
             </label>
             <input
               type="text"
@@ -172,60 +239,118 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
               value={formData.cnpj}
               onChange={(e) => setFormData(prev => ({ ...prev, cnpj: e.target.value }))}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
-              placeholder="00.000.000/0000-00"
+              placeholder="000.000.000-00 ou 00.000.000/0000-00"
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Cidade *
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.location.city}
-              onChange={(e) => setFormData(prev => ({ 
-                ...prev, 
-                location: { ...prev.location, city: e.target.value }
-              }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Estado *
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.location.state}
-              onChange={(e) => setFormData(prev => ({ 
-                ...prev, 
-                location: { ...prev.location, state: e.target.value }
-              }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              País *
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.location.country}
-              onChange={(e) => setFormData(prev => ({ 
-                ...prev, 
-                location: { ...prev.location, country: e.target.value }
-              }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
-            />
-          </div>
+        {/* Country Selection */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            País *
+          </label>
+          <select
+            value={countryType}
+            onChange={(e) => handleCountryTypeChange(e.target.value as 'brasil' | 'outros')}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
+          >
+            <option value="brasil">Brasil</option>
+            <option value="outros">Outros</option>
+          </select>
         </div>
+
+        {/* Location Fields */}
+        {countryType === 'brasil' ? (
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Cidade *
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.location.city}
+                onChange={(e) => setFormData(prev => ({ 
+                  ...prev, 
+                  location: { ...prev.location, city: e.target.value }
+                }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Estado *
+              </label>
+              <select
+                required
+                value={formData.location.state}
+                onChange={(e) => setFormData(prev => ({ 
+                  ...prev, 
+                  location: { ...prev.location, state: e.target.value }
+                }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
+              >
+                <option value="">Selecione o estado</option>
+                {brazilianStates.map(state => (
+                  <option key={state.code} value={state.code}>
+                    {state.code} - {state.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                País *
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.location.country}
+                onChange={(e) => setFormData(prev => ({ 
+                  ...prev, 
+                  location: { ...prev.location, country: e.target.value }
+                }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Estado *
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.location.state}
+                onChange={(e) => setFormData(prev => ({ 
+                  ...prev, 
+                  location: { ...prev.location, state: e.target.value }
+                }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Cidade *
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.location.city}
+                onChange={(e) => setFormData(prev => ({ 
+                  ...prev, 
+                  location: { ...prev.location, city: e.target.value }
+                }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
+              />
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -233,11 +358,11 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
               Website
             </label>
             <input
-              type="url"
+              type="text"
               value={formData.website}
               onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
-              placeholder="https://exemplo.com"
+              placeholder="exemplo.com ou www.exemplo.com"
             />
           </div>
           
@@ -269,7 +394,7 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
         </div>
 
         {/* Ratings */}
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
               Avaliação - Qualidade
@@ -279,7 +404,7 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
                 ...prev, 
                 ratings: { ...prev.ratings, quality: rating }
               }))
-            )}
+            , '👍')}
           </div>
           
           <div>
@@ -291,7 +416,19 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
                 ...prev, 
                 ratings: { ...prev.ratings, price: rating }
               }))
-            )}
+            , '💰')}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Avaliação - Indicabilidade
+            </label>
+            {renderStarRating(formData.ratings.recommendation, (rating) => 
+              setFormData(prev => ({ 
+                ...prev, 
+                ratings: { ...prev.ratings, recommendation: rating }
+              }))
+            , '⭐')}
           </div>
         </div>
 

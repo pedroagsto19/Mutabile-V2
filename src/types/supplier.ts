@@ -13,6 +13,7 @@ export interface Supplier {
   ratings: {
     quality: number; // 1-5
     price: number; // 1-5
+    recommendation: number; // 1-5
   };
   linkedProjects: string[]; // Project IDs
   createdAt: Date;
