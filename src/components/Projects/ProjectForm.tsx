@@ -194,13 +194,6 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
                 </option>
               ))}
             </select>
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Número de Controle
-          </label>
           <input
             type="text"
             value={formData.controlNumber}
