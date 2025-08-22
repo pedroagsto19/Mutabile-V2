@@ -162,6 +162,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthState(prev => ({ ...prev, isLoading: true }));
     
     try {
+      // First ensure data is initialized
+      LocalStorage.initializeDefaultData();
+      
       const localUser = LocalStorage.authenticateUser(credentials.email, credentials.password);
       
       if (localUser) {
@@ -173,6 +176,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
         LocalStorage.setCurrentUser(localUser);
         return true;
+      } else {
+        console.log('Authentication failed for:', credentials.email);
+        // Debug: log available users
+        const users = LocalStorage.getUsers();
+        console.log('Available users:', users.map(u => ({ email: u.email, authLevel: u.authLevel })));
       }
     } catch (error) {
       console.error('Login error:', error);

@@ -135,22 +135,24 @@ export function LoginForm() {
                   variant="outline"
                   size="sm"
                   onClick={() => handleDemoLogin('marina@mutabile.com.br', 'admin123')}
-                  className="text-left justify-start"
+                  className="text-left justify-start h-auto py-3"
                 >
                   <div>
                     <p className="font-medium">Admin</p>
                     <p className="text-xs text-gray-500">Acesso total</p>
+                    <p className="text-xs text-blue-600">marina@mutabile.com.br</p>
                   </div>
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleDemoLogin('ana@mutabile.com.br', 'gestor123')}
-                  className="text-left justify-start"
+                  className="text-left justify-start h-auto py-3"
                 >
                   <div>
                     <p className="font-medium">Gestor</p>
                     <p className="text-xs text-gray-500">Gerencia projetos</p>
+                    <p className="text-xs text-blue-600">ana@mutabile.com.br</p>
                   </div>
                 </Button>
               </div>
@@ -159,22 +161,24 @@ export function LoginForm() {
                   variant="outline"
                   size="sm"
                   onClick={() => handleDemoLogin('carlos@mutabile.com.br', 'equipe123')}
-                  className="text-left justify-start"
+                  className="text-left justify-start h-auto py-3"
                 >
                   <div>
                     <p className="font-medium">Equipe</p>
                     <p className="text-xs text-gray-500">Executa atividades</p>
+                    <p className="text-xs text-blue-600">carlos@mutabile.com.br</p>
                   </div>
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleDemoLogin('joao@mutabile.com.br', 'leitor123')}
-                  className="text-left justify-start"
+                  className="text-left justify-start h-auto py-3"
                 >
                   <div>
                     <p className="font-medium">Leitor</p>
                     <p className="text-xs text-gray-500">Apenas visualização</p>
+                    <p className="text-xs text-blue-600">joao@mutabile.com.br</p>
                   </div>
                 </Button>
               </div>

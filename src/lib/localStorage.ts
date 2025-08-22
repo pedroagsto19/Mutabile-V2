@@ -63,18 +63,22 @@ export interface LocalStage {
 }
 // Função simples para hash de senha (apenas para demo local)
 function simpleHash(password: string): string {
+  if (!password) return '';
   let hash = 0;
   for (let i = 0; i < password.length; i++) {
     const char = password.charCodeAt(i);
     hash = ((hash << 5) - hash) + char;
     hash = hash & hash; // Convert to 32bit integer
   }
-  return hash.toString();
+  return Math.abs(hash).toString();
 }
 
 // Função para verificar senha
 function verifyPassword(password: string, hash: string): boolean {
-  return simpleHash(password) === hash;
+  if (!password || !hash) return false;
+  const computedHash = simpleHash(password);
+  console.log('Verifying password:', { password, hash, computedHash, match: computedHash === hash });
+  return computedHash === hash;
 }
 
 class LocalStorage {
@@ -85,6 +89,11 @@ class LocalStorage {
   // Inicializar dados padrão se não existirem
   static initializeDefaultData() {
     try {
+      // Always clear and reinitialize for demo purposes
+      localStorage.removeItem(this.USERS_KEY);
+      localStorage.removeItem(this.PROJECTS_KEY);
+      localStorage.removeItem(this.CURRENT_USER_KEY);
+      
       if (!localStorage.getItem(this.USERS_KEY)) {
         const defaultUsers: LocalUser[] = [
           {
@@ -136,6 +145,12 @@ class LocalStorage {
             updatedAt: new Date().toISOString()
           }
         ];
+        
+        console.log('Initializing default users:', defaultUsers.map(u => ({ 
+          email: u.email, 
+          authLevel: u.authLevel,
+          passwordHash: u.passwordHash 
+        })));
         
         localStorage.setItem(this.USERS_KEY, JSON.stringify(defaultUsers));
       }
@@ -298,11 +313,23 @@ class LocalStorage {
 
   static authenticateUser(email: string, password: string): LocalUser | null {
     try {
+      console.log('Attempting to authenticate:', email);
       const users = this.getUsers();
+      console.log('Found users:', users.length);
       const user = users.find(u => u.email === email);
       
-      if (user && verifyPassword(password, user.passwordHash)) {
-        return user;
+      if (user) {
+        console.log('User found:', user.email, 'Auth level:', user.authLevel);
+        const isValidPassword = verifyPassword(password, user.passwordHash);
+        console.log('Password valid:', isValidPassword);
+        
+        if (isValidPassword) {
+          return user;
+        } else {
+          console.log('Password verification failed');
+        }
+      } else {
+        console.log('User not found with email:', email);
       }
     } catch (error) {
       console.error('Error authenticating user:', error);
