@@ -167,6 +167,13 @@ export function SupplierDetail({ supplierId, onBack }: SupplierDetailProps) {
                   <p className="text-gray-900">{supplier.description}</p>
                 </div>
               )}
+              
+              {supplier.observations && (
+                <div className="mt-6">
+                  <p className="text-sm text-gray-500 mb-2">Observações</p>
+                  <p className="text-gray-900">{supplier.observations}</p>
+                </div>
+              )}
             </CardContent>
           </Card>
 

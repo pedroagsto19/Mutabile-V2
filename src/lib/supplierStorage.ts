@@ -12,6 +12,7 @@ export interface LocalSupplier {
   website?: string;
   mainContact?: string;
   description?: string;
+  observations?: string;
   ratings: {
     quality: number;
     price: number;

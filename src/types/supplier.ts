@@ -10,6 +10,7 @@ export interface Supplier {
   website?: string;
   mainContact?: string;
   description?: string;
+  observations?: string;
   ratings: {
     quality: number; // 1-5
     price: number; // 1-5

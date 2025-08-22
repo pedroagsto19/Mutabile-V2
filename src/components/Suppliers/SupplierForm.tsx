@@ -58,6 +58,7 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
     website: '',
     mainContact: '',
     description: '',
+    observations: '',
     ratings: {
       quality: 5,
       price: 5,
@@ -85,6 +86,7 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
         website: supplier.website || '',
         mainContact: supplier.mainContact || '',
         description: supplier.description || '',
+        observations: supplier.observations || '',
         ratings: {
           quality: supplier.ratings.quality,
           price: supplier.ratings.price,
@@ -106,6 +108,7 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
         website: '',
         mainContact: '',
         description: '',
+        observations: '',
         ratings: {
           quality: 5,
           price: 5,
@@ -205,7 +208,11 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
   };
 
   // Filter active projects only
-  const activeProjects = projects.filter(p => p.status === 'in_progress' || p.status === 'planning');
+  const activeProjects = projects.filter(p => 
+    p.status === 'in_progress' || 
+    p.status === 'planning' || 
+    p.status === 'on_hold'
+  );
 
   return (
     <Modal 
@@ -239,7 +246,6 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
               value={formData.cnpj}
               onChange={(e) => setFormData(prev => ({ ...prev, cnpj: e.target.value }))}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
-              placeholder="000.000.000-00 ou 00.000.000/0000-00"
             />
           </div>
         </div>
@@ -362,7 +368,6 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
               value={formData.website}
               onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
-              placeholder="exemplo.com ou www.exemplo.com"
             />
           </div>
           
@@ -389,7 +394,20 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
             onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
             rows={3}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none resize-none"
-            placeholder="Descreva os serviços ou produtos oferecidos..."
+            placeholder="Serviços/produtos oferecidos"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Observações
+          </label>
+          <textarea
+            value={formData.observations}
+            onChange={(e) => setFormData(prev => ({ ...prev, observations: e.target.value }))}
+            rows={3}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none resize-none"
+            placeholder="Importante saber"
           />
         </div>
 
