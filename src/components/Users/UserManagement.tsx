@@ -1,0 +1,414 @@
+import React, { useState } from 'react';
+import { Plus, Edit, Trash2, Shield, User as UserIcon, Search, Filter } from 'lucide-react';
+import { Button } from '../UI/Button';
+import { Card, CardHeader, CardContent } from '../UI/Card';
+import { Modal } from '../UI/Modal';
+import { useAuth } from '../../context/AuthContext';
+import type { User } from '../../types/auth';
+
+export function UserManagement() {
+  const { 
+    getAllUsers, 
+    register, 
+    updateUser, 
+    deleteUser, 
+    hasPermission, 
+    canEditUser,
+    user: currentUser 
+  } = useAuth();
+  
+  const [users, setUsers] = useState(getAllUsers());
+  const [showUserForm, setShowUserForm] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterLevel, setFilterLevel] = useState('');
+
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         user.role.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = !filterLevel || user.authLevel === filterLevel;
+    return matchesSearch && matchesFilter;
+  });
+
+  const handleCreateUser = () => {
+    setEditingUser(null);
+    setShowUserForm(true);
+  };
+
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+    setShowUserForm(true);
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (userId === currentUser?.id) {
+      alert('Você não pode excluir sua própria conta');
+      return;
+    }
+    
+    if (confirm('Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.')) {
+      await deleteUser(userId);
+      setUsers(getAllUsers());
+    }
+  };
+
+  const getAuthLevelColor = (level: string) => {
+    const colors = {
+      admin: 'bg-red-100 text-red-800',
+      gestor: 'bg-blue-100 text-blue-800',
+      equipe: 'bg-green-100 text-green-800',
+      leitor: 'bg-gray-100 text-gray-800'
+    };
+    return colors[level as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+  };
+
+  const getAuthLevelLabel = (level: string) => {
+    const labels = {
+      admin: 'Administrador',
+      gestor: 'Gestor',
+      equipe: 'Equipe',
+      leitor: 'Leitor'
+    };
+    return labels[level as keyof typeof labels] || level;
+  };
+
+  const UserForm = () => {
+    const [formData, setFormData] = useState({
+      name: editingUser?.name || '',
+      email: editingUser?.email || '',
+      role: editingUser?.role || '',
+      authLevel: editingUser?.authLevel || 'equipe' as const,
+      teamId: editingUser?.teamId || currentUser?.teamId || '',
+      managerId: editingUser?.managerId || '',
+      password: ''
+    });
+
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      
+      try {
+        if (editingUser) {
+          const updateData = { ...formData };
+          // Only include password if it was provided
+          if (!updateData.password) {
+            delete updateData.password;
+          }
+          await updateUser(editingUser.id, updateData);
+        } else {
+          // For new users, password is required
+          if (!formData.password) {
+            alert('Senha é obrigatória para novos usuários');
+            return;
+          }
+          await register(formData);
+        }
+        setUsers(getAllUsers());
+        setShowUserForm(false);
+        setEditingUser(null);
+      } catch (error) {
+        console.error('Error saving user:', error);
+        alert('Erro ao salvar usuário');
+      }
+    };
+
+    const canChangeAuthLevel = hasPermission('canChangeUserAuthLevel');
+    const isEditingOwnAccount = editingUser?.id === currentUser?.id;
+
+    // Get available managers (users with 'gestor' or 'admin' auth level)
+    const availableManagers = users.filter(user => 
+      user.authLevel === 'gestor' || user.authLevel === 'admin'
+    );
+    return (
+      <Modal 
+        isOpen={showUserForm} 
+        onClose={() => {
+          setShowUserForm(false);
+          setEditingUser(null);
+        }} 
+        title={editingUser ? 'Editar Usuário' : 'Novo Usuário'}
+      >
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Nome Completo *
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.name}
+              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              E-mail *
+            </label>
+            <input
+              type="email"
+              required
+              value={formData.email}
+              onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
+              disabled={!!editingUser} // Email não pode ser alterado após criação
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Cargo/Função *
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.role}
+              onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
+              placeholder="Ex: Arquiteto, Engenheiro, Gerente de Projetos"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Nível de Autorização *
+            </label>
+            <select
+              value={formData.authLevel}
+              onChange={(e) => setFormData(prev => ({ ...prev, authLevel: e.target.value as any }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
+              disabled={!canChangeAuthLevel || isEditingOwnAccount}
+            >
+              <option value="leitor">Leitor - Apenas visualização</option>
+              <option value="equipe">Equipe - Executa atividades</option>
+              <option value="gestor">Gestor - Gerencia projetos</option>
+              <option value="admin">Administrador - Acesso total</option>
+            </select>
+            {(!canChangeAuthLevel || isEditingOwnAccount) && (
+              <p className="text-xs text-gray-500 mt-1">
+                {isEditingOwnAccount 
+                  ? 'Você não pode alterar seu próprio nível de autorização'
+                  : 'Apenas administradores podem alterar níveis de autorização'
+                }
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {editingUser ? 'Nova Senha (deixe em branco para manter atual)' : 'Senha *'}
+            </label>
+            <input
+              type="password"
+              required={!editingUser}
+              value={formData.password}
+              onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
+              placeholder={editingUser ? 'Digite nova senha...' : 'Digite a senha...'}
+            />
+            {editingUser && (
+              <p className="text-xs text-gray-500 mt-1">
+                Deixe em branco para manter a senha atual
+              </p>
+            )}
+          </div>
+          {/* Manager Selection for Team Members */}
+          {formData.authLevel === 'equipe' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Gestor Responsável *
+              </label>
+              <select
+                required
+                value={formData.managerId}
+                onChange={(e) => setFormData(prev => ({ ...prev, managerId: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
+              >
+                <option value="">Selecione um gestor</option>
+                {availableManagers.map(manager => (
+                  <option key={manager.id} value={manager.id}>
+                    {manager.name} - {manager.role}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Usuários de equipe devem ter um gestor responsável
+              </p>
+            </div>
+          )}
+
+          <div className="flex justify-end space-x-3 pt-6">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => {
+                setShowUserForm(false);
+                setEditingUser(null);
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit">
+              {editingUser ? 'Salvar Alterações' : 'Criar Usuário'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+    );
+  };
+
+  if (!hasPermission('canManageUsers')) {
+    return (
+      <div className="text-center py-12">
+        <Shield className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Acesso Restrito</h3>
+        <p className="text-gray-600">
+          Você não tem permissão para gerenciar usuários.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <UserForm />
+      
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+            Gerenciamento de Usuários
+          </h1>
+          <p className="text-gray-600 mt-1">{filteredUsers.length} usuários encontrados</p>
+        </div>
+        <Button onClick={handleCreateUser}>
+          <Plus className="h-4 w-4 mr-2" />
+          Novo Usuário
+        </Button>
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <CardContent>
+          <div className="flex items-center space-x-4">
+            <div className="flex-1 relative">
+              <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Buscar usuários..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
+              />
+            </div>
+            <select
+              value={filterLevel}
+              onChange={(e) => setFilterLevel(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
+            >
+              <option value="">Todos os níveis</option>
+              <option value="admin">Administrador</option>
+              <option value="gestor">Gestor</option>
+              <option value="equipe">Equipe</option>
+              <option value="leitor">Leitor</option>
+            </select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Users Table */}
+      <Card>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Usuário
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Cargo
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Nível de Acesso
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Criado em
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Ações
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredUsers.map((user) => (
+                <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 h-10 w-10">
+                        <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                          <UserIcon className="h-5 w-5 text-gray-500" />
+                        </div>
+                      </div>
+                      <div className="ml-4">
+                        <div className="text-sm font-medium text-gray-900">
+                          {user.name}
+                          {user.id === currentUser?.id && (
+                            <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                              Você
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-sm text-gray-500">{user.email}</div>
+                        {user.managerId && (
+                          <div className="text-xs text-gray-400">
+                            Gestor: {users.find(u => u.id === user.managerId)?.name || 'N/A'}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-900">
+                    {user.role}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getAuthLevelColor(user.authLevel)}`}>
+                      {getAuthLevelLabel(user.authLevel)}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-500">
+                    {user.createdAt.toLocaleDateString('pt-BR')}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex space-x-2">
+                      {canEditUser(user) && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditUser(user)}
+                          title="Editar usuário"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {hasPermission('canChangeUserAuthLevel') && user.id !== currentUser?.id && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteUser(user.id)}
+                          title="Excluir usuário"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  );
+}
