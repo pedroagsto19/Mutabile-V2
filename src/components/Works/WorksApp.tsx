@@ -49,8 +49,6 @@ export function WorksApp({ onBackToMenu }: WorksAppProps) {
           onBack={handleBackToProjects}
         />
       );
-    case 'fornecedores':
-      return <SupplierApp onBackToMenu={onBackToMenu} />;
     }
 
     switch (currentView) {
@@ -66,6 +64,8 @@ export function WorksApp({ onBackToMenu }: WorksAppProps) {
             />
           </ProtectedRoute>
         );
+      case 'fornecedores':
+        return <SupplierApp onBackToMenu={onBackToMenu} />;
       default:
         return <DashboardOverview onProjectSelect={handleProjectSelect} />;
     }
