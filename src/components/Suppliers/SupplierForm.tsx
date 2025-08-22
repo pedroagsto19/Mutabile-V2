@@ -92,6 +92,20 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
     }
   };
 
+  const renderCifrao = (rating: number) => {
+    return Array.from({ length: 5 }, (_, i) => (
+      <span
+        key={i}
+        className={`text-lg font-bold ${
+          i < rating ? 'text-green-600' : 'text-gray-300'
+        }`}
+        style={{ marginRight: '0.25rem' }}
+      >
+        $
+      </span>
+    ));
+  };
+
   const renderStarRating = (rating: number, onChange: (rating: number) => void) => {
     return (
       <div className="flex items-center space-x-1">
