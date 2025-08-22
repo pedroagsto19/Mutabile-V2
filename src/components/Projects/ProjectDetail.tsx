@@ -52,7 +52,7 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
     return `${h}h ${m}m ${s}s`;
   };
 
-  const handleTimerAction = (activity: Activity) => {
+  const handleTimerAction = async (activity: Activity) => {
     if (activity.isTimerActive) {
       stopActivityTimer(activity.id);
     } else {
