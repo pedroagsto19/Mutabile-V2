@@ -5,6 +5,7 @@ import { Card, CardHeader, CardContent } from '../UI/Card';
 import { ProgressBar } from '../UI/ProgressBar';
 import { Modal } from '../UI/Modal';
 import { GanttChart } from './GanttChart';
+import { ProjectForm } from './ProjectForm';
 import { useProject } from '../../context/ProjectContext';
 import { useAuth } from '../../context/AuthContext';
 import { ProtectedRoute } from '../Auth/ProtectedRoute';
