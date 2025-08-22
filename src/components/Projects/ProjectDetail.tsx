@@ -523,8 +523,7 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
           <ProtectedRoute requiredPermission="canEditProjects">
             <Button variant="outline" onClick={handleEditProject}>
               <Edit className="h-4 w-4 mr-2" />
-              Editar
-              Editar Projeto
+              Editar projeto
             </Button>
           </ProtectedRoute>
           <ProtectedRoute requiredPermission="canEditProjects">
