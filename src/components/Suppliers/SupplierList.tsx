@@ -46,7 +46,7 @@ export function SupplierList({ onSupplierSelect }: SupplierListProps) {
     return Array.from({ length: 5 }, (_, i) => (
       <span
         key={i}
-        className={`text-lg font-bold ${
+        className={`text-lg font-bold mr-1 ${
           i < rating ? 'text-green-600' : 'text-gray-300'
         }`}
       >
@@ -213,7 +213,7 @@ export function SupplierList({ onSupplierSelect }: SupplierListProps) {
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-center">
-                        <span className="text-2xl font-bold text-gray-900">#{index + 1}</span>
+                        <span className="text-lg font-bold text-gray-900">#{index + 1}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
