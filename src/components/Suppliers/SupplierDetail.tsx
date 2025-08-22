@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Edit, Star, MapPin, Globe, Phone, Mail, Building } from 'lucide-react';
+import { ArrowLeft, Edit, MapPin, Globe, Phone, Mail, Building } from 'lucide-react';
 import { Button } from '../UI/Button';
 import { Card, CardHeader, CardContent } from '../UI/Card';
 import { SupplierForm } from './SupplierForm';
@@ -30,19 +30,28 @@ export function SupplierDetail({ supplierId, onBack }: SupplierDetailProps) {
     );
   }
 
-  const renderStars = (rating: number) => {
-    return Array.from({ length: 5 }, (_, i) => (
-      <Star
-        key={i}
-        className={`h-5 w-5 ${
-          i < rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
-        }`}
-      />
-    ));
+  const renderRating = (rating: number, emoji: string) => {
+    return (
+      <div className="flex items-center">
+        {Array.from({ length: 5 }, (_, i) => (
+          <span
+            key={i}
+            className={`text-xl ${i < rating ? 'opacity-100' : 'opacity-30'}`}
+            style={{ marginRight: '0.25rem' }}
+          >
+            {emoji}
+          </span>
+        ))}
+        <span className="ml-2 text-sm font-medium text-gray-900">
+          {rating}/5
+        </span>
+      </div>
+    );
   };
 
   const getAverageRating = () => {
-    return (supplier.ratings.quality + supplier.ratings.price) / 2;
+    const total = supplier.ratings.quality + supplier.ratings.price + (supplier.ratings.recommendation || 5);
+    return total / 3;
   };
 
   const getLinkedProjects = () => {
@@ -75,7 +84,7 @@ export function SupplierDetail({ supplierId, onBack }: SupplierDetailProps) {
             </h1>
             <div className="flex items-center space-x-4 mt-1">
               <div className="flex items-center">
-                {renderStars(Math.round(avgRating))}
+                {renderRating(Math.round(avgRating), '⭐')}
                 <span className="ml-2 text-sm font-medium text-gray-900">
                   {avgRating.toFixed(1)} (média geral)
                 </span>
@@ -228,28 +237,23 @@ export function SupplierDetail({ supplierId, onBack }: SupplierDetailProps) {
               <div className="space-y-4">
                 <div>
                   <p className="text-sm text-gray-500 mb-2">Qualidade</p>
-                  <div className="flex items-center">
-                    {renderStars(supplier.ratings.quality)}
-                    <span className="ml-2 text-sm font-medium text-gray-900">
-                      {supplier.ratings.quality}/5
-                    </span>
-                  </div>
+                  {renderRating(supplier.ratings.quality, '👍')}
                 </div>
                 
                 <div>
                   <p className="text-sm text-gray-500 mb-2">Preço</p>
-                  <div className="flex items-center">
-                    {renderStars(supplier.ratings.price)}
-                    <span className="ml-2 text-sm font-medium text-gray-900">
-                      {supplier.ratings.price}/5
-                    </span>
-                  </div>
+                  {renderRating(supplier.ratings.price, '💰')}
+                </div>
+
+                <div>
+                  <p className="text-sm text-gray-500 mb-2">Indicabilidade</p>
+                  {renderRating((supplier.ratings as any).recommendation || 5, '⭐')}
                 </div>
                 
                 <div className="pt-4 border-t border-gray-200">
                   <p className="text-sm text-gray-500 mb-2">Média Geral</p>
                   <div className="flex items-center">
-                    {renderStars(Math.round(avgRating))}
+                    {renderRating(Math.round(avgRating), '⭐')}
                     <span className="ml-2 text-lg font-bold text-gray-900">
                       {avgRating.toFixed(1)}/5
                     </span>

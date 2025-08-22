@@ -77,8 +77,8 @@ export function SupplierProvider({ children }: { children: React.ReactNode }) {
 
   const getSuppliersByRanking = (): Supplier[] => {
     return [...suppliers].sort((a, b) => {
-      const avgA = (a.ratings.quality + a.ratings.price) / 2;
-      const avgB = (b.ratings.quality + b.ratings.price) / 2;
+      const avgA = (a.ratings.quality + a.ratings.price + (a.ratings as any).recommendation || 5) / 3;
+      const avgB = (b.ratings.quality + b.ratings.price + (b.ratings as any).recommendation || 5) / 3;
       return avgB - avgA; // Descending order (best first)
     });
   };
