@@ -143,10 +143,11 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              CNPJ
+              CNPJ *
             </label>
             <input
               type="text"
+              required
               value={formData.cnpj}
               onChange={(e) => setFormData(prev => ({ ...prev, cnpj: e.target.value }))}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
@@ -158,10 +159,11 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
         <div className="grid grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Cidade
+              Cidade *
             </label>
             <input
               type="text"
+              required
               value={formData.location.city}
               onChange={(e) => setFormData(prev => ({ 
                 ...prev, 
@@ -173,10 +175,11 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Estado
+              Estado *
             </label>
             <input
               type="text"
+              required
               value={formData.location.state}
               onChange={(e) => setFormData(prev => ({ 
                 ...prev, 
@@ -188,10 +191,11 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              País
+              País *
             </label>
             <input
               type="text"
+              required
               value={formData.location.country}
               onChange={(e) => setFormData(prev => ({ 
                 ...prev, 
