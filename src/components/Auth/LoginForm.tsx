@@ -3,9 +3,11 @@ import { Eye, EyeOff, LogIn, Building2 } from 'lucide-react';
 import { Button } from '../UI/Button';
 import { Card, CardHeader, CardContent } from '../UI/Card';
 import { useAuth } from '../../context/AuthContext';
+import { useNotification } from '../../context/NotificationContext';
 
 export function LoginForm() {
   const { login, isLoading } = useAuth();
+  const { toast } = useNotification();
   const [credentials, setCredentials] = useState({
     email: '',
     password: ''
@@ -24,7 +26,7 @@ export function LoginForm() {
     
     const success = await login(credentials);
     if (!success) {
-      setError('E-mail ou senha incorretos');
+      toast.error('Erro de autenticação', 'E-mail ou senha incorretos');
     }
   };
 

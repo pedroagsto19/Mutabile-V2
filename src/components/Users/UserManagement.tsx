@@ -5,6 +5,7 @@ import { Card, CardHeader, CardContent } from '../UI/Card';
 import { Modal } from '../UI/Modal';
 import { useAuth } from '../../context/AuthContext';
 import type { User } from '../../types/auth';
+import { useNotification } from '../../context/NotificationContext';
 
 export function UserManagement() {
   const { 
@@ -16,6 +17,7 @@ export function UserManagement() {
     canEditUser,
     user: currentUser 
   } = useAuth();
+  const { toast, confirm } = useNotification();
   
   const [users, setUsers] = useState(getAllUsers());
   const [showUserForm, setShowUserForm] = useState(false);
@@ -43,13 +45,26 @@ export function UserManagement() {
 
   const handleDeleteUser = async (userId: string) => {
     if (userId === currentUser?.id) {
-      alert('Você não pode excluir sua própria conta');
+      toast.warning('Ação não permitida', 'Você não pode excluir sua própria conta');
       return;
     }
     
-    if (confirm('Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.')) {
-      await deleteUser(userId);
-      setUsers(getAllUsers());
+    const confirmed = await confirm({
+      title: 'Excluir Usuário',
+      message: 'Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.',
+      type: 'danger',
+      confirmText: 'Excluir',
+      cancelText: 'Cancelar'
+    });
+    
+    if (confirmed) {
+      try {
+        await deleteUser(userId);
+        setUsers(getAllUsers());
+        toast.success('Usuário excluído com sucesso!');
+      } catch (error) {
+        toast.error('Erro ao excluir usuário', 'Tente novamente mais tarde.');
+      }
     }
   };
 
@@ -95,20 +110,22 @@ export function UserManagement() {
             delete updateData.password;
           }
           await updateUser(editingUser.id, updateData);
+          toast.success('Usuário atualizado com sucesso!');
         } else {
           // For new users, password is required
           if (!formData.password) {
-            alert('Senha é obrigatória para novos usuários');
+            toast.error('Erro de validação', 'Senha é obrigatória para novos usuários');
             return;
           }
           await register(formData);
+          toast.success('Usuário criado com sucesso!');
         }
         setUsers(getAllUsers());
         setShowUserForm(false);
         setEditingUser(null);
       } catch (error) {
         console.error('Error saving user:', error);
-        alert('Erro ao salvar usuário');
+        toast.error('Erro ao salvar usuário', 'Tente novamente mais tarde.');
       }
     };
 

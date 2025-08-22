@@ -4,6 +4,7 @@ import { Button } from '../UI/Button';
 import { SettingsModal } from '../Settings/SettingsModal';
 import { ProfileModal } from '../Users/ProfileModal';
 import { useAuth } from '../../context/AuthContext';
+import { useNotification } from '../../context/NotificationContext';
 
 interface WorksHeaderProps {
   currentView: string;
@@ -13,6 +14,7 @@ interface WorksHeaderProps {
 
 export function WorksHeader({ currentView, onViewChange, onBackToMenu }: WorksHeaderProps) {
   const { user: currentUser, hasPermission, logout } = useAuth();
+  const { confirm } = useNotification();
   const [showSettings, setShowSettings] = React.useState(false);
   const [showProfile, setShowProfile] = React.useState(false);
 
@@ -22,9 +24,17 @@ export function WorksHeader({ currentView, onViewChange, onBackToMenu }: WorksHe
 
 
   const handleLogout = () => {
-    if (confirm('Tem certeza que deseja sair?')) {
-      logout();
-    }
+    confirm({
+      title: 'Sair do Sistema',
+      message: 'Tem certeza que deseja sair?',
+      type: 'warning',
+      confirmText: 'Sair',
+      cancelText: 'Cancelar'
+    }).then((confirmed) => {
+      if (confirmed) {
+        logout();
+      }
+    });
   };
 
   if (!currentUser) return null;

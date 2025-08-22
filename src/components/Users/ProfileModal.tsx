@@ -3,6 +3,7 @@ import { User as UserIcon, Save, X, Lock } from 'lucide-react';
 import { Button } from '../UI/Button';
 import { Modal } from '../UI/Modal';
 import { useAuth } from '../../context/AuthContext';
+import { useNotification } from '../../context/NotificationContext';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface ProfileModalProps {
 
 export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const { user: currentUser, updateUser } = useAuth();
+  const { toast } = useNotification();
   const [formData, setFormData] = useState({
     name: currentUser?.name || '',
     email: currentUser?.email || '',
@@ -39,11 +41,11 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
 
       await updateUser(currentUser.id, updateData);
       
-      alert('Perfil atualizado com sucesso!');
+      toast.success('Perfil atualizado com sucesso!');
       onClose();
     } catch (error) {
       console.error('Error updating profile:', error);
-      alert('Erro ao atualizar perfil');
+      toast.error('Erro ao atualizar perfil', 'Tente novamente mais tarde.');
     } finally {
       setIsLoading(false);
     }
@@ -54,17 +56,17 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     
     // Validate passwords
     if (passwordData.newPassword.length < 6) {
-      alert('Nova senha deve ter pelo menos 6 caracteres');
+      toast.error('Erro de validação', 'Nova senha deve ter pelo menos 6 caracteres');
       return;
     }
     
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      alert('Nova senha e confirmação não coincidem');
+      toast.error('Erro de validação', 'Nova senha e confirmação não coincidem');
       return;
     }
     
     if (!passwordData.currentPassword) {
-      alert('Senha atual é obrigatória');
+      toast.error('Erro de validação', 'Senha atual é obrigatória');
       return;
     }
     
@@ -84,10 +86,10 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       });
       setShowPasswordChange(false);
       
-      alert('Senha alterada com sucesso!');
+      toast.success('Senha alterada com sucesso!');
     } catch (error) {
       console.error('Error updating password:', error);
-      alert('Erro ao alterar senha. Verifique se a senha atual está correta.');
+      toast.error('Erro ao alterar senha', 'Verifique se a senha atual está correta.');
     } finally {
       setIsLoading(false);
     }

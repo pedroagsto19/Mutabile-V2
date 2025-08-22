@@ -16,6 +16,7 @@ import { Button } from '../UI/Button';
 import { SettingsModal } from '../Settings/SettingsModal';
 import { ProfileModal } from '../Users/ProfileModal';
 import { useAuth } from '../../context/AuthContext';
+import { useNotification } from '../../context/NotificationContext';
 
 interface MainMenuProps {
   onModuleSelect: (module: string) => void;
@@ -24,13 +25,22 @@ interface MainMenuProps {
 
 export function MainMenu({ onModuleSelect, currentUser }: MainMenuProps) {
   const { hasPermission, logout } = useAuth();
+  const { confirm, toast } = useNotification();
   const [showSettings, setShowSettings] = React.useState(false);
   const [showProfile, setShowProfile] = React.useState(false);
 
   const handleLogout = () => {
-    if (confirm('Tem certeza que deseja sair?')) {
-      logout();
-    }
+    confirm({
+      title: 'Sair do Sistema',
+      message: 'Tem certeza que deseja sair?',
+      type: 'warning',
+      confirmText: 'Sair',
+      cancelText: 'Cancelar'
+    }).then((confirmed) => {
+      if (confirmed) {
+        logout();
+      }
+    });
   };
 
   const modules = [
@@ -88,7 +98,7 @@ export function MainMenu({ onModuleSelect, currentUser }: MainMenuProps) {
     if (available) {
       onModuleSelect(moduleId);
     } else {
-      alert('Este módulo está em desenvolvimento e estará disponível em breve!');
+      toast.info('Módulo em desenvolvimento', 'Este módulo estará disponível em breve!');
     }
   };
 
