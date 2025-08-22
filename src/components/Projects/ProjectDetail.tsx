@@ -10,6 +10,7 @@ import { useProject } from '../../context/ProjectContext';
 import { useAuth } from '../../context/AuthContext';
 import { ProtectedRoute } from '../Auth/ProtectedRoute';
 import type { Project, Activity } from '../../types';
+import { useNotification } from '../../context/NotificationContext';
 
 interface ProjectDetailProps {
   projectId: string;
@@ -20,6 +21,7 @@ interface ProjectDetailProps {
 export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: ProjectDetailProps) {
   const { projects, addActivity, updateActivity, startActivityTimer, stopActivityTimer, activeTimer, getElapsedTime, updateProject, calculateActivityProgress, canUserEditActivity } = useProject();
   const { user: currentUser, hasPermission, getAllUsers } = useAuth();
+  const { toast, confirm } = useNotification();
   const users = getAllUsers();
   const [activeTab, setActiveTab] = useState<'stages' | 'gantt'>(initialTab === 'gantt' ? 'gantt' : 'stages');
   const [activeStage, setActiveStage] = useState(0);
@@ -61,9 +63,15 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
         .some(a => a.isTimerActive && a.id !== activity.id);
       
       if (hasActiveTimer) {
-        if (!confirm('Já existe um timer ativo em outra atividade. Deseja parar o timer atual e iniciar este?')) {
-          return;
-        }
+        const confirmed = await confirm({
+          title: 'Timer Ativo',
+          message: 'Já existe um timer ativo em outra atividade. Deseja parar o timer atual e iniciar este?',
+          type: 'warning',
+          confirmText: 'Sim, trocar timer',
+          cancelText: 'Cancelar'
+        });
+        
+        if (!confirmed) return;
       }
       
       // Set actual start date if this is the first time starting the timer
@@ -87,16 +95,26 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
   };
 
   const handleCompleteProject = () => {
-    if (confirm('Tem certeza que deseja marcar este projeto como concluído?')) {
-      updateProject(projectId, { 
-        status: 'completed',
-        progress: 100
-      });
-    }
+    confirm({
+      title: 'Concluir Projeto',
+      message: 'Tem certeza que deseja marcar este projeto como concluído?',
+      type: 'success',
+      confirmText: 'Concluir',
+      cancelText: 'Cancelar'
+    }).then((confirmed) => {
+      if (confirmed) {
+        updateProject(projectId, { 
+          status: 'completed',
+          progress: 100
+        });
+        toast.success('Projeto marcado como concluído!');
+      }
+    });
   };
 
   const handleUpdateProject = (projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => {
     updateProject(project.id, projectData);
+    toast.success('Projeto atualizado com sucesso!');
     setShowEditProjectForm(false);
   };
 
@@ -108,13 +126,22 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
   };
 
   const handleCompleteActivity = (activity: Activity) => {
-    if (confirm('Tem certeza que deseja marcar esta atividade como concluída?')) {
-      updateActivity(activity.id, {
-        status: 'completed',
-        progress: 100,
-        actualEndDate: new Date()
-      });
-    }
+    confirm({
+      title: 'Concluir Atividade',
+      message: 'Tem certeza que deseja marcar esta atividade como concluída?',
+      type: 'success',
+      confirmText: 'Concluir',
+      cancelText: 'Cancelar'
+    }).then((confirmed) => {
+      if (confirmed) {
+        updateActivity(activity.id, {
+          status: 'completed',
+          progress: 100,
+          actualEndDate: new Date()
+        });
+        toast.success('Atividade marcada como concluída!');
+      }
+    });
   };
 
   const TimeEditorModal = () => {

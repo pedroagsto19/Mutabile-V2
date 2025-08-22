@@ -5,6 +5,7 @@ import { useProject } from '../../context/ProjectContext';
 import { useAuth } from '../../context/AuthContext';
 import type { Project } from '../../types';
 import { defaultStages } from '../../data/mockData';
+import { useNotification } from '../../context/NotificationContext';
 
 interface ProjectFormProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ interface ProjectFormProps {
 export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormProps) {
   const { addProject } = useProject();
   const { getAllUsers } = useAuth();
+  const { toast } = useNotification();
   const users = getAllUsers();
   
   const [formData, setFormData] = useState({
@@ -75,9 +77,11 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
     if (project) {
       // Editing existing project
       onSubmit(projectData);
+      toast.success('Projeto atualizado com sucesso!');
     } else {
       // Creating new project
       addProject(projectData);
+      toast.success('Projeto criado com sucesso!');
     }
     onSubmit(projectData);
     

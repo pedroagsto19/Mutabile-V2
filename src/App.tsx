@@ -5,6 +5,7 @@ import { LoginForm } from './components/Auth/LoginForm';
 import { ProjectProvider } from './context/ProjectContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SupplierApp } from './components/Suppliers/SupplierApp';
+import { NotificationProvider } from './context/NotificationContext';
 
 function AppContent() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -72,9 +73,11 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <ProjectProvider>
-        <AppContent />
-      </ProjectProvider>
+      <NotificationProvider>
+        <ProjectProvider>
+          <AppContent />
+        </ProjectProvider>
+      </NotificationProvider>
     </AuthProvider>
   );
 }

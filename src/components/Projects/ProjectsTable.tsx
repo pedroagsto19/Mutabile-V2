@@ -8,6 +8,7 @@ import { useProject } from '../../context/ProjectContext';
 import { useAuth } from '../../context/AuthContext';
 import { ProtectedRoute } from '../Auth/ProtectedRoute';
 import type { ProjectFilters } from '../../types';
+import { useNotification } from '../../context/NotificationContext';
 
 interface ProjectsTableProps {
   onProjectSelect: (projectId: string) => void;
@@ -18,6 +19,7 @@ interface ProjectsTableProps {
 export function ProjectsTable({ onProjectSelect, onProjectGantt, onCreateProject }: ProjectsTableProps) {
   const { projects, deleteProject, updateProject } = useProject();
   const { hasPermission } = useAuth();
+  const { toast, confirm } = useNotification();
   const [filters, setFilters] = useState<ProjectFilters>({});
   const [showFilters, setShowFilters] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -78,14 +80,28 @@ export function ProjectsTable({ onProjectSelect, onProjectGantt, onCreateProject
   };
 
   const handleDeleteProject = (projectId: string) => {
-    if (confirm('Tem certeza que deseja excluir este projeto? Esta ação não pode ser desfeita.')) {
-      deleteProject(projectId);
-    }
+    confirm({
+      title: 'Excluir Projeto',
+      message: 'Tem certeza que deseja excluir este projeto? Esta ação não pode ser desfeita.',
+      type: 'danger',
+      confirmText: 'Excluir',
+      cancelText: 'Cancelar'
+    }).then((confirmed) => {
+      if (confirmed) {
+        try {
+          deleteProject(projectId);
+          toast.success('Projeto excluído com sucesso!');
+        } catch (error) {
+          toast.error('Erro ao excluir projeto', 'Tente novamente mais tarde.');
+        }
+      }
+    });
   };
 
   const handleUpdateProject = (projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (editingProject) {
       updateProject(editingProject.id, projectData);
+      toast.success('Projeto atualizado com sucesso!');
       setShowEditForm(false);
       setEditingProject(null);
     }

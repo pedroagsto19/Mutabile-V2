@@ -5,6 +5,7 @@ import { Star } from 'lucide-react';
 import { useSupplier } from '../../context/SupplierContext';
 import { useProject } from '../../context/ProjectContext';
 import type { Supplier } from '../../types/supplier';
+import { useNotification } from '../../context/NotificationContext';
 
 interface SupplierFormProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ interface SupplierFormProps {
 export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
   const { addSupplier, updateSupplier } = useSupplier();
   const { projects } = useProject();
+  const { toast } = useNotification();
   
   const [formData, setFormData] = useState({
     name: '',
@@ -76,13 +78,18 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (supplier) {
-      updateSupplier(supplier.id, formData);
-    } else {
-      addSupplier(formData);
+    try {
+      if (supplier) {
+        updateSupplier(supplier.id, formData);
+        toast.success('Fornecedor atualizado com sucesso!');
+      } else {
+        addSupplier(formData);
+        toast.success('Fornecedor cadastrado com sucesso!');
+      }
+      onClose();
+    } catch (error) {
+      toast.error('Erro ao salvar fornecedor', 'Tente novamente mais tarde.');
     }
-    
-    onClose();
   };
 
   const renderStarRating = (rating: number, onChange: (rating: number) => void) => {

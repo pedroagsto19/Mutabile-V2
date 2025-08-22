@@ -6,6 +6,7 @@ import { SupplierForm } from './SupplierForm';
 import { useSupplier } from '../../context/SupplierContext';
 import { useProject } from '../../context/ProjectContext';
 import type { SupplierFilters } from '../../types/supplier';
+import { useNotification } from '../../context/NotificationContext';
 
 interface SupplierListProps {
   onSupplierSelect: (supplierId: string) => void;
@@ -14,6 +15,7 @@ interface SupplierListProps {
 export function SupplierList({ onSupplierSelect }: SupplierListProps) {
   const { suppliers, getSuppliersByRanking, deleteSupplier, canDeleteSupplier, canEditSupplier } = useSupplier();
   const { projects } = useProject();
+  const { toast, confirm } = useNotification();
   const [showSupplierForm, setShowSupplierForm] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState(null);
   const [filters, setFilters] = useState<SupplierFilters>({});
@@ -72,9 +74,22 @@ export function SupplierList({ onSupplierSelect }: SupplierListProps) {
   };
 
   const handleDeleteSupplier = (supplierId: string) => {
-    if (confirm('Tem certeza que deseja excluir este fornecedor? Esta ação não pode ser desfeita.')) {
-      deleteSupplier(supplierId);
-    }
+    confirm({
+      title: 'Excluir Fornecedor',
+      message: 'Tem certeza que deseja excluir este fornecedor? Esta ação não pode ser desfeita.',
+      type: 'danger',
+      confirmText: 'Excluir',
+      cancelText: 'Cancelar'
+    }).then((confirmed) => {
+      if (confirmed) {
+        try {
+          deleteSupplier(supplierId);
+          toast.success('Fornecedor excluído com sucesso!');
+        } catch (error) {
+          toast.error('Erro ao excluir fornecedor', 'Tente novamente mais tarde.');
+        }
+      }
+    });
   };
 
   const handleFormClose = () => {
