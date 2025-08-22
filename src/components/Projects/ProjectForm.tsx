@@ -188,19 +188,9 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
             >
               <option value="">Selecione um responsável</option>
-                    disabled={project && project.stages.some(s => s.name === stage.name && s.activities.length > 0)}
               {users.map(user => (
                 <option key={user.id} value={user.name}>
-                  <span className={`ml-2 text-sm ${
-                    project && project.stages.some(s => s.name === stage.name && s.activities.length > 0)
-                      ? 'text-gray-400'
-                      : 'text-gray-700'
-                  }`}>
-                    {stage.name}
-                    {project && project.stages.some(s => s.name === stage.name && s.activities.length > 0) && (
-                      <span className="text-xs text-gray-500 ml-1">(contém atividades)</span>
-                    )}
-                  </span>
+                  {user.name} - {user.role}
                 </option>
               ))}
             </select>
