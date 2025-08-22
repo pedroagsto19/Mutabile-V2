@@ -180,13 +180,6 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
                   <strong>Atenção:</strong> Alterar as etapas de um projeto existente pode afetar as atividades já cadastradas.
                 </p>
               </div>
-            )}
-            <select
-              required
-              value={formData.responsible}
-              onChange={(e) => setFormData(prev => ({ ...prev, responsible: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
-            >
               <option value="">Selecione um responsável</option>
               {users.map(user => (
                 <option key={user.id} value={user.name}>
