@@ -27,6 +27,7 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
   const [showEditProject, setShowEditProject] = useState(false);
   const [showTimeEditor, setShowTimeEditor] = useState(false);
   const [editingTimeActivity, setEditingTimeActivity] = useState<Activity | null>(null);
+  const [showEditProjectForm, setShowEditProjectForm] = useState(false);
 
   const project = projects.find(p => p.id === projectId);
   if (!project || !currentUser) return null;
@@ -81,7 +82,7 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
   };
 
   const handleEditProject = () => {
-    setShowEditProject(true);
+    setShowEditProjectForm(true);
   };
 
   const handleCompleteProject = () => {
@@ -91,6 +92,11 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
         progress: 100
       });
     }
+  };
+
+  const handleUpdateProject = (projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => {
+    updateProject(project.id, projectData);
+    setShowEditProjectForm(false);
   };
 
   const handleEditTime = (activity: Activity) => {
@@ -488,6 +494,16 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
       <ActivityForm />
       <TimeEditorModal />
       
+      {/* Edit Project Form */}
+      <ProtectedRoute requiredPermission="canEditProjects">
+        <ProjectForm
+          isOpen={showEditProjectForm}
+          onClose={() => setShowEditProjectForm(false)}
+          onSubmit={handleUpdateProject}
+          project={project}
+        />
+      </ProtectedRoute>
+      
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
@@ -507,6 +523,7 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
             <Button variant="outline" onClick={handleEditProject}>
               <Edit className="h-4 w-4 mr-2" />
               Editar
+              Editar Projeto
             </Button>
           </ProtectedRoute>
           <ProtectedRoute requiredPermission="canEditProjects">

@@ -30,6 +30,22 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
     customStages: [] as string[]
   });
 
+  // Update form data when project changes
+  React.useEffect(() => {
+    if (project) {
+      setFormData({
+        name: project.name,
+        client: project.client,
+        location: project.location,
+        responsible: project.responsible,
+        controlNumber: project.controlNumber,
+        description: project.description,
+        status: project.status,
+        selectedStages: project.stages.map(s => s.name),
+        customStages: []
+      });
+    }
+  }, [project]);
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -51,26 +67,34 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
     const projectData = {
       ...formData,
       progress: 0,
+      progress: project?.progress || 0,
       stages,
-      risk: 'on_time'
+      risk: project?.risk || 'on_time'
     };
 
-    // Use context to add project
-    addProject(projectData);
+    if (project) {
+      // Editing existing project
+      onSubmit(projectData);
+    } else {
+      // Creating new project
+      addProject(projectData);
+    }
     onSubmit(projectData);
     
-    // Reset form
-    setFormData({
-      name: '',
-      client: '',
-      location: '',
-      responsible: '',
-      controlNumber: '',
-      description: '',
-      status: 'planning',
-      selectedStages: ['Anteprojeto'],
-      customStages: []
-    });
+    // Reset form only if creating new project
+    if (!project) {
+      setFormData({
+        name: '',
+        client: '',
+        location: '',
+        responsible: '',
+        controlNumber: '',
+        description: '',
+        status: 'planning',
+        selectedStages: ['Anteprojeto'],
+        customStages: []
+      });
+    }
     
     onClose();
   };
@@ -150,6 +174,13 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Responsável *
             </label>
+            {project && (
+              <div className="mb-3 p-3 bg-blue-50 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <strong>Atenção:</strong> Alterar as etapas de um projeto existente pode afetar as atividades já cadastradas.
+                </p>
+              </div>
+            )}
             <select
               required
               value={formData.responsible}
@@ -157,9 +188,19 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
             >
               <option value="">Selecione um responsável</option>
+                    disabled={project && project.stages.some(s => s.name === stage.name && s.activities.length > 0)}
               {users.map(user => (
                 <option key={user.id} value={user.name}>
-                  {user.name} - {user.role}
+                  <span className={`ml-2 text-sm ${
+                    project && project.stages.some(s => s.name === stage.name && s.activities.length > 0)
+                      ? 'text-gray-400'
+                      : 'text-gray-700'
+                  }`}>
+                    {stage.name}
+                    {project && project.stages.some(s => s.name === stage.name && s.activities.length > 0) && (
+                      <span className="text-xs text-gray-500 ml-1">(contém atividades)</span>
+                    )}
+                  </span>
                 </option>
               ))}
             </select>
