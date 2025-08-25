@@ -71,12 +71,18 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
 
   // Filter active projects only and update when projects change
   const activeProjects = React.useMemo(() => {
+    console.log('All projects:', projects); // Debug log
     return projects.filter(p => 
       p.status === 'in_progress' || 
       p.status === 'planning' || 
       p.status === 'on_hold'
     );
   }, [projects]);
+  
+  // Debug log for active projects
+  React.useEffect(() => {
+    console.log('Active projects updated:', activeProjects);
+  }, [activeProjects]);
   // Update form data when supplier changes
   useEffect(() => {
     if (supplier) {
