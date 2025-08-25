@@ -115,16 +115,18 @@ export function SupplierDetail({ supplierId, onBack }: SupplierDetailProps) {
             </div>
           </div>
         </div>
-        {canEditSupplier() && (
-          <Button onClick={() => setShowEditForm(true)}>
-            <Edit className="h-4 w-4 mr-2" />
-            Editar Fornecedor
+        <div className="flex items-center space-x-3">
+          {canEditSupplier() && (
+            <Button onClick={() => setShowEditForm(true)}>
+              <Edit className="h-4 w-4 mr-2" />
+              Editar Fornecedor
+            </Button>
+          )}
+          <Button onClick={() => setShowEvaluationForm(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nova Avaliação
           </Button>
-        )}
-        <Button onClick={() => setShowEvaluationForm(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nova Avaliação
-        </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -341,59 +343,55 @@ export function SupplierDetail({ supplierId, onBack }: SupplierDetailProps) {
                         </div>
                       </div>
                       
-                      <div className="space-y-3">
-                        <div>
-                          <div className="flex items-center justify-between">
-                            <p className="text-sm font-medium text-gray-700">Qualidade</p>
-                            <div className="flex items-center space-x-1">
-                              {Array.from({ length: 5 }, (_, i) => (
-                                <span
-                                  key={i}
-                                  className={`text-lg ${i < evaluation.ratings.quality ? 'opacity-100' : 'opacity-30'}`}
-                                >
-                                  👍
-                                </span>
-                              ))}
-                              <span className="ml-2 text-sm font-medium text-gray-900">
-                                {evaluation.ratings.quality}/5
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium text-gray-700">Qualidade</p>
+                          <div className="flex items-center space-x-1">
+                            {Array.from({ length: 5 }, (_, i) => (
+                              <span
+                                key={i}
+                                className={`text-lg ${i < evaluation.ratings.quality ? 'opacity-100' : 'opacity-30'}`}
+                              >
+                                👍
                               </span>
-                            </div>
+                            ))}
+                            <span className="ml-2 text-sm font-medium text-gray-900">
+                              {evaluation.ratings.quality}/5
+                            </span>
                           </div>
                         </div>
-                        <div>
-                          <div className="flex items-center justify-between">
-                            <p className="text-sm font-medium text-gray-700">Preço</p>
-                            <div className="flex items-center space-x-1">
-                              {Array.from({ length: 5 }, (_, i) => (
-                                <span
-                                  key={i}
-                                  className={`text-lg ${i < evaluation.ratings.price ? 'opacity-100' : 'opacity-30'}`}
-                                >
-                                  💰
-                                </span>
-                              ))}
-                              <span className="ml-2 text-sm font-medium text-gray-900">
-                                {evaluation.ratings.price}/5
+                        
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium text-gray-700">Preço</p>
+                          <div className="flex items-center space-x-1">
+                            {Array.from({ length: 5 }, (_, i) => (
+                              <span
+                                key={i}
+                                className={`text-lg ${i < evaluation.ratings.price ? 'opacity-100' : 'opacity-30'}`}
+                              >
+                                💰
                               </span>
-                            </div>
+                            ))}
+                            <span className="ml-2 text-sm font-medium text-gray-900">
+                              {evaluation.ratings.price}/5
+                            </span>
                           </div>
                         </div>
-                        <div>
-                          <div className="flex items-center justify-between">
-                            <p className="text-sm font-medium text-gray-700">Índice de Indicação</p>
-                            <div className="flex items-center space-x-1">
-                              {Array.from({ length: 5 }, (_, i) => (
-                                <span
-                                  key={i}
-                                  className={`text-lg ${i < evaluation.ratings.recommendation ? 'opacity-100' : 'opacity-30'}`}
-                                >
-                                  ⭐
-                                </span>
-                              ))}
-                              <span className="ml-2 text-sm font-medium text-gray-900">
-                                {evaluation.ratings.recommendation}/5
+                        
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium text-gray-700">Índice de Indicação</p>
+                          <div className="flex items-center space-x-1">
+                            {Array.from({ length: 5 }, (_, i) => (
+                              <span
+                                key={i}
+                                className={`text-lg ${i < evaluation.ratings.recommendation ? 'opacity-100' : 'opacity-30'}`}
+                              >
+                                ⭐
                               </span>
-                            </div>
+                            ))}
+                            <span className="ml-2 text-sm font-medium text-gray-900">
+                              {evaluation.ratings.recommendation}/5
+                            </span>
                           </div>
                         </div>
                       </div>
