@@ -3,19 +3,18 @@ import { ArrowLeft, Edit, MapPin, Globe, Phone, Mail, Building, Plus, Calendar, 
 import { Button } from '../UI/Button';
 import { Card, CardHeader, CardContent } from '../UI/Card';
 import { SupplierForm } from './SupplierForm';
-import { SupplierEvaluationForm } from './SupplierEvaluationForm';
 import { useSupplier } from '../../context/SupplierContext';
 import { useProject } from '../../context/ProjectContext';
 import { useAuth } from '../../context/AuthContext';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-interface SupplierDetailProps {
+interface SupplierEvaluationFormProps {
   supplierId: string;
   onBack: () => void;
 }
 
-export function SupplierDetail({ supplierId, onBack }: SupplierDetailProps) {
+export function SupplierEvaluationForm({ supplierId, onBack }: SupplierEvaluationFormProps) {
   const { suppliers, canEditSupplier } = useSupplier();
   const { projects } = useProject();
   const { getAllUsers } = useAuth();
