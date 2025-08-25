@@ -50,7 +50,7 @@ export function DashboardOverview({ onProjectSelect }: DashboardOverviewProps) {
         <div className="flex items-center justify-between">
           <div>
             <p className={`text-sm transition-colors duration-200 ${onClick ? 'text-gray-500 group-hover:text-gray-700' : 'text-gray-500'}`}>{title}</p>
-            <p className={`text-2xl font-bold transition-colors duration-200 ${onClick ? 'text-gray-900 group-hover:text-black' : 'text-gray-900'}`}>{value}</p>
+            <p className={`text-2xl font-bold transition-colors duration-200 ${onClick ? 'text-gray-900 group-hover:text-blue-600' : 'text-gray-900'}`}>{value}</p>
           </div>
           <Icon className={`h-8 w-8 transition-all duration-200 ${color} ${onClick ? 'group-hover:scale-110' : ''}`} />
         </div>
