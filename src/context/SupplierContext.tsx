@@ -106,10 +106,10 @@ export function SupplierProvider({ children }: { children: React.ReactNode }) {
     };
     
     const updateData = {
-      evaluations: updatedEvaluations.map(eval => ({
-        ...eval,
-        evaluationDate: eval.evaluationDate.toISOString(),
-        createdAt: eval.createdAt.toISOString()
+      evaluations: updatedEvaluations.map(evaluation => ({
+        ...evaluation,
+        evaluationDate: evaluation.evaluationDate.toISOString(),
+        createdAt: evaluation.createdAt.toISOString()
       })),
       ratings: avgRatings,
       updatedAt: new Date().toISOString()
