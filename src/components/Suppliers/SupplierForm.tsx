@@ -69,6 +69,14 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
 
   const [countryType, setCountryType] = useState<'brasil' | 'outros'>('brasil');
 
+  // Filter active projects only and update when projects change
+  const activeProjects = React.useMemo(() => {
+    return projects.filter(p => 
+      p.status === 'in_progress' || 
+      p.status === 'planning' || 
+      p.status === 'on_hold'
+    );
+  }, [projects]);
   // Update form data when supplier changes
   useEffect(() => {
     if (supplier) {
@@ -207,12 +215,6 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
     }));
   };
 
-  // Filter active projects only
-  const activeProjects = projects.filter(p => 
-    p.status === 'in_progress' || 
-    p.status === 'planning' || 
-    p.status === 'on_hold'
-  );
 
   return (
     <Modal 
