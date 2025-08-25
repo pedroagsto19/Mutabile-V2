@@ -44,4 +44,9 @@ export interface SupplierFilters {
   state?: string;
   city?: string;
   search?: string;
+  minQuality?: number;
+  minPrice?: number;
+  minRecommendation?: number;
+  linkedProject?: string;
+  hasEvaluations?: boolean;
 }

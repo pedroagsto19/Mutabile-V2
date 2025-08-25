@@ -51,6 +51,7 @@ export function SupplierList({ onSupplierSelect }: SupplierListProps) {
   const [filters, setFilters] = useState<SupplierFilters>({});
   const [showFilters, setShowFilters] = useState(false);
   const [countryFilter, setCountryFilter] = useState<'brasil' | 'outros' | ''>('');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   const rankedSuppliers = getSuppliersByRanking();
 
@@ -63,6 +64,22 @@ export function SupplierList({ onSupplierSelect }: SupplierListProps) {
     if (filters.country && supplier.location.country !== filters.country) return false;
     if (filters.state && supplier.location.state !== filters.state) return false;
     if (filters.city && supplier.location.city !== filters.city) return false;
+    
+    // Filtros de avaliação
+    if (filters.minQuality && supplier.ratings.quality < filters.minQuality) return false;
+    if (filters.minPrice && supplier.ratings.price < filters.minPrice) return false;
+    if (filters.minRecommendation && supplier.ratings.recommendation < filters.minRecommendation) return false;
+    
+    // Filtro por projeto vinculado
+    if (filters.linkedProject && !supplier.linkedProjects.includes(filters.linkedProject)) return false;
+    
+    // Filtro por ter avaliações
+    if (filters.hasEvaluations !== undefined) {
+      const hasEvals = supplier.evaluations && supplier.evaluations.length > 0;
+      if (filters.hasEvaluations && !hasEvals) return false;
+      if (!filters.hasEvaluations && hasEvals) return false;
+    }
+    
     return true;
   });
 
@@ -128,6 +145,10 @@ export function SupplierList({ onSupplierSelect }: SupplierListProps) {
   const uniqueStates = [...new Set(suppliers.map(s => s.location.state).filter(Boolean))];
   const uniqueBrazilianStates = [...new Set(suppliers.filter(s => s.location.country === 'Brasil').map(s => s.location.state).filter(Boolean))];
   const uniqueCities = [...new Set(suppliers.map(s => s.location.city).filter(Boolean))];
+  
+  // Get unique linked projects for filters
+  const linkedProjectIds = [...new Set(suppliers.flatMap(s => s.linkedProjects))];
+  const linkedProjects = linkedProjectIds.map(id => projects.find(p => p.id === id)).filter(Boolean);
 
   // Create ranking with tied positions
   const createRanking = (suppliers: any[]) => {
@@ -205,11 +226,17 @@ export function SupplierList({ onSupplierSelect }: SupplierListProps) {
             >
               <Filter className="h-4 w-4 mr-2" />
               Filtros
+              {(filters.minQuality || filters.minPrice || filters.minRecommendation || filters.linkedProject || filters.hasEvaluations !== undefined) && (
+                <span className="ml-2 bg-blue-500 text-white text-xs rounded-full px-2 py-1">
+                  Ativos
+                </span>
+              )}
             </Button>
           </div>
 
           {showFilters && (
-            <div className="mt-4 space-y-4">
+            <div className="mt-4 space-y-6">
+              {/* Filtros Básicos */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   País
@@ -314,6 +341,148 @@ export function SupplierList({ onSupplierSelect }: SupplierListProps) {
                   </div>
                 </div>
               )}
+              
+              {/* Filtros Avançados */}
+              <div className="border-t border-gray-200 pt-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-medium text-gray-900">Filtros Avançados</h3>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                  >
+                    {showAdvancedFilters ? 'Ocultar' : 'Mostrar'}
+                  </Button>
+                </div>
+                
+                {showAdvancedFilters && (
+                  <div className="space-y-4">
+                    {/* Filtros de Avaliação */}
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700 mb-3">Notas Mínimas</h4>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">
+                            Qualidade 👍
+                          </label>
+                          <select
+                            value={filters.minQuality || ''}
+                            onChange={(e) => setFilters(prev => ({ 
+                              ...prev, 
+                              minQuality: e.target.value ? parseInt(e.target.value) : undefined 
+                            }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none text-sm"
+                          >
+                            <option value="">Qualquer</option>
+                            <option value="1">1+ estrelas</option>
+                            <option value="2">2+ estrelas</option>
+                            <option value="3">3+ estrelas</option>
+                            <option value="4">4+ estrelas</option>
+                            <option value="5">5 estrelas</option>
+                          </select>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">
+                            Preço 💰
+                          </label>
+                          <select
+                            value={filters.minPrice || ''}
+                            onChange={(e) => setFilters(prev => ({ 
+                              ...prev, 
+                              minPrice: e.target.value ? parseInt(e.target.value) : undefined 
+                            }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none text-sm"
+                          >
+                            <option value="">Qualquer</option>
+                            <option value="1">1+ estrelas</option>
+                            <option value="2">2+ estrelas</option>
+                            <option value="3">3+ estrelas</option>
+                            <option value="4">4+ estrelas</option>
+                            <option value="5">5 estrelas</option>
+                          </select>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">
+                            Indicabilidade ⭐
+                          </label>
+                          <select
+                            value={filters.minRecommendation || ''}
+                            onChange={(e) => setFilters(prev => ({ 
+                              ...prev, 
+                              minRecommendation: e.target.value ? parseInt(e.target.value) : undefined 
+                            }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none text-sm"
+                          >
+                            <option value="">Qualquer</option>
+                            <option value="1">1+ estrelas</option>
+                            <option value="2">2+ estrelas</option>
+                            <option value="3">3+ estrelas</option>
+                            <option value="4">4+ estrelas</option>
+                            <option value="5">5 estrelas</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Filtro por Projeto */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Projeto Vinculado
+                        </label>
+                        <select
+                          value={filters.linkedProject || ''}
+                          onChange={(e) => setFilters(prev => ({ ...prev, linkedProject: e.target.value || undefined }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
+                        >
+                          <option value="">Todos os projetos</option>
+                          {linkedProjects.map(project => (
+                            <option key={project.id} value={project.id}>
+                              {project.name} ({project.client})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Status de Avaliação
+                        </label>
+                        <select
+                          value={filters.hasEvaluations === undefined ? '' : filters.hasEvaluations.toString()}
+                          onChange={(e) => setFilters(prev => ({ 
+                            ...prev, 
+                            hasEvaluations: e.target.value === '' ? undefined : e.target.value === 'true'
+                          }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
+                        >
+                          <option value="">Todos</option>
+                          <option value="true">Com avaliações</option>
+                          <option value="false">Sem avaliações</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    {/* Botão para limpar filtros */}
+                    <div className="flex justify-end pt-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setFilters({});
+                          setCountryFilter('');
+                        }}
+                      >
+                        Limpar Filtros
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </CardContent>
