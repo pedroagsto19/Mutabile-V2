@@ -17,6 +17,7 @@ export function DashboardOverview({ onProjectSelect }: DashboardOverviewProps) {
   const { projects } = useProject();
   const [showActiveProjectsModal, setShowActiveProjectsModal] = useState(false);
   const [showRiskProjectsModal, setShowRiskProjectsModal] = useState(false);
+  const [showCompletedProjectsModal, setShowCompletedProjectsModal] = useState(false);
 
   const stats = {
     totalProjects: projects.length,
@@ -41,16 +42,17 @@ export function DashboardOverview({ onProjectSelect }: DashboardOverviewProps) {
 
   const activeProjects = projects.filter(p => p.status === 'in_progress');
   const riskProjects = projects.filter(p => p.risk === 'at_risk' || p.risk === 'delayed');
+  const completedProjects = projects.filter(p => p.status === 'completed');
 
   const StatCard = ({ title, value, icon: Icon, color, onClick }: any) => (
     <Card>
-      <CardContent className={onClick ? 'cursor-pointer hover:bg-gray-50 transition-colors' : ''} onClick={onClick}>
+      <CardContent className={onClick ? 'cursor-pointer hover:bg-gray-50 transition-all duration-200 group' : ''} onClick={onClick}>
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm text-gray-500">{title}</p>
-            <p className="text-2xl font-bold text-gray-900">{value}</p>
+            <p className={`text-sm transition-colors duration-200 ${onClick ? 'text-gray-500 group-hover:text-gray-700' : 'text-gray-500'}`}>{title}</p>
+            <p className={`text-2xl font-bold transition-colors duration-200 ${onClick ? 'text-gray-900 group-hover:text-black' : 'text-gray-900'}`}>{value}</p>
           </div>
-          <Icon className={`h-8 w-8 ${color}`} />
+          <Icon className={`h-8 w-8 transition-all duration-200 ${color} ${onClick ? 'group-hover:scale-110' : ''}`} />
         </div>
       </CardContent>
     </Card>
@@ -205,6 +207,13 @@ export function DashboardOverview({ onProjectSelect }: DashboardOverviewProps) {
         projects={riskProjects}
       />
       
+      <ProjectDetailsModal
+        isOpen={showCompletedProjectsModal}
+        onClose={() => setShowCompletedProjectsModal(false)}
+        title="Projetos Concluídos"
+        projects={completedProjects}
+      />
+      
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
@@ -240,6 +249,7 @@ export function DashboardOverview({ onProjectSelect }: DashboardOverviewProps) {
           value={stats.completedProjects}
           icon={CheckCircle}
           color="text-emerald-600"
+          onClick={() => setShowCompletedProjectsModal(true)}
         />
       </div>
 
