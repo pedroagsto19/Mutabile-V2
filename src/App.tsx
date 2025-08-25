@@ -59,7 +59,11 @@ function AppContent() {
         </ProjectProvider>
       );
     case 'fornecedores':
-      return <SupplierApp onBackToMenu={handleBackToMenu} />;
+      return (
+        <ProjectProvider>
+          <SupplierApp onBackToMenu={handleBackToMenu} />
+        </ProjectProvider>
+      );
     default:
       return (
         <MainMenu 
