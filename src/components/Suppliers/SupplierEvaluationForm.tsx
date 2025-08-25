@@ -76,20 +76,20 @@ export function SupplierEvaluationForm({ isOpen, onClose, supplierId }: Supplier
 
   const renderStarRating = (rating: number, onChange: (rating: number) => void, emoji: string) => {
     return (
-      <div className="flex items-center space-x-1">
+      <div className="flex items-center justify-center space-x-1">
         {Array.from({ length: 5 }, (_, i) => (
           <button
             key={i}
             type="button"
             onClick={() => onChange(i + 1)}
-            className="focus:outline-none text-2xl hover:scale-110 transition-transform"
+            className="focus:outline-none text-xl hover:scale-110 transition-transform"
           >
             <span className={i < rating ? 'opacity-100' : 'opacity-30'}>
               {emoji}
             </span>
           </button>
         ))}
-        <span className="ml-2 text-sm text-gray-600">({rating})</span>
+        <span className="ml-2 text-sm font-medium text-gray-900">({rating})</span>
       </div>
     );
   };
@@ -99,10 +99,10 @@ export function SupplierEvaluationForm({ isOpen, onClose, supplierId }: Supplier
       isOpen={isOpen} 
       onClose={onClose} 
       title="Nova Avaliação do Fornecedor"
-      size="md"
+      size="lg"
     >
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-2 gap-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Data da Avaliação *
@@ -136,9 +136,9 @@ export function SupplierEvaluationForm({ isOpen, onClose, supplierId }: Supplier
         </div>
 
         {/* Ratings */}
-        <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            <label className="block text-sm font-medium text-gray-700 mb-3 text-center">
               Avaliação - Qualidade
             </label>
             {renderStarRating(formData.ratings.quality, (rating) => 
@@ -150,7 +150,7 @@ export function SupplierEvaluationForm({ isOpen, onClose, supplierId }: Supplier
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            <label className="block text-sm font-medium text-gray-700 mb-3 text-center">
               Avaliação - Preço
             </label>
             {renderStarRating(formData.ratings.price, (rating) => 
@@ -162,7 +162,7 @@ export function SupplierEvaluationForm({ isOpen, onClose, supplierId }: Supplier
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            <label className="block text-sm font-medium text-gray-700 mb-3 text-center">
               Avaliação - Índice de Indicação
             </label>
             {renderStarRating(formData.ratings.recommendation, (rating) => 
@@ -181,13 +181,13 @@ export function SupplierEvaluationForm({ isOpen, onClose, supplierId }: Supplier
           <textarea
             value={formData.notes}
             onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-            rows={4}
+            rows={3}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none resize-none"
             placeholder="Comentários sobre esta avaliação..."
           />
         </div>
 
-        <div className="flex justify-end space-x-3 pt-6">
+        <div className="flex justify-end space-x-3 pt-4">
           <Button type="button" variant="outline" onClick={onClose}>
             Cancelar
           </Button>
