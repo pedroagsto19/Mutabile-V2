@@ -406,7 +406,7 @@ export function SupplierList({ onSupplierSelect }: SupplierListProps) {
                         
                         <div>
                           <label className="block text-xs text-gray-600 mb-1">
-                            Indicabilidade ⭐
+                            Índice de Indicação ⭐
                           </label>
                           <select
                             value={filters.minRecommendation || ''}

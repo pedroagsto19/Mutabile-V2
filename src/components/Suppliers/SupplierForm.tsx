@@ -450,7 +450,7 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
-              Avaliação - Indicabilidade
+              Avaliação - Índice de Indicação
             </label>
             {renderStarRating(formData.ratings.recommendation, (rating) => 
               setFormData(prev => ({ 
