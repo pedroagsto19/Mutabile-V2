@@ -285,7 +285,7 @@ export function SupplierDetail({ supplierId, onBack }: SupplierDetailProps) {
                 </div>
 
                 <div>
-                  <p className="text-sm text-gray-500 mb-2">Indicabilidade</p>
+                  <p className="text-sm text-gray-500 mb-2">Índice de Indicação</p>
                   {renderRating(supplier.ratings.recommendation, '⭐')}
                 </div>
                 
