@@ -18,6 +18,7 @@ export function DashboardOverview({ onProjectSelect }: DashboardOverviewProps) {
   const [showActiveProjectsModal, setShowActiveProjectsModal] = useState(false);
   const [showRiskProjectsModal, setShowRiskProjectsModal] = useState(false);
   const [showCompletedProjectsModal, setShowCompletedProjectsModal] = useState(false);
+  const [showAllProjectsModal, setShowAllProjectsModal] = useState(false);
 
   const stats = {
     totalProjects: projects.length,
@@ -43,6 +44,7 @@ export function DashboardOverview({ onProjectSelect }: DashboardOverviewProps) {
   const activeProjects = projects.filter(p => p.status === 'in_progress');
   const riskProjects = projects.filter(p => p.risk === 'at_risk' || p.risk === 'delayed');
   const completedProjects = projects.filter(p => p.status === 'completed');
+  const allProjects = projects; // Todos os projetos
 
   const StatCard = ({ title, value, icon: Icon, color, onClick }: any) => (
     <Card>
@@ -214,6 +216,13 @@ export function DashboardOverview({ onProjectSelect }: DashboardOverviewProps) {
         projects={completedProjects}
       />
       
+      <ProjectDetailsModal
+        isOpen={showAllProjectsModal}
+        onClose={() => setShowAllProjectsModal(false)}
+        title="Todos os Projetos"
+        projects={allProjects}
+      />
+      
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
@@ -229,6 +238,7 @@ export function DashboardOverview({ onProjectSelect }: DashboardOverviewProps) {
           value={stats.totalProjects}
           icon={TrendingUp}
           color="text-black"
+          onClick={() => setShowAllProjectsModal(true)}
         />
         <StatCard
           title="Projetos Ativos"
