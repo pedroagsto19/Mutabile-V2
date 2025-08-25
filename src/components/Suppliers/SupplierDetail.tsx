@@ -125,7 +125,6 @@ export function SupplierDetail({ supplierId, onBack }: SupplierDetailProps) {
           <Plus className="h-4 w-4 mr-2" />
           Nova Avaliação
         </Button>
-        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -19,10 +19,10 @@ const SupplierContext = createContext<SupplierContextType | undefined>(undefined
 // Helper function to convert local supplier to app supplier
 const convertLocalSupplier = (localSupplier: any): Supplier => ({
   ...localSupplier,
-  evaluations: (localSupplier.evaluations || []).map((eval: any) => ({
-    ...eval,
-    evaluationDate: new Date(eval.evaluationDate),
-    createdAt: new Date(eval.createdAt)
+  evaluations: (localSupplier.evaluations || []).map((evaluation: any) => ({
+    ...evaluation,
+    evaluationDate: new Date(evaluation.evaluationDate),
+    createdAt: new Date(evaluation.createdAt)
   })),
   createdAt: new Date(localSupplier.createdAt),
   updatedAt: new Date(localSupplier.updatedAt)
