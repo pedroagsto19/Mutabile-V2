@@ -100,9 +100,9 @@ export function SupplierProvider({ children }: { children: React.ReactNode }) {
     
     // Calculate new average ratings
     const avgRatings = {
-      quality: Math.round(updatedEvaluations.reduce((sum, eval) => sum + eval.ratings.quality, 0) / updatedEvaluations.length),
-      price: Math.round(updatedEvaluations.reduce((sum, eval) => sum + eval.ratings.price, 0) / updatedEvaluations.length),
-      recommendation: Math.round(updatedEvaluations.reduce((sum, eval) => sum + eval.ratings.recommendation, 0) / updatedEvaluations.length)
+      quality: Math.round(updatedEvaluations.reduce((sum, evaluation) => sum + evaluation.ratings.quality, 0) / updatedEvaluations.length),
+      price: Math.round(updatedEvaluations.reduce((sum, evaluation) => sum + evaluation.ratings.price, 0) / updatedEvaluations.length),
+      recommendation: Math.round(updatedEvaluations.reduce((sum, evaluation) => sum + evaluation.ratings.recommendation, 0) / updatedEvaluations.length)
     };
     
     const updateData = {
