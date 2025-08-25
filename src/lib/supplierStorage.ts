@@ -1,5 +1,7 @@
 import type { Supplier } from '../types/supplier';
 
+import type { SupplierEvaluation } from '../types/supplier';
+
 export interface LocalSupplier {
   id: string;
   name: string;
@@ -18,6 +20,7 @@ export interface LocalSupplier {
     price: number;
     recommendation: number;
   };
+  evaluations: any[];
   linkedProjects: string[];
   createdAt: string;
   updatedAt: string;

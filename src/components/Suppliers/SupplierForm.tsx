@@ -104,8 +104,9 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
         ratings: {
           quality: supplier.ratings.quality,
           price: supplier.ratings.price,
-          recommendation: (supplier.ratings as any).recommendation || 5
+          recommendation: supplier.ratings.recommendation
         },
+        evaluations: supplier.evaluations,
         linkedProjects: supplier.linkedProjects
       });
     } else {
@@ -128,6 +129,8 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
           price: 5,
           recommendation: 5
         },
+        evaluations: [],
+        evaluations: [],
         linkedProjects: []
       });
     }

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import type { Supplier, SupplierFilters } from '../types/supplier';
+import type { Supplier, SupplierFilters, SupplierEvaluation } from '../types/supplier';
 import { useAuth } from './AuthContext';
 import SupplierStorage from '../lib/supplierStorage';
 
@@ -8,6 +8,7 @@ interface SupplierContextType {
   addSupplier: (supplier: Omit<Supplier, 'id' | 'createdAt' | 'updatedAt' | 'createdBy'>) => void;
   updateSupplier: (id: string, updates: Partial<Supplier>) => void;
   deleteSupplier: (id: string) => void;
+  addEvaluation: (supplierId: string, evaluation: Omit<SupplierEvaluation, 'id' | 'supplierId' | 'createdAt'>) => void;
   getSuppliersByRanking: () => Supplier[];
   canDeleteSupplier: () => boolean;
   canEditSupplier: () => boolean;
@@ -18,6 +19,11 @@ const SupplierContext = createContext<SupplierContextType | undefined>(undefined
 // Helper function to convert local supplier to app supplier
 const convertLocalSupplier = (localSupplier: any): Supplier => ({
   ...localSupplier,
+  evaluations: (localSupplier.evaluations || []).map((eval: any) => ({
+    ...eval,
+    evaluationDate: new Date(eval.evaluationDate),
+    createdAt: new Date(eval.createdAt)
+  })),
   createdAt: new Date(localSupplier.createdAt),
   updatedAt: new Date(localSupplier.updatedAt)
 });
@@ -41,6 +47,7 @@ export function SupplierProvider({ children }: { children: React.ReactNode }) {
     
     const localSupplierData = {
       ...supplierData,
+      evaluations: [],
       createdBy: currentUser.id,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -75,10 +82,47 @@ export function SupplierProvider({ children }: { children: React.ReactNode }) {
     setSuppliers(prev => prev.filter(s => s.id !== id));
   };
 
+  const addEvaluation = (supplierId: string, evaluationData: Omit<SupplierEvaluation, 'id' | 'supplierId' | 'createdAt'>) => {
+    if (!currentUser) return;
+    
+    const supplier = suppliers.find(s => s.id === supplierId);
+    if (!supplier) return;
+    
+    const newEvaluation: SupplierEvaluation = {
+      id: Date.now().toString(),
+      supplierId,
+      ...evaluationData,
+      evaluatedBy: currentUser.id,
+      createdAt: new Date()
+    };
+    
+    const updatedEvaluations = [...supplier.evaluations, newEvaluation];
+    
+    // Calculate new average ratings
+    const avgRatings = {
+      quality: Math.round(updatedEvaluations.reduce((sum, eval) => sum + eval.ratings.quality, 0) / updatedEvaluations.length),
+      price: Math.round(updatedEvaluations.reduce((sum, eval) => sum + eval.ratings.price, 0) / updatedEvaluations.length),
+      recommendation: Math.round(updatedEvaluations.reduce((sum, eval) => sum + eval.ratings.recommendation, 0) / updatedEvaluations.length)
+    };
+    
+    const updateData = {
+      evaluations: updatedEvaluations.map(eval => ({
+        ...eval,
+        evaluationDate: eval.evaluationDate.toISOString(),
+        createdAt: eval.createdAt.toISOString()
+      })),
+      ratings: avgRatings,
+      updatedAt: new Date().toISOString()
+    };
+    
+    SupplierStorage.updateSupplier(supplierId, updateData);
+    loadSuppliers();
+  };
+
   const getSuppliersByRanking = (): Supplier[] => {
     return [...suppliers].sort((a, b) => {
-      const avgA = (a.ratings.quality + a.ratings.price + (a.ratings as any).recommendation || 5) / 3;
-      const avgB = (b.ratings.quality + b.ratings.price + (b.ratings as any).recommendation || 5) / 3;
+      const avgA = (a.ratings.quality + a.ratings.price + a.ratings.recommendation) / 3;
+      const avgB = (b.ratings.quality + b.ratings.price + b.ratings.recommendation) / 3;
       return avgB - avgA; // Descending order (best first)
     });
   };
@@ -97,6 +141,7 @@ export function SupplierProvider({ children }: { children: React.ReactNode }) {
       addSupplier,
       updateSupplier,
       deleteSupplier,
+      addEvaluation,
       getSuppliersByRanking,
       canDeleteSupplier,
       canEditSupplier

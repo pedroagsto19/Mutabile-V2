@@ -83,7 +83,7 @@ export function SupplierList({ onSupplierSelect }: SupplierListProps) {
   };
 
   const getAverageRating = (supplier: any) => {
-    const total = supplier.ratings.quality + supplier.ratings.price + (supplier.ratings.recommendation || 5);
+    const total = supplier.ratings.quality + supplier.ratings.price + supplier.ratings.recommendation;
     return total / 3;
   };
 

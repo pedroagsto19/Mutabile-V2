@@ -1,3 +1,19 @@
+export interface SupplierEvaluation {
+  id: string;
+  supplierId: string;
+  projectId?: string;
+  projectName?: string;
+  evaluationDate: Date;
+  ratings: {
+    quality: number;
+    price: number;
+    recommendation: number;
+  };
+  notes?: string;
+  evaluatedBy: string;
+  createdAt: Date;
+}
+
 export interface Supplier {
   id: string;
   name: string;
@@ -16,6 +32,7 @@ export interface Supplier {
     price: number; // 1-5
     recommendation: number; // 1-5
   };
+  evaluations: SupplierEvaluation[];
   linkedProjects: string[]; // Project IDs
   createdAt: Date;
   updatedAt: Date;

@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Edit, MapPin, Globe, Phone, Mail, Building } from 'lucide-react';
+import { ArrowLeft, Edit, MapPin, Globe, Phone, Mail, Building, Plus, Calendar, User } from 'lucide-react';
 import { Button } from '../UI/Button';
 import { Card, CardHeader, CardContent } from '../UI/Card';
 import { SupplierForm } from './SupplierForm';
+import { SupplierEvaluationForm } from './SupplierEvaluationForm';
 import { useSupplier } from '../../context/SupplierContext';
 import { useProject } from '../../context/ProjectContext';
+import { useAuth } from '../../context/AuthContext';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface SupplierDetailProps {
   supplierId: string;
@@ -14,7 +18,10 @@ interface SupplierDetailProps {
 export function SupplierDetail({ supplierId, onBack }: SupplierDetailProps) {
   const { suppliers, canEditSupplier } = useSupplier();
   const { projects } = useProject();
+  const { getAllUsers } = useAuth();
+  const users = getAllUsers();
   const [showEditForm, setShowEditForm] = useState(false);
+  const [showEvaluationForm, setShowEvaluationForm] = useState(false);
 
   const supplier = suppliers.find(s => s.id === supplierId);
   
@@ -50,7 +57,7 @@ export function SupplierDetail({ supplierId, onBack }: SupplierDetailProps) {
   };
 
   const getAverageRating = () => {
-    const total = supplier.ratings.quality + supplier.ratings.price + (supplier.ratings.recommendation || 5);
+    const total = supplier.ratings.quality + supplier.ratings.price + supplier.ratings.recommendation;
     return total / 3;
   };
 
@@ -62,6 +69,16 @@ export function SupplierDetail({ supplierId, onBack }: SupplierDetailProps) {
 
   const linkedProjects = getLinkedProjects();
   const avgRating = getAverageRating();
+  
+  const getUserName = (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    return user ? user.name : 'Usuário não encontrado';
+  };
+  
+  const getProjectName = (projectId: string) => {
+    const project = projects.find(p => p.id === projectId);
+    return project ? project.name : 'Projeto não encontrado';
+  };
 
   return (
     <div className="space-y-6">
@@ -69,6 +86,12 @@ export function SupplierDetail({ supplierId, onBack }: SupplierDetailProps) {
         isOpen={showEditForm}
         onClose={() => setShowEditForm(false)}
         supplier={supplier}
+      />
+      
+      <SupplierEvaluationForm
+        isOpen={showEvaluationForm}
+        onClose={() => setShowEvaluationForm(false)}
+        supplierId={supplierId}
       />
       
       {/* Header */}
@@ -86,7 +109,7 @@ export function SupplierDetail({ supplierId, onBack }: SupplierDetailProps) {
               <div className="flex items-center">
                 {renderRating(Math.round(avgRating), '⭐')}
                 <span className="ml-2 text-sm font-medium text-gray-900">
-                  {avgRating.toFixed(1)} (média geral)
+                  {avgRating.toFixed(1)} (média de {supplier.evaluations.length} avaliações)
                 </span>
               </div>
             </div>
@@ -97,6 +120,11 @@ export function SupplierDetail({ supplierId, onBack }: SupplierDetailProps) {
             <Edit className="h-4 w-4 mr-2" />
             Editar Fornecedor
           </Button>
+        )}
+        <Button onClick={() => setShowEvaluationForm(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Nova Avaliação
+        </Button>
         )}
       </div>
 
@@ -238,7 +266,12 @@ export function SupplierDetail({ supplierId, onBack }: SupplierDetailProps) {
           {/* Ratings */}
           <Card>
             <CardHeader>
-              <h2 className="text-lg font-semibold text-gray-900">Avaliações</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900">Avaliação Atual</h2>
+                <span className="text-sm text-gray-500">
+                  Média de {supplier.evaluations.length} avaliações
+                </span>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -254,7 +287,7 @@ export function SupplierDetail({ supplierId, onBack }: SupplierDetailProps) {
 
                 <div>
                   <p className="text-sm text-gray-500 mb-2">Indicabilidade</p>
-                  {renderRating((supplier.ratings as any).recommendation || 5, '⭐')}
+                  {renderRating(supplier.ratings.recommendation, '⭐')}
                 </div>
                 
                 <div className="pt-4 border-t border-gray-200">
@@ -267,6 +300,81 @@ export function SupplierDetail({ supplierId, onBack }: SupplierDetailProps) {
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+          
+          {/* Evaluation History */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900">Histórico de Avaliações</h2>
+                <Button size="sm" onClick={() => setShowEvaluationForm(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nova Avaliação
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {supplier.evaluations.length > 0 ? (
+                <div className="space-y-4">
+                  {supplier.evaluations
+                    .sort((a, b) => b.evaluationDate.getTime() - a.evaluationDate.getTime())
+                    .map((evaluation) => (
+                    <div key={evaluation.id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-2">
+                          <Calendar className="h-4 w-4 text-gray-400" />
+                          <span className="text-sm font-medium text-gray-900">
+                            {format(evaluation.evaluationDate, 'dd/MM/yyyy', { locale: ptBR })}
+                          </span>
+                          {evaluation.projectId && (
+                            <>
+                              <span className="text-gray-300">•</span>
+                              <span className="text-sm text-gray-600">
+                                {getProjectName(evaluation.projectId)}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                        <div className="flex items-center text-sm text-gray-500">
+                          <User className="h-3 w-3 mr-1" />
+                          {getUserName(evaluation.evaluatedBy)}
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-4 mb-3">
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Qualidade</p>
+                          {renderRating(evaluation.ratings.quality, '👍')}
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Preço</p>
+                          {renderRating(evaluation.ratings.price, '💰')}
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Indicabilidade</p>
+                          {renderRating(evaluation.ratings.recommendation, '⭐')}
+                        </div>
+                      </div>
+                      
+                      {evaluation.notes && (
+                        <div className="bg-gray-50 rounded-lg p-3">
+                          <p className="text-sm text-gray-700">{evaluation.notes}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500 mb-4">Nenhuma avaliação registrada ainda.</p>
+                  <Button onClick={() => setShowEvaluationForm(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Fazer primeira avaliação
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 
