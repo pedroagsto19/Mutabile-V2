@@ -92,7 +92,7 @@ export function SupplierDetail({ supplierId, onBack }: SupplierDetailProps) {
         isOpen={showEvaluationForm}
         onClose={() => setShowEvaluationForm(false)}
         supplierId={supplierId}
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+      />
       
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -104,7 +104,7 @@ export function SupplierDetail({ supplierId, onBack }: SupplierDetailProps) {
           <div>
             <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
               {supplier.name}
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            </h1>
             <div className="flex items-center space-x-4 mt-1">
               <div className="flex items-center">
                 {renderRating(Math.round(avgRating), '⭐')}
@@ -374,11 +374,24 @@ export function SupplierDetail({ supplierId, onBack }: SupplierDetailProps) {
                             <span className="ml-1 text-xs font-medium text-gray-900">
                               {evaluation.ratings.price}/5
                             </span>
+                          </div>
                         </div>
                         <div>
                           <p className="text-xs text-gray-500 mb-1">Índice de Indicação</p>
-                          <p className="text-xs text-gray-500 mb-1">Índice de Indicação</p>
-                          {renderRating(evaluation.ratings.recommendation, '⭐')}
+                          <div className="flex items-center justify-center sm:justify-start">
+                            {Array.from({ length: 5 }, (_, i) => (
+                              <span
+                                key={i}
+                                className={`text-sm ${i < evaluation.ratings.recommendation ? 'opacity-100' : 'opacity-30'}`}
+                                style={{ marginRight: '0.125rem' }}
+                              >
+                                ⭐
+                              </span>
+                            ))}
+                            <span className="ml-1 text-xs font-medium text-gray-900">
+                              {evaluation.ratings.recommendation}/5
+                            </span>
+                          </div>
                         </div>
                       </div>
                       
@@ -432,6 +445,5 @@ export function SupplierDetail({ supplierId, onBack }: SupplierDetailProps) {
         </div>
       </div>
     </div>
-        <div className="space-y-6">
+  );
 }
-            <label className="block text-sm font-medium text-gray-700 mb-3">
