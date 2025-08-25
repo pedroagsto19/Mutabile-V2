@@ -513,9 +513,6 @@ export function SupplierList({ onSupplierSelect }: SupplierListProps) {
                   Índice de Indicação
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Projetos
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Ações
                 </th>
               </tr>
@@ -567,11 +564,6 @@ export function SupplierList({ onSupplierSelect }: SupplierListProps) {
                     </td>
                     <td className="px-6 py-4">
                       {renderRating(supplier.ratings.recommendation || 5, '⭐')}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">
-                        {linkedProjects || 'Nenhum projeto'}
-                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
