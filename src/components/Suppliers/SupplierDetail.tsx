@@ -319,7 +319,7 @@ export function SupplierDetail({ supplierId, onBack }: SupplierDetailProps) {
                   {supplier.evaluations
                     .sort((a, b) => b.evaluationDate.getTime() - a.evaluationDate.getTime())
                     .map((evaluation) => (
-                    <div key={evaluation.id} className="border border-gray-200 rounded-lg p-4">
+                    <div key={evaluation.id} className="border border-gray-200 rounded-lg p-4 space-y-3">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center space-x-2">
                           <Calendar className="h-4 w-4 text-gray-400" />
@@ -341,24 +341,65 @@ export function SupplierDetail({ supplierId, onBack }: SupplierDetailProps) {
                         </div>
                       </div>
                       
-                      <div className="grid grid-cols-3 gap-4 mb-3">
+                      <div className="space-y-3">
                         <div>
-                          <p className="text-xs text-gray-500 mb-1">Qualidade</p>
-                          {renderRating(evaluation.ratings.quality, '👍')}
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-medium text-gray-700">Qualidade</p>
+                            <div className="flex items-center space-x-1">
+                              {Array.from({ length: 5 }, (_, i) => (
+                                <span
+                                  key={i}
+                                  className={`text-lg ${i < evaluation.ratings.quality ? 'opacity-100' : 'opacity-30'}`}
+                                >
+                                  👍
+                                </span>
+                              ))}
+                              <span className="ml-2 text-sm font-medium text-gray-900">
+                                {evaluation.ratings.quality}/5
+                              </span>
+                            </div>
+                          </div>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-500 mb-1">Preço</p>
-                          {renderRating(evaluation.ratings.price, '💰')}
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-medium text-gray-700">Preço</p>
+                            <div className="flex items-center space-x-1">
+                              {Array.from({ length: 5 }, (_, i) => (
+                                <span
+                                  key={i}
+                                  className={`text-lg ${i < evaluation.ratings.price ? 'opacity-100' : 'opacity-30'}`}
+                                >
+                                  💰
+                                </span>
+                              ))}
+                              <span className="ml-2 text-sm font-medium text-gray-900">
+                                {evaluation.ratings.price}/5
+                              </span>
+                            </div>
+                          </div>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-500 mb-1">Índice de Indicação</p>
-                          <p className="text-xs text-gray-500 mb-1">Índice de Indicação</p>
-                          {renderRating(evaluation.ratings.recommendation, '⭐')}
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-medium text-gray-700">Índice de Indicação</p>
+                            <div className="flex items-center space-x-1">
+                              {Array.from({ length: 5 }, (_, i) => (
+                                <span
+                                  key={i}
+                                  className={`text-lg ${i < evaluation.ratings.recommendation ? 'opacity-100' : 'opacity-30'}`}
+                                >
+                                  ⭐
+                                </span>
+                              ))}
+                              <span className="ml-2 text-sm font-medium text-gray-900">
+                                {evaluation.ratings.recommendation}/5
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       </div>
                       
                       {evaluation.notes && (
-                        <div className="bg-gray-50 rounded-lg p-3">
+                        <div className="bg-gray-50 rounded-lg p-3 mt-3">
                           <p className="text-sm text-gray-700">{evaluation.notes}</p>
                         </div>
                       )}
