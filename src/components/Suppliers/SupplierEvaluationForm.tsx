@@ -74,7 +74,7 @@ export function SupplierEvaluationForm({ isOpen, onClose, supplierId }: Supplier
 
   const renderStarRating = (rating: number, onChange: (rating: number) => void, emoji: string, label: string) => {
     return (
-      <div className="space-y-3">
+      <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700">
           {label}
         </label>
@@ -141,7 +141,7 @@ export function SupplierEvaluationForm({ isOpen, onClose, supplierId }: Supplier
         </div>
 
         {/* Ratings */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {renderStarRating(
             formData.ratings.quality, 
             (rating) => setFormData(prev => ({ 

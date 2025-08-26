@@ -7,6 +7,7 @@ import { ProjectForm } from './ProjectForm';
 import { useProject } from '../../context/ProjectContext';
 import { useAuth } from '../../context/AuthContext';
 import { ProtectedRoute } from '../Auth/ProtectedRoute';
+import type { Project } from '../../types';
 import type { ProjectFilters } from '../../types';
 import { useNotification } from '../../context/NotificationContext';
 
