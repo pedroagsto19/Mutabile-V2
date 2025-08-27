@@ -52,7 +52,7 @@ export function ToastComponent({ toast, onClose }: ToastProps) {
 
   return (
     <div className={cn(
-      'max-w-sm w-full shadow-lg rounded-lg pointer-events-auto border',
+      'max-w-md w-full shadow-lg rounded-lg pointer-events-auto border',
       getStyles(),
       'animate-in slide-in-from-right-full duration-300'
     )}>
@@ -61,12 +61,12 @@ export function ToastComponent({ toast, onClose }: ToastProps) {
           <div className="flex-shrink-0">
             {getIcon()}
           </div>
-          <div className="ml-3 w-0 flex-1">
+          <div className="ml-3 flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900">
               {toast.title}
             </p>
             {toast.message && (
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-gray-500 break-words">
                 {toast.message}
               </p>
             )}
@@ -93,7 +93,7 @@ interface ToastContainerProps {
 
 export function ToastContainer({ toasts, onClose }: ToastContainerProps) {
   return (
-    <div className="fixed top-0 right-0 z-50 p-6 space-y-4 pointer-events-none">
+    <div className="fixed top-4 right-4 z-50 space-y-4 pointer-events-none max-w-md">
       {toasts.map((toast) => (
         <ToastComponent
           key={toast.id}
