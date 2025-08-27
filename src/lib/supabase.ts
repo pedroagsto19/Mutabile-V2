@@ -3,6 +3,22 @@ import { createClient } from '@supabase/supabase-js';
 const url = import.meta.env.VITE_SUPABASE_URL;
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+// Validate and provide fallback for URL to prevent TypeError
+function getValidSupabaseUrl(url: string | undefined): string {
+  if (!url) return 'https://placeholder.supabase.co';
+  
+  try {
+    new URL(url);
+    return url;
+  } catch {
+    console.warn('Invalid VITE_SUPABASE_URL provided, using fallback');
+    return 'https://placeholder.supabase.co';
+  }
+}
+
+const validUrl = getValidSupabaseUrl(url);
+const validKey = key || 'placeholder-key';
+
 export const assertEnv = () => {
   const problems: string[] = [];
   if (!url) problems.push('VITE_SUPABASE_URL ausente');
@@ -11,7 +27,7 @@ export const assertEnv = () => {
   return problems;
 };
 
-export const supabase = (url && key) ? createClient(url, key) : null;
+export const supabase = createClient(validUrl, validKey);
 
 export async function healthCheck(): Promise<{ ok: boolean; reason?: string }> {
   try {
