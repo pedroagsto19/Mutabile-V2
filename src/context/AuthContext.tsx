@@ -486,6 +486,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const logout = () => {
+    setAuthState({
+      user: null,
+      isAuthenticated: false,
+      isLoading: false
+    });
+    localStorage.removeItem('current_user_id');
+    LocalStorage.clearCurrentUser();
+  };
+
   const getAllUsers = (): User[] => {
     return users;
   };
