@@ -231,6 +231,66 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
           </CardContent>
         </Card>
 
+        {/* Example Logins */}
+        <Card>
+          <CardHeader>
+            <h3 className="text-sm font-semibold text-gray-900">Logins de Exemplo</h3>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('marina@mutabile.com.br');
+                  setPassword('admin123');
+                }}
+                className="w-full text-left p-2 text-xs bg-red-50 hover:bg-red-100 rounded border transition-colors"
+                disabled={!canLogin}
+              >
+                <strong>Admin:</strong> marina@mutabile.com.br / admin123
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('ana@mutabile.com.br');
+                  setPassword('gestor123');
+                }}
+                className="w-full text-left p-2 text-xs bg-blue-50 hover:bg-blue-100 rounded border transition-colors"
+                disabled={!canLogin}
+              >
+                <strong>Gestor:</strong> ana@mutabile.com.br / gestor123
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('carlos@mutabile.com.br');
+                  setPassword('equipe123');
+                }}
+                className="w-full text-left p-2 text-xs bg-green-50 hover:bg-green-100 rounded border transition-colors"
+                disabled={!canLogin}
+              >
+                <strong>Equipe:</strong> carlos@mutabile.com.br / equipe123
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('joao@mutabile.com.br');
+                  setPassword('leitor123');
+                }}
+                className="w-full text-left p-2 text-xs bg-gray-50 hover:bg-gray-100 rounded border transition-colors"
+                disabled={!canLogin}
+              >
+                <strong>Leitor:</strong> joao@mutabile.com.br / leitor123
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-3">
+              💡 Clique em qualquer login para preencher automaticamente
+            </p>
+          </CardContent>
+        </Card>
         {/* Help Section */}
         <Card>
           <CardHeader>
