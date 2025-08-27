@@ -31,20 +31,29 @@ export const supabase = createClient(validUrl, validKey);
 
 export async function healthCheck(): Promise<{ ok: boolean; reason?: string }> {
   try {
-    if (!url) return { ok: false, reason: 'URL ausente' };
+    if (!url || !key) return { ok: false, reason: 'Env vars ausentes' };
+    
     const ctrl = new AbortController();
     const timeout = setTimeout(() => ctrl.abort(), 4000);
-    const res = await fetch(`${url}/auth/v1/health`, { 
+    
+    const res = await fetch(`${url}/auth/v1/health`, {
+      method: 'GET',
       signal: ctrl.signal,
-      method: 'GET'
+      headers: {
+        // Supabase pode exigir ambos:
+        'apikey': key,
+        'Authorization': `Bearer ${key}`,
+      },
     });
     clearTimeout(timeout);
+    
+    const bodyText = await res.text().catch(() => '');
     return { ok: res.ok, reason: res.ok ? undefined : `HTTP ${res.status}` };
   } catch (e: any) {
     if (e.name === 'AbortError') {
       return { ok: false, reason: 'Timeout (4s) - verifique CORS/URL' };
     }
-    return { ok: false, reason: e?.message || 'Falha no fetch' };
+    return { ok: false, reason: e?.message || 'Failed to fetch' };
   }
 }
 
