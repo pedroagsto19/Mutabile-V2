@@ -1,42 +1,129 @@
-import React, { useState } from 'react';
-import { Eye, EyeOff, LogIn, Building2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Eye, EyeOff, LogIn, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '../UI/Button';
 import { Card, CardHeader, CardContent } from '../UI/Card';
-import { useAuth } from '../../context/AuthContext';
-import { useNotification } from '../../context/NotificationContext';
+import { supabase, assertEnv, healthCheck, explainSupabaseError } from '../../lib/supabase';
 
-export function LoginForm() {
-  const { login, isLoading } = useAuth();
-  const { toast } = useNotification();
-  const [credentials, setCredentials] = useState({
-    email: '',
-    password: ''
-  });
+interface LoginFormProps {
+  onLoginSuccess: () => void;
+}
+
+export function LoginForm({ onLoginSuccess }: LoginFormProps) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [systemStatus, setSystemStatus] = useState<{
+    envOk: boolean;
+    healthOk: boolean;
+    message: string;
+    checking: boolean;
+  }>({
+    envOk: false,
+    healthOk: false,
+    message: '',
+    checking: true
+  });
+
+  // Verificação inicial do sistema
+  useEffect(() => {
+    checkSystemHealth();
+  }, []);
+
+  const checkSystemHealth = async () => {
+    setSystemStatus(prev => ({ ...prev, checking: true }));
+    
+    // Verificar variáveis de ambiente
+    const envIssues = assertEnv();
+    if (envIssues.length > 0) {
+      setSystemStatus({
+        envOk: false,
+        healthOk: false,
+        message: `Configuração inválida: ${envIssues.join(' | ')}. Configure no Bolt (Environment).`,
+        checking: false
+      });
+      return;
+    }
+
+    // Verificar conectividade
+    const health = await healthCheck();
+    setSystemStatus({
+      envOk: true,
+      healthOk: health.ok,
+      message: health.ok 
+        ? 'Sistema pronto para login' 
+        : `Não foi possível alcançar o Supabase: ${health.reason}`,
+      checking: false
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     
-    if (!credentials.email || !credentials.password) {
+    if (!email || !password) {
       setError('Por favor, preencha todos os campos');
       return;
     }
-    
-    const success = await login(credentials);
-    if (!success) {
-      toast.error('Erro de autenticação', 'E-mail ou senha incorretos');
+
+    if (!supabase) {
+      setError('Supabase não configurado');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password
+      });
+
+      if (authError) {
+        setError(explainSupabaseError(authError));
+        return;
+      }
+
+      if (data.session) {
+        console.log('Login realizado com sucesso:', data.user?.email);
+        onLoginSuccess();
+      } else {
+        setError('Falha no login: sessão não criada');
+      }
+    } catch (e: any) {
+      console.error('Erro no login:', e);
+      setError(explainSupabaseError(e));
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleDemoLogin = (email: string, password: string) => {
-    setCredentials({ email, password });
+  const getStatusIcon = () => {
+    if (systemStatus.checking) {
+      return <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>;
+    }
+    if (systemStatus.envOk && systemStatus.healthOk) {
+      return <CheckCircle className="h-4 w-4 text-green-600" />;
+    }
+    if (systemStatus.envOk && !systemStatus.healthOk) {
+      return <AlertTriangle className="h-4 w-4 text-yellow-600" />;
+    }
+    return <XCircle className="h-4 w-4 text-red-600" />;
   };
+
+  const getStatusColor = () => {
+    if (systemStatus.checking) return 'bg-blue-50 border-blue-200 text-blue-800';
+    if (systemStatus.envOk && systemStatus.healthOk) return 'bg-green-50 border-green-200 text-green-800';
+    if (systemStatus.envOk && !systemStatus.healthOk) return 'bg-yellow-50 border-yellow-200 text-yellow-800';
+    return 'bg-red-50 border-red-200 text-red-800';
+  };
+
+  const canLogin = systemStatus.envOk && systemStatus.healthOk && !systemStatus.checking;
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
-      <div className="max-w-md w-full space-y-8">
+      <div className="max-w-md w-full space-y-6">
         {/* Logo and Title */}
         <div className="text-center">
           <div className="flex items-center justify-center space-x-3 mb-6">
@@ -49,11 +136,28 @@ export function LoginForm() {
             </div>
           </div>
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            Faça login em sua conta
+            Acesso ao Sistema
           </h2>
           <p className="text-gray-600">
-            Acesse o sistema de gestão de projetos
+            Entre com suas credenciais
           </p>
+        </div>
+
+        {/* System Status */}
+        <div className={`border rounded-lg p-3 ${getStatusColor()}`}>
+          <div className="flex items-center space-x-2">
+            {getStatusIcon()}
+            <span className="text-sm font-medium">
+              {systemStatus.checking ? 'Verificando sistema...' : systemStatus.message}
+            </span>
+          </div>
+          {!systemStatus.healthOk && systemStatus.envOk && (
+            <div className="mt-2 text-xs">
+              <p>💡 <strong>Dica:</strong> Configure CORS no Supabase:</p>
+              <p>• Authentication → URL Configuration</p>
+              <p>• Adicione o domínio do preview do Bolt em "Allowed CORS Origins"</p>
+            </div>
+          )}
         </div>
 
         {/* Login Form */}
@@ -73,10 +177,11 @@ export function LoginForm() {
                 <input
                   type="email"
                   required
-                  value={credentials.email}
-                  onChange={(e) => setCredentials(prev => ({ ...prev, email: e.target.value }))}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
                   placeholder="seu@email.com"
+                  disabled={!canLogin}
                 />
               </div>
 
@@ -88,15 +193,17 @@ export function LoginForm() {
                   <input
                     type={showPassword ? 'text' : 'password'}
                     required
-                    value={credentials.password}
-                    onChange={(e) => setCredentials(prev => ({ ...prev, password: e.target.value }))}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
                     placeholder="Sua senha"
+                    disabled={!canLogin}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    disabled={!canLogin}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -106,7 +213,7 @@ export function LoginForm() {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={isLoading}
+                disabled={isLoading || !canLogin}
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center">
@@ -124,66 +231,23 @@ export function LoginForm() {
           </CardContent>
         </Card>
 
-        {/* Demo Accounts */}
+        {/* Help Section */}
         <Card>
           <CardHeader>
-            <h3 className="text-lg font-semibold text-gray-900">Contas de Demonstração</h3>
-            <p className="text-sm text-gray-600">Clique para testar diferentes níveis de acesso</p>
+            <h3 className="text-sm font-semibold text-gray-900">Configuração do Supabase</h3>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDemoLogin('marina@mutabile.com.br', 'admin123')}
-                  className="text-left justify-start h-auto py-3"
-                >
-                  <div>
-                    <p className="font-medium">Admin</p>
-                    <p className="text-xs text-gray-500">Acesso total</p>
-                    <p className="text-xs text-blue-600">marina@mutabile.com.br</p>
-                  </div>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDemoLogin('ana@mutabile.com.br', 'gestor123')}
-                  className="text-left justify-start h-auto py-3"
-                >
-                  <div>
-                    <p className="font-medium">Gestor</p>
-                    <p className="text-xs text-gray-500">Gerencia projetos</p>
-                    <p className="text-xs text-blue-600">ana@mutabile.com.br</p>
-                  </div>
-                </Button>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDemoLogin('carlos@mutabile.com.br', 'equipe123')}
-                  className="text-left justify-start h-auto py-3"
-                >
-                  <div>
-                    <p className="font-medium">Equipe</p>
-                    <p className="text-xs text-gray-500">Executa atividades</p>
-                    <p className="text-xs text-blue-600">carlos@mutabile.com.br</p>
-                  </div>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDemoLogin('joao@mutabile.com.br', 'leitor123')}
-                  className="text-left justify-start h-auto py-3"
-                >
-                  <div>
-                    <p className="font-medium">Leitor</p>
-                    <p className="text-xs text-gray-500">Apenas visualização</p>
-                    <p className="text-xs text-blue-600">joao@mutabile.com.br</p>
-                  </div>
-                </Button>
-              </div>
+            <div className="text-xs text-gray-600 space-y-2">
+              <p><strong>1. Variáveis de Ambiente (Bolt):</strong></p>
+              <p>• VITE_SUPABASE_URL</p>
+              <p>• VITE_SUPABASE_ANON_KEY</p>
+              
+              <p><strong>2. CORS (Supabase Dashboard):</strong></p>
+              <p>• Authentication → URL Configuration</p>
+              <p>• Adicionar domínio *.webcontainer-api.io</p>
+              
+              <p><strong>3. Email Auth:</strong></p>
+              <p>• Desabilitar "Enable email signups"</p>
             </div>
           </CardContent>
         </Card>
