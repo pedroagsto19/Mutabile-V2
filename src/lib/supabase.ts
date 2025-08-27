@@ -1,6 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co';
+// Validate and get Supabase URL with fallback
+let supabaseUrl = 'https://placeholder.supabase.co';
+const envUrl = import.meta.env.VITE_SUPABASE_URL;
+
+if (envUrl) {
+  try {
+    // Test if the URL is valid by constructing a URL object
+    new URL(envUrl);
+    supabaseUrl = envUrl;
+  } catch (error) {
+    console.warn('Invalid VITE_SUPABASE_URL provided, using fallback:', envUrl);
+  }
+}
+
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder-key';
 
 // Check if we have valid Supabase configuration
