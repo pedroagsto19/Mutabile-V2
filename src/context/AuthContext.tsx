@@ -162,9 +162,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthState(prev => ({ ...prev, isLoading: true }));
     
     try {
-      // First ensure data is initialized
-      LocalStorage.initializeDefaultData();
-      
       const localUser = LocalStorage.authenticateUser(credentials.email, credentials.password);
       
       if (localUser) {
