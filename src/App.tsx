@@ -7,9 +7,82 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { SupplierApp } from './components/Suppliers/SupplierApp';
 import { NotificationProvider } from './context/NotificationContext';
 
+// Initialize demo data if needed
+import { supabase } from './lib/supabase';
+
+async function initializeDemoData() {
+  try {
+    // Check if users already exist
+    const { data: existingUsers, error } = await supabase
+      .from('users')
+      .select('id')
+      .limit(1);
+    
+    if (error) {
+      console.error('Error checking existing users:', error);
+      return;
+    }
+    
+    // If no users exist, create demo users
+    if (!existingUsers || existingUsers.length === 0) {
+      const demoUsers = [
+        {
+          name: 'Marina Costa',
+          email: 'marina@mutabile.com.br',
+          role: 'Administradora',
+          auth_level: 'admin',
+          password_hash: '1804289383', // hash of 'admin123'
+          team_id: 'team1'
+        },
+        {
+          name: 'Ana Silva',
+          email: 'ana@mutabile.com.br',
+          role: 'Gerente de Projetos',
+          auth_level: 'gestor',
+          password_hash: '846930886', // hash of 'gestor123'
+          team_id: 'team1'
+        },
+        {
+          name: 'Carlos Santos',
+          email: 'carlos@mutabile.com.br',
+          role: 'Arquiteto',
+          auth_level: 'equipe',
+          password_hash: '1681692777', // hash of 'equipe123'
+          team_id: 'team1'
+        },
+        {
+          name: 'João Oliveira',
+          email: 'joao@mutabile.com.br',
+          role: 'Cliente',
+          auth_level: 'leitor',
+          password_hash: '1714636915', // hash of 'leitor123'
+          team_id: 'team1'
+        }
+      ];
+      
+      const { error: insertError } = await supabase
+        .from('users')
+        .insert(demoUsers);
+      
+      if (insertError) {
+        console.error('Error creating demo users:', insertError);
+      } else {
+        console.log('Demo users created successfully');
+      }
+    }
+  } catch (error) {
+    console.error('Error initializing demo data:', error);
+  }
+}
+
 function AppContent() {
   const { isAuthenticated, isLoading, user } = useAuth();
   const [currentModule, setCurrentModule] = useState<string | null>(null);
+  
+  // Initialize demo data on first load
+  React.useEffect(() => {
+    initializeDemoData();
+  }, []);
 
   // Show loading spinner while checking authentication
   if (isLoading) {

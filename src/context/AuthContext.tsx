@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { User, LoginCredentials, AuthState, Permission } from '../types/auth';
-import LocalStorage from '../lib/localStorage';
+import { supabase, hashPassword, verifyPassword } from '../lib/supabase';
 
 interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<boolean>;
@@ -39,33 +39,66 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isLoading: true
   });
 
-  // Initialize local storage and load users on mount
+  // Load users from database on mount
   useEffect(() => {
-    LocalStorage.initializeDefaultData();
     loadUsers();
-    
-    // Check for existing session
-    const savedUser = LocalStorage.getCurrentUser();
-    if (savedUser) {
-      setAuthState({
-        user: convertLocalUser(savedUser),
-        isAuthenticated: true,
-        isLoading: false
-      });
-    } else {
-      setAuthState(prev => ({ ...prev, isLoading: false }));
-    }
+    checkSession();
   }, []);
 
-  const loadUsers = () => {
+  const loadUsers = async () => {
     try {
-      const localUsers = LocalStorage.getUsers();
-      setUsers(localUsers.map(convertLocalUser));
+      const { data, error } = await supabase
+        .from('users')
+        .select('*');
+      
+      if (error) throw error;
+      
+      setUsers((data || []).map(convertDatabaseUser));
     } catch (error) {
       console.error('Error loading users:', error);
       setUsers([]);
     }
   };
+
+  const checkSession = async () => {
+    try {
+      const savedUserId = localStorage.getItem('current_user_id');
+      if (savedUserId) {
+        const { data, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', savedUserId)
+          .single();
+        
+        if (data && !error) {
+          setAuthState({
+            user: convertDatabaseUser(data),
+            isAuthenticated: true,
+            isLoading: false
+          });
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Error checking session:', error);
+    }
+    
+    setAuthState(prev => ({ ...prev, isLoading: false }));
+  };
+
+  // Helper function to convert database user to app user
+  const convertDatabaseUser = (dbUser: any): User => ({
+    id: dbUser.id,
+    name: dbUser.name,
+    email: dbUser.email,
+    role: dbUser.role,
+    authLevel: dbUser.auth_level,
+    teamId: dbUser.team_id,
+    managerId: dbUser.manager_id,
+    createdBy: dbUser.created_by,
+    createdAt: new Date(dbUser.created_at),
+    updatedAt: new Date(dbUser.updated_at)
+  });
 
   const getPermissions = (user: User): Permission => {
     const basePermissions: Permission = {
@@ -162,22 +195,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthState(prev => ({ ...prev, isLoading: true }));
     
     try {
-      const localUser = LocalStorage.authenticateUser(credentials.email, credentials.password);
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', credentials.email)
+        .single();
       
-      if (localUser) {
-        const user = convertLocalUser(localUser);
+      if (error || !data) {
+        setAuthState(prev => ({ ...prev, isLoading: false }));
+        return false;
+      }
+      
+      const isValidPassword = verifyPassword(credentials.password, data.password_hash);
+      
+      if (isValidPassword) {
+        const user = convertDatabaseUser(data);
         setAuthState({
           user,
           isAuthenticated: true,
           isLoading: false
         });
-        LocalStorage.setCurrentUser(localUser);
+        localStorage.setItem('current_user_id', user.id);
         return true;
-      } else {
-        console.log('Authentication failed for:', credentials.email);
-        // Debug: log available users
-        const users = LocalStorage.getUsers();
-        console.log('Available users:', users.map(u => ({ email: u.email, authLevel: u.authLevel })));
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -193,20 +232,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated: false,
       isLoading: false
     });
-    LocalStorage.setCurrentUser(null);
+    localStorage.removeItem('current_user_id');
   };
 
   const register = async (userData: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): Promise<User> => {
     try {
       const { password, ...userDataWithoutPassword } = userData as any;
       
-      const newLocalUser = LocalStorage.createUser({
-        ...userDataWithoutPassword,
-        password: password || 'temp123'
-      });
+      const { data, error } = await supabase
+        .from('users')
+        .insert([{
+          name: userDataWithoutPassword.name,
+          email: userDataWithoutPassword.email,
+          role: userDataWithoutPassword.role,
+          auth_level: userDataWithoutPassword.authLevel,
+          team_id: userDataWithoutPassword.teamId,
+          manager_id: userDataWithoutPassword.managerId,
+          created_by: userDataWithoutPassword.createdBy || authState.user?.id,
+          password_hash: hashPassword(password || 'temp123')
+        }])
+        .select()
+        .single();
+      
+      if (error) throw error;
 
-      const newUser = convertLocalUser(newLocalUser);
-      loadUsers(); // Reload users list
+      const newUser = convertDatabaseUser(data);
+      await loadUsers(); // Reload users list
       return newUser;
     } catch (error) {
       console.error('Error registering user:', error);
@@ -220,39 +271,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // If password is being changed, validate current password first
       if (password && currentPassword) {
-        const user = users.find(u => u.id === id);
-        if (user) {
-          const localUser = LocalStorage.authenticateUser(user.email, currentPassword);
-          if (!localUser) {
-            throw new Error('Senha atual incorreta');
-          }
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('email, password_hash')
+          .eq('id', id)
+          .single();
+        
+        if (userError || !userData) {
+          throw new Error('Usuário não encontrado');
+        }
+        
+        if (!verifyPassword(currentPassword, userData.password_hash)) {
+          throw new Error('Senha atual incorreta');
         }
       }
       
       // Prepare update data
-      const updateData: any = { ...userUpdates };
+      const updateData: any = {
+        name: userUpdates.name,
+        email: userUpdates.email,
+        role: userUpdates.role,
+        auth_level: userUpdates.authLevel,
+        team_id: userUpdates.teamId,
+        manager_id: userUpdates.managerId
+      };
+      
       if (password) {
-        updateData.password = password;
+        updateData.password_hash = hashPassword(password);
       }
       
-      const success = LocalStorage.updateUser(id, updateData);
+      const { error } = await supabase
+        .from('users')
+        .update(updateData)
+        .eq('id', id);
       
-      if (success) {
-        // Update current user if it's the same user
-        if (authState.user?.id === id) {
-          const updatedLocalUser = LocalStorage.getUsers().find(u => u.id === id);
-          if (updatedLocalUser) {
-            const updatedUser = convertLocalUser(updatedLocalUser);
-            setAuthState(prev => ({ ...prev, user: updatedUser }));
-            LocalStorage.setCurrentUser(updatedLocalUser);
-          }
-        }
+      if (error) throw error;
+      
+      // Update current user if it's the same user
+      if (authState.user?.id === id) {
+        const { data: updatedUserData } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', id)
+          .single();
         
-        loadUsers(); // Reload users list
-        return true;
+        if (updatedUserData) {
+          const updatedUser = convertDatabaseUser(updatedUserData);
+          setAuthState(prev => ({ ...prev, user: updatedUser }));
+        }
       }
       
-      throw new Error('Erro ao atualizar usuário');
+      await loadUsers(); // Reload users list
+      return true;
     } catch (error) {
       console.error('Error updating user:', error);
       throw error;
@@ -261,14 +331,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const deleteUser = async (id: string): Promise<boolean> => {
     try {
-      const success = LocalStorage.deleteUser(id);
+      const { error } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', id);
       
-      if (success) {
-        loadUsers(); // Reload users list
-        return true;
-      }
+      if (error) throw error;
       
-      throw new Error('Erro ao excluir usuário');
+      await loadUsers(); // Reload users list
+      return true;
     } catch (error) {
       console.error('Error deleting user:', error);
       throw error;
