@@ -1,10 +1,16 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder-key';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
+// Check if we have valid Supabase configuration
+const hasValidSupabaseConfig = supabaseUrl !== 'https://placeholder.supabase.co' && 
+                               supabaseAnonKey !== 'placeholder-key' &&
+                               supabaseUrl.startsWith('https://') &&
+                               supabaseUrl.includes('.supabase.co');
+
+if (!hasValidSupabaseConfig) {
+  console.warn('Supabase not configured. Using fallback values. Please configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.');
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
