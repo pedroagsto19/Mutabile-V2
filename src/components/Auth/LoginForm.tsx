@@ -240,9 +240,35 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
             <div className="space-y-2">
               <button
                 type="button"
-                onClick={() => {
+                onClick={async () => {
+                  if (!canLogin) return;
                   setEmail('marina@mutabile.com.br');
                   setPassword('admin123');
+                  setError('');
+                  setIsLoading(true);
+                  
+                  try {
+                    const { data, error: authError } = await supabase.auth.signInWithPassword({
+                      email: 'marina@mutabile.com.br',
+                      password: 'admin123'
+                    });
+
+                    if (authError) {
+                      setError(explainSupabaseError(authError));
+                      return;
+                    }
+                    if (data.session) {
+                      console.log('Login Admin realizado com sucesso');
+                      onLoginSuccess();
+                    } else {
+                      setError('Falha no login: sessão não criada');
+                    }
+                  } catch (e: any) {
+                    console.error('Erro no login Admin:', e);
+                    setError(explainSupabaseError(e));
+                  } finally {
+                    setIsLoading(false);
+                  }
                 }}
                 className="w-full text-left p-2 text-xs bg-red-50 hover:bg-red-100 rounded border transition-colors"
                 disabled={!canLogin}
@@ -252,9 +278,34 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
               
               <button
                 type="button"
-                onClick={() => {
+                onClick={async () => {
+                  if (!canLogin) return;
                   setEmail('ana@mutabile.com.br');
                   setPassword('gestor123');
+                  setError('');
+                  setIsLoading(true);
+                  
+                  try {
+                    const { data, error: authError } = await supabase.auth.signInWithPassword({
+                      email: 'ana@mutabile.com.br',
+                      password: 'gestor123'
+                    if (authError) {
+                      setError(explainSupabaseError(authError));
+                      return;
+                    }
+                    });
+                    if (data.session) {
+                      console.log('Login Gestor realizado com sucesso');
+                      onLoginSuccess();
+                    } else {
+                      setError('Falha no login: sessão não criada');
+                    }
+                  } catch (e: any) {
+                    console.error('Erro no login Gestor:', e);
+                    setError(explainSupabaseError(e));
+                  } finally {
+                    setIsLoading(false);
+                  }
                 }}
                 className="w-full text-left p-2 text-xs bg-blue-50 hover:bg-blue-100 rounded border transition-colors"
                 disabled={!canLogin}
@@ -264,9 +315,34 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
               
               <button
                 type="button"
-                onClick={() => {
+                onClick={async () => {
+                  if (!canLogin) return;
                   setEmail('carlos@mutabile.com.br');
                   setPassword('equipe123');
+                  setError('');
+                  setIsLoading(true);
+                  
+                  try {
+                    const { data, error: authError } = await supabase.auth.signInWithPassword({
+                      email: 'carlos@mutabile.com.br',
+                      password: 'equipe123'
+                    if (authError) {
+                      setError(explainSupabaseError(authError));
+                      return;
+                    }
+                    });
+                    if (data.session) {
+                      console.log('Login Equipe realizado com sucesso');
+                      onLoginSuccess();
+                    } else {
+                      setError('Falha no login: sessão não criada');
+                    }
+                  } catch (e: any) {
+                    console.error('Erro no login Equipe:', e);
+                    setError(explainSupabaseError(e));
+                  } finally {
+                    setIsLoading(false);
+                  }
                 }}
                 className="w-full text-left p-2 text-xs bg-green-50 hover:bg-green-100 rounded border transition-colors"
                 disabled={!canLogin}
@@ -276,9 +352,34 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
               
               <button
                 type="button"
-                onClick={() => {
+                onClick={async () => {
+                  if (!canLogin) return;
                   setEmail('joao@mutabile.com.br');
                   setPassword('leitor123');
+                  setError('');
+                  setIsLoading(true);
+                  
+                  try {
+                    const { data, error: authError } = await supabase.auth.signInWithPassword({
+                      email: 'joao@mutabile.com.br',
+                      password: 'leitor123'
+                    if (authError) {
+                      setError(explainSupabaseError(authError));
+                      return;
+                    }
+                    });
+                    if (data.session) {
+                      console.log('Login Leitor realizado com sucesso');
+                      onLoginSuccess();
+                    } else {
+                      setError('Falha no login: sessão não criada');
+                    }
+                  } catch (e: any) {
+                    console.error('Erro no login Leitor:', e);
+                    setError(explainSupabaseError(e));
+                  } finally {
+                    setIsLoading(false);
+                  }
                 }}
                 className="w-full text-left p-2 text-xs bg-gray-50 hover:bg-gray-100 rounded border transition-colors"
                 disabled={!canLogin}
@@ -287,7 +388,7 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
               </button>
             </div>
             <p className="text-xs text-gray-500 mt-3">
-              💡 Clique em qualquer login para preencher automaticamente
+              💡 Clique em qualquer login para entrar automaticamente
             </p>
           </CardContent>
         </Card>
