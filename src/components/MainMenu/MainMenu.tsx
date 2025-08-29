@@ -13,10 +13,7 @@ import {
 } from 'lucide-react';
 import { Card } from '../UI/Card';
 import { Button } from '../UI/Button';
-import { SettingsModal } from '../Settings/SettingsModal';
-import { ProfileModal } from '../Users/ProfileModal';
 import { useAuth } from '../../context/AuthContext';
-import { useNotification } from '../../context/NotificationContext';
 
 interface MainMenuProps {
   onModuleSelect: (module: string) => void;
@@ -24,23 +21,12 @@ interface MainMenuProps {
 }
 
 export function MainMenu({ onModuleSelect, currentUser }: MainMenuProps) {
-  const { hasPermission, logout } = useAuth();
-  const { confirm, toast } = useNotification();
-  const [showSettings, setShowSettings] = React.useState(false);
-  const [showProfile, setShowProfile] = React.useState(false);
+  const { logout } = useAuth();
 
   const handleLogout = () => {
-    confirm({
-      title: 'Sair do Sistema',
-      message: 'Tem certeza que deseja sair?',
-      type: 'warning',
-      confirmText: 'Sair',
-      cancelText: 'Cancelar'
-    }).then((confirmed) => {
-      if (confirmed) {
-        logout();
-      }
-    });
+    if (confirm('Tem certeza que deseja sair?')) {
+      logout();
+    }
   };
 
   const modules = [
@@ -98,7 +84,7 @@ export function MainMenu({ onModuleSelect, currentUser }: MainMenuProps) {
     if (available) {
       onModuleSelect(moduleId);
     } else {
-      toast.info('Módulo em desenvolvimento', 'Este módulo estará disponível em breve!');
+      alert('Este módulo estará disponível em breve!');
     }
   };
 
@@ -113,17 +99,11 @@ export function MainMenu({ onModuleSelect, currentUser }: MainMenuProps) {
               <h1 className="text-2xl font-bold text-gray-900">Mutabile</h1>
             </div>
             <div className="flex items-center space-x-4">
-              {(hasPermission('canAccessSettings') || hasPermission('canManageUsers')) && (
-                <Button variant="ghost" size="sm" onClick={() => setShowSettings(true)}>
-                  <Settings className="h-4 w-4" />
-                </Button>
-              )}
               <Button variant="ghost" size="sm" onClick={handleLogout}>
                 <LogOut className="h-4 w-4" />
               </Button>
               <div className="h-6 w-px bg-gray-300"></div>
               <button
-                onClick={() => setShowProfile(true)}
                 className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
                 title="Clique para editar seu perfil"
               >
@@ -145,15 +125,6 @@ export function MainMenu({ onModuleSelect, currentUser }: MainMenuProps) {
         </div>
       </div>
       
-      <SettingsModal 
-        isOpen={showSettings} 
-        onClose={() => setShowSettings(false)} 
-      />
-      
-      <ProfileModal 
-        isOpen={showProfile} 
-        onClose={() => setShowProfile(false)} 
-      />
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

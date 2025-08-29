@@ -4,9 +4,10 @@ import { LoginForm } from './LoginForm';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  requiredPermission?: string;
 }
 
-export function ProtectedRoute({ children }: ProtectedRouteProps) {
+export function ProtectedRoute({ children, requiredPermission }: ProtectedRouteProps) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -54,6 +55,13 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (!isAuthenticated) {
     return <LoginForm onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  // If a specific permission is required but we don't have permission system,
+  // just show the children (for now)
+  if (requiredPermission) {
+    // In a real app, you'd check permissions here
+    // For now, just allow access
   }
 
   return <>{children}</>;

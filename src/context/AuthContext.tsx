@@ -1,19 +1,26 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, hasValidSession, explainSupabaseError } from '../lib/supabase';
-import type { User } from '@supabase/supabase-js';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
+import type { User } from '../types/auth';
 
 interface AuthContextType {
-  user: User | null;
+  user: SupabaseUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   logout: () => Promise<void>;
   error: string | null;
+  getAllUsers: () => User[];
+  register: (userData: any) => Promise<void>;
+  updateUser: (id: string, updates: any) => Promise<void>;
+  deleteUser: (id: string) => Promise<void>;
+  hasPermission: (permission: string) => boolean;
+  canEditUser: (user: User) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -107,13 +114,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Placeholder functions for compatibility
+  const getAllUsers = (): User[] => {
+    return [];
+  };
+
+  const register = async (userData: any): Promise<void> => {
+    throw new Error('Registration is disabled');
+  };
+
+  const updateUser = async (id: string, updates: any): Promise<void> => {
+    throw new Error('User updates not implemented');
+  };
+
+  const deleteUser = async (id: string): Promise<void> => {
+    throw new Error('User deletion not implemented');
+  };
+
+  const hasPermission = (permission: string): boolean => {
+    return false;
+  };
+
+  const canEditUser = (user: User): boolean => {
+    return false;
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
       isAuthenticated,
       isLoading,
       logout,
-      error
+      error,
+      getAllUsers,
+      register,
+      updateUser,
+      deleteUser,
+      hasPermission,
+      canEditUser
     }}>
       {children}
     </AuthContext.Provider>

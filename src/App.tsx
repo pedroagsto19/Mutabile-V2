@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { AuthProvider } from './context/AuthContext';
-import { NotificationProvider } from './context/NotificationContext';
 import { ProtectedRoute } from './components/Auth/ProtectedRoute';
 import { AppHeader } from './components/Layout/AppHeader';
 import { MainMenu } from './components/MainMenu/MainMenu';
@@ -58,9 +57,7 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <NotificationProvider>
-        <AppContent />
-      </NotificationProvider>
+      <AppContent />
     </AuthProvider>
   );
 }
