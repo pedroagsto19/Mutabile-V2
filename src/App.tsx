@@ -1,4 +1,3 @@
-// App.tsx
 import React, { useEffect } from "react";
 import { AuthProvider } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/Auth/ProtectedRoute";
@@ -7,8 +6,8 @@ import { MainMenu } from "./components/MainMenu/MainMenu";
 import { initializeDemoData } from "./lib/initializeDemoData";
 import { hasValidSession } from "./lib/supabase";
 
-// >>> AQUI: importa da pasta Works (default export, sem chaves)
-import AcompanhamentoObrasPage from "./components/Works/AcompanhamentoObrasPage";
+// importa da pasta Works (named export)
+import { WorksApp } from "./components/Works/WorksApp";
 
 function AppContent() {
   const [currentModule, setCurrentModule] = React.useState<string | null>(null);
@@ -34,14 +33,18 @@ function AppContent() {
   const renderContent = () => {
     switch (currentModule) {
       case "obras":
-        return <AcompanhamentoObrasPage onBack={handleBackToMenu} />;
+        return <WorksApp onBackToMenu={handleBackToMenu} />;
       // case "fornecedores":
-      //   return <FornecedoresPage onBack={handleBackToMenu} />;
+      //   return <FornecedoresPage onBackToMenu={handleBackToMenu} />;
       default:
         return (
           <MainMenu
             onModuleSelect={handleModuleSelect}
-            currentUser={{ name: "Usuário", authLevel: "admin", role: "Administrador" }}
+            currentUser={{
+              name: "Usuário",
+              authLevel: "admin",
+              role: "Administrador",
+            }}
           />
         );
     }
