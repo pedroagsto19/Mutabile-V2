@@ -8,7 +8,7 @@ import { initializeDemoData } from './lib/initializeDemoData';
 import { hasValidSession } from './lib/supabase';
 
 // importe a página do módulo
-import { AcompanhamentoObrasPage } from './pages/AcompanhamentoObrasPage'; 
+import { AcompanhamentoObrasPage } from './components/projects/ProjectsTable'; 
 // ajuste o caminho conforme seu projeto
 
 function AppContent() {
