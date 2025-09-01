@@ -1,92 +1,98 @@
-import { createClient } from '@supabase/supabase-js';
+// src/lib/supabase.ts
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-const url = import.meta.env.VITE_SUPABASE_URL;
-const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const url = import.meta.env.VITE_SUPABASE_URL?.trim();
+const key = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
 
-// Validate and provide fallback for URL to prevent TypeError
-function getValidSupabaseUrl(url: string | undefined): string {
-  if (!url) return 'https://placeholder.supabase.co';
-  
-  try {
-    new URL(url);
-    return url;
-  } catch {
-    console.warn('Invalid VITE_SUPABASE_URL provided, using fallback');
-    return 'https://placeholder.supabase.co';
-  }
-}
-
-const validUrl = getValidSupabaseUrl(url);
-const validKey = key || 'placeholder-key';
-
-export const assertEnv = () => {
+/**
+ * Valida as variáveis de ambiente exigidas pelo Supabase.
+ * Retorna uma lista de problemas encontrados (string vazia = ok).
+ */
+export function assertEnv(): string[] {
   const problems: string[] = [];
   if (!url) problems.push('VITE_SUPABASE_URL ausente');
   if (!key) problems.push('VITE_SUPABASE_ANON_KEY ausente');
-  if (url && !url.startsWith('https://')) problems.push('VITE_SUPABASE_URL deve iniciar com https://');
-  return problems;
-};
 
-export const supabase = createClient(validUrl, validKey);
+  if (url && !/^https:\/\/.+/.test(url))
+    problems.push('VITE_SUPABASE_URL deve iniciar com https://');
 
-export async function healthCheck(): Promise<{ ok: boolean; reason?: string }> {
   try {
-    if (!url || !key) return { ok: false, reason: 'Env vars ausentes' };
-    
+    if (url) new URL(url);
+  } catch {
+    problems.push('VITE_SUPABASE_URL inválida (URL malformada)');
+  }
+
+  return problems;
+}
+
+// Falha rápido para evitar 400 "No API key found in request"
+const problems = assertEnv();
+if (problems.length) {
+  // Mostra claramente no console e interrompe a app em dev
+  // (melhor do que seguir com placeholder e ter 400/401 silenciosos)
+  throw new Error(`Config Supabase inválida: ${problems.join(' | ')}`);
+}
+
+export const supabase: SupabaseClient = createClient(url!, key!);
+
+/**
+ * Health check simples do endpoint de Auth do Supabase.
+ */
+export async function healthCheck(): Promise<{ ok: boolean; reason?: string; status?: number }> {
+  try {
     const ctrl = new AbortController();
     const timeout = setTimeout(() => ctrl.abort(), 4000);
-    
-    const res = await fetch(`${url}/auth/v1/health`, {
+
+    const res = await fetch(`${url!}/auth/v1/health`, {
       method: 'GET',
       signal: ctrl.signal,
       headers: {
-        // Supabase pode exigir ambos:
-        'apikey': key,
-        'Authorization': `Bearer ${key}`,
+        apikey: key!,
+        Authorization: `Bearer ${key!}`,
       },
     });
+
     clearTimeout(timeout);
-    
-    const bodyText = await res.text().catch(() => '');
-    return { ok: res.ok, reason: res.ok ? undefined : `HTTP ${res.status}` };
+    return { ok: res.ok, reason: res.ok ? undefined : res.statusText, status: res.status };
   } catch (e: any) {
-    if (e.name === 'AbortError') {
+    if (e?.name === 'AbortError') {
       return { ok: false, reason: 'Timeout (4s) - verifique CORS/URL' };
     }
     return { ok: false, reason: e?.message || 'Failed to fetch' };
   }
 }
 
+/**
+ * Traduz erros comuns do Supabase/Fetch para mensagens amigáveis.
+ */
 export function explainSupabaseError(e: any): string {
   if (!e) return 'Erro desconhecido';
-  
-  // TypeError: Failed to fetch
-  if (e.name === 'TypeError' && e.message?.includes('Failed to fetch')) {
-    return 'Conexão com Supabase falhou. Verifique CORS/URL/Key.';
+
+  const msg = String(e.message || e.error_description || '').toLowerCase();
+
+  if (msg.includes('no api key') || msg.includes('apikey')) {
+    return 'Chave de API não enviada. Verifique VITE_SUPABASE_ANON_KEY e a inicialização do cliente.';
   }
-  
-  // Supabase auth errors
-  if (e.message?.toLowerCase().includes('invalid_credentials') || 
-      e.message?.toLowerCase().includes('invalid login credentials')) {
+  if (msg.includes('invalid_credentials') || msg.includes('invalid login credentials')) {
     return 'E-mail ou senha inválidos.';
   }
-  
-  // Network/fetch errors
-  if (e.name === 'FetchError' || e.message?.includes('fetch')) {
-    return 'Falha de conexão com o Supabase. Verifique URL/Key e CORS.';
+  if (msg.includes('failed to fetch') || e?.name === 'TypeError') {
+    return 'Falha de conexão com o Supabase. Verifique URL, chave e CORS (Origins).';
   }
-  
-  // Default with error code if available
-  const code = e.code ? ` (${e.code})` : '';
-  return `${e.message || 'Erro desconhecido'}${code}`;
+  if (e?.status === 400) return 'Requisição inválida (400). Revise headers/endpoint.';
+  if (e?.status === 401) return 'Não autorizado (401). Chave inválida/ausente.';
+
+  const code = e?.code ? ` (${e.code})` : '';
+  return `${e?.message || 'Erro desconhecido'}${code}`;
 }
 
-// Helper para verificar se há sessão válida
+/**
+ * Retorna true se há sessão válida.
+ */
 export async function hasValidSession(): Promise<boolean> {
-  if (!supabase) return false;
   try {
     const { data } = await supabase.auth.getSession();
-    return !!data.session;
+    return Boolean(data?.session);
   } catch (e) {
     console.error('Erro ao verificar sessão:', e);
     return false;
