@@ -1,3 +1,4 @@
+// src/App.tsx
 import React, { useEffect } from "react";
 import { AuthProvider } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/Auth/ProtectedRoute";
@@ -6,8 +7,10 @@ import { MainMenu } from "./components/MainMenu/MainMenu";
 import { initializeDemoData } from "./lib/initializeDemoData";
 import { hasValidSession } from "./lib/supabase";
 
-// importa da pasta Works (named export)
+// Ajuste estes caminhos conforme seus arquivos
 import { WorksApp } from "./components/Works/WorksApp";
+import { NotificationProvider } from "./components/UI/NotificationProvider"; // ou ./context/NotificationContext
+import { ProjectProvider } from "./context/ProjectContext"; // confirme o caminho
 
 function AppContent() {
   const [currentModule, setCurrentModule] = React.useState<string | null>(null);
@@ -34,17 +37,11 @@ function AppContent() {
     switch (currentModule) {
       case "obras":
         return <WorksApp onBackToMenu={handleBackToMenu} />;
-      // case "fornecedores":
-      //   return <FornecedoresPage onBackToMenu={handleBackToMenu} />;
       default:
         return (
           <MainMenu
             onModuleSelect={handleModuleSelect}
-            currentUser={{
-              name: "Usuário",
-              authLevel: "admin",
-              role: "Administrador",
-            }}
+            currentUser={{ name: "Usuário", authLevel: "admin", role: "Administrador" }}
           />
         );
     }
@@ -63,7 +60,11 @@ function AppContent() {
 export default function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <NotificationProvider>
+        <ProjectProvider>
+          <AppContent />
+        </ProjectProvider>
+      </NotificationProvider>
     </AuthProvider>
   );
 }
