@@ -1,3 +1,4 @@
+// App.tsx
 import React, { useEffect } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute } from './components/Auth/ProtectedRoute';
@@ -6,10 +7,13 @@ import { MainMenu } from './components/MainMenu/MainMenu';
 import { initializeDemoData } from './lib/initializeDemoData';
 import { hasValidSession } from './lib/supabase';
 
+// importe a página do módulo
+import { AcompanhamentoObrasPage } from './pages/AcompanhamentoObrasPage'; 
+// ajuste o caminho conforme seu projeto
+
 function AppContent() {
   const [currentModule, setCurrentModule] = React.useState<string | null>(null);
 
-  // Initialize demo data only after authentication
   useEffect(() => {
     const initData = async () => {
       try {
@@ -20,10 +24,8 @@ function AppContent() {
         }
       } catch (error) {
         console.error('Erro ao inicializar dados demo:', error);
-        // Don't throw - app should still work without demo data
       }
     };
-
     initData();
   }, []);
 
@@ -35,19 +37,28 @@ function AppContent() {
     setCurrentModule(null);
   };
 
+  const renderContent = () => {
+    switch (currentModule) {
+      case 'obras':
+        return <AcompanhamentoObrasPage onBack={handleBackToMenu} />;
+      // case 'fornecedores':
+      //   return <FornecedoresPage onBack={handleBackToMenu} />;
+      default:
+        return (
+          <MainMenu
+            onModuleSelect={handleModuleSelect}
+            currentUser={{ name: 'Usuário', authLevel: 'admin', role: 'Administrador' }}
+          />
+        );
+    }
+  };
+
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">
-        <AppHeader />
+        <AppHeader onBack={currentModule ? handleBackToMenu : undefined} />
         <main className="max-w-7xl mx-auto px-6 py-8">
-          <MainMenu 
-            onModuleSelect={handleModuleSelect}
-            currentUser={{
-              name: 'Usuário',
-              authLevel: 'admin',
-              role: 'Administrador'
-            }}
-          />
+          {renderContent()}
         </main>
       </div>
     </ProtectedRoute>
