@@ -1,9 +1,13 @@
 import React from 'react';
-import { LogOut, User, Settings } from 'lucide-react';
+import { LogOut, User, ArrowLeft } from 'lucide-react';
 import { Button } from '../UI/Button';
 import { useAuth } from '../../context/AuthContext';
 
-export function AppHeader() {
+interface AppHeaderProps {
+  onBack?: () => void;
+}
+
+export function AppHeader({ onBack }: AppHeaderProps) {
   const { user, logout, isLoading } = useAuth();
 
   const handleLogout = async () => {
@@ -16,6 +20,11 @@ export function AppHeader() {
     <header className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
+          {onBack && (
+            <Button variant="ghost" size="sm" onClick={onBack} className="mr-2">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          )}
           <img src="/png.png" alt="Mutabile Logo" className="h-8 w-auto" />
           <div>
             <h1 className="text-xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>

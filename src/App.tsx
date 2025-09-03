@@ -9,8 +9,8 @@ import { hasValidSession } from "./lib/supabase";
 
 // Ajuste estes caminhos conforme seus arquivos
 import { WorksApp } from "./components/Works/WorksApp";
-import { NotificationProvider } from "./components/UI/NotificationProvider"; // ou ./context/NotificationContext
-import { ProjectProvider } from "./context/ProjectContext"; // confirme o caminho
+import { NotificationProvider } from "./context/NotificationContext";
+import { ProjectProvider } from "./context/ProjectContext";
 
 function AppContent() {
   const [currentModule, setCurrentModule] = React.useState<string | null>(null);

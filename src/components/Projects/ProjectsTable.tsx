@@ -151,7 +151,6 @@ export function ProjectsTable({ onProjectSelect, onProjectGantt, onCreateProject
                 value={filters.search || ''}
                 onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1C58F6] focus:border-[#1C58F6] outline-none"
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
               />
             </div>
             <Button
@@ -169,7 +168,6 @@ export function ProjectsTable({ onProjectSelect, onProjectGantt, onCreateProject
                 value={filters.status || ''}
                 onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1C58F6] focus:border-[#1C58F6] outline-none"
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
               >
                 <option value="">Todos os Status</option>
                 <option value="planning">Planejamento</option>
@@ -183,7 +181,6 @@ export function ProjectsTable({ onProjectSelect, onProjectGantt, onCreateProject
                 value={filters.client || ''}
                 onChange={(e) => setFilters(prev => ({ ...prev, client: e.target.value }))}
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1C58F6] focus:border-[#1C58F6] outline-none"
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
               />
               <input
                 type="text"
@@ -191,7 +188,6 @@ export function ProjectsTable({ onProjectSelect, onProjectGantt, onCreateProject
                 value={filters.responsible || ''}
                 onChange={(e) => setFilters(prev => ({ ...prev, responsible: e.target.value }))}
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1C58F6] focus:border-[#1C58F6] outline-none"
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
               />
             </div>
           )}
