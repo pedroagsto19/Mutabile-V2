@@ -34,7 +34,7 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
               <h1 className="text-xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                 Mutabile
               </h1>
-              <p className="text-sm text-gray-600">Acompanhamento de Obras</p>
+              <p className="text-sm text-gray-600">Gestão de Projetos</p>
             </div>
           </div>
           
