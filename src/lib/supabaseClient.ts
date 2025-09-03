@@ -1,17 +1,12 @@
-export interface SupabaseClient {
-  auth: {
-    getSession: () => Promise<{ data: { session: any } }>
-    signOut: () => Promise<{ error: null }>
-    onAuthStateChange: (callback: any) => { data: { subscription: { unsubscribe: () => void } } }
-  }
+import { createClient as createSupabaseClient, SupabaseClient } from '@supabase/supabase-js'
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+export const supabase = createSupabaseClient(supabaseUrl, supabaseAnonKey)
+
+export function createClient(url: string, key: string): SupabaseClient {
+  return createSupabaseClient(url, key)
 }
 
-export function createClient(_url: string, _key: string): SupabaseClient {
-  return {
-    auth: {
-      getSession: async () => ({ data: { session: null } }),
-      signOut: async () => ({ error: null }),
-      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
-    }
-  }
-}
+export type { SupabaseClient }
