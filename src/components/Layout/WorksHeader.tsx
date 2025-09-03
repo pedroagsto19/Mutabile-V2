@@ -76,11 +76,9 @@ export function WorksHeader({ currentView, onViewChange, onBackToMenu }: WorksHe
         </div>
 
         <div className="flex items-center space-x-3">
-          {(hasPermission('canAccessSettings') || hasPermission('canManageUsers')) && (
-            <Button variant="ghost" size="sm" onClick={() => setShowSettings(true)}>
-              <Settings className="h-4 w-4" />
-            </Button>
-          )}
+          <Button variant="ghost" size="sm" onClick={() => setShowSettings(true)}>
+            <Settings className="h-4 w-4" />
+          </Button>
           <Button variant="ghost" size="sm" onClick={handleLogout}>
             <LogOut className="h-4 w-4" />
           </Button>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Building2, Settings, User } from 'lucide-react';
 import { Button } from '../UI/Button';
+import { SettingsModal } from '../Settings/SettingsModal';
 import { useProject } from '../../context/ProjectContext';
 
 interface HeaderProps {
@@ -11,14 +12,15 @@ interface HeaderProps {
 export function Header({ currentView, onViewChange }: HeaderProps) {
   const { currentUser } = useProject();
 
+  const [showSettings, setShowSettings] = React.useState(false);
+
   const handleProfileClick = () => {
     // TODO: Implement profile functionality
     alert('Funcionalidade de perfil será implementada em breve');
   };
 
   const handleSettingsClick = () => {
-    // TODO: Implement settings functionality
-    alert('Funcionalidade de configurações será implementada em breve');
+    setShowSettings(true);
   };
 
   return (
@@ -67,6 +69,7 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
           </Button>
         </div>
       </div>
+      <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
     </header>
   );
 }

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Settings } from 'lucide-react';
 import { Button } from '../UI/Button';
 import { SupplierList } from './SupplierList';
 import { SupplierDetail } from './SupplierDetail';
 import { SupplierProvider } from '../../context/SupplierContext';
 import { ProjectProvider } from '../../context/ProjectContext';
+import { SettingsModal } from '../Settings/SettingsModal';
 
 interface SupplierAppProps {
   onBackToMenu: () => void;
@@ -12,6 +13,7 @@ interface SupplierAppProps {
 
 export function SupplierApp({ onBackToMenu }: SupplierAppProps) {
   const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
 
   const handleSupplierSelect = (supplierId: string) => {
     setSelectedSupplierId(supplierId);
@@ -44,19 +46,25 @@ export function SupplierApp({ onBackToMenu }: SupplierAppProps) {
                   </div>
                 </div>
               </div>
+              <div className="flex items-center space-x-3">
+                <Button variant="ghost" size="sm" onClick={() => setShowSettings(true)}>
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
-          
+
           <main className="max-w-7xl mx-auto px-6 py-8">
             {selectedSupplierId ? (
-              <SupplierDetail 
-                supplierId={selectedSupplierId} 
+              <SupplierDetail
+                supplierId={selectedSupplierId}
                 onBack={handleBackToList}
               />
             ) : (
               <SupplierList onSupplierSelect={handleSupplierSelect} />
             )}
           </main>
+          <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
         </div>
       </SupplierProvider>
     </ProjectProvider>

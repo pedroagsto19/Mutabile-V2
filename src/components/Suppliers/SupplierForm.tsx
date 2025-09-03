@@ -130,7 +130,6 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
           recommendation: 5
         },
         evaluations: [],
-        evaluations: [],
         linkedProjects: []
       });
     }
