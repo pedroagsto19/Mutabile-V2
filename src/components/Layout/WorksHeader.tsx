@@ -52,7 +52,7 @@ export function WorksHeader({ currentView, onViewChange, onBackToMenu }: WorksHe
             <img src="/png.png" alt="Mutabile Logo" className="h-8 w-auto" />
             <div>
               <h1 className="text-xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                Acompanhamento de Obras
+                Gestão de Projetos
               </h1>
               <p className="text-sm text-gray-600">Gestão de Projetos e Atividades</p>
             </div>
