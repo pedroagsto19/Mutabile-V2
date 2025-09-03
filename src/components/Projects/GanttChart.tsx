@@ -205,7 +205,6 @@ export function GanttChart({ project }: GanttChartProps) {
                               x2={`${currentPosition.left}%`}
                               y2="50%"
                               stroke="#1C58F6"
-                              stroke="black"
                               strokeWidth="2"
                               markerEnd="url(#arrowhead)"
                             />

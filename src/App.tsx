@@ -2,15 +2,15 @@
 import React, { useEffect } from "react";
 import { AuthProvider } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/Auth/ProtectedRoute";
-import { AppHeader } from "./components/Layout/AppHeader";
 import { MainMenu } from "./components/MainMenu/MainMenu";
 import { initializeDemoData } from "./lib/initializeDemoData";
 import { hasValidSession } from "./lib/supabase";
 
 // Ajuste estes caminhos conforme seus arquivos
 import { WorksApp } from "./components/Works/WorksApp";
-import { NotificationProvider } from "./components/UI/NotificationProvider"; // ou ./context/NotificationContext
-import { ProjectProvider } from "./context/ProjectContext"; // confirme o caminho
+import { SupplierApp } from "./components/Suppliers/SupplierApp";
+import { NotificationProvider } from "./context/NotificationContext";
+import { ProjectProvider } from "./context/ProjectContext";
 
 function AppContent() {
   const [currentModule, setCurrentModule] = React.useState<string | null>(null);
@@ -37,6 +37,8 @@ function AppContent() {
     switch (currentModule) {
       case "obras":
         return <WorksApp onBackToMenu={handleBackToMenu} />;
+      case "fornecedores":
+        return <SupplierApp onBackToMenu={handleBackToMenu} />;
       default:
         return (
           <MainMenu
@@ -49,10 +51,7 @@ function AppContent() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
-        <AppHeader onBack={currentModule ? handleBackToMenu : undefined} />
-        <main className="max-w-7xl mx-auto px-6 py-8">{renderContent()}</main>
-      </div>
+      {renderContent()}
     </ProtectedRoute>
   );
 }
