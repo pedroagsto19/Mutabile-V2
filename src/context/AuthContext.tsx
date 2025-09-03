@@ -97,18 +97,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       const { error } = await supabase.auth.signOut();
       
-      if (error) {
+      if (error && error.code !== 'session_not_found') {
         console.error('Erro no logout:', error);
         setError(explainSupabaseError(error));
       } else {
+        // Clear local state regardless of server-side session status
         setUser(null);
         setIsAuthenticated(false);
         setError(null);
-        console.log('Logout realizado com sucesso');
+        if (error?.code === 'session_not_found') {
+          console.log('Logout realizado - sessão já havia expirado');
+        } else {
+          console.log('Logout realizado com sucesso');
+        }
       }
     } catch (e: any) {
       console.error('Erro no logout:', e);
-      setError(explainSupabaseError(e));
+      // If it's a session_not_found error, clear local state anyway
+      if (e?.code === 'session_not_found') {
+        setUser(null);
+        setIsAuthenticated(false);
+        setError(null);
+        console.log('Logout realizado - sessão já havia expirado');
+      } else {
+        setError(explainSupabaseError(e));
+      }
     } finally {
       setIsLoading(false);
     }

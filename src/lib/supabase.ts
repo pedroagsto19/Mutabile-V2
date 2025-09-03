@@ -69,6 +69,7 @@ export function explainSupabaseError(e: any): string {
   if (!e) return 'Erro desconhecido';
 
   const msg = String(e.message || e.error_description || '').toLowerCase();
+  const code = e?.code || '';
 
   if (msg.includes('no api key') || msg.includes('apikey')) {
     return 'Chave de API não enviada. Verifique VITE_SUPABASE_ANON_KEY e a inicialização do cliente.';
@@ -76,14 +77,17 @@ export function explainSupabaseError(e: any): string {
   if (msg.includes('invalid_credentials') || msg.includes('invalid login credentials')) {
     return 'E-mail ou senha inválidos.';
   }
+  if (code === 'session_not_found' || msg.includes('session_not_found')) {
+    return 'Sessão já expirada ou inválida.';
+  }
   if (msg.includes('failed to fetch') || e?.name === 'TypeError') {
     return 'Falha de conexão com o Supabase. Verifique URL, chave e CORS (Origins).';
   }
   if (e?.status === 400) return 'Requisição inválida (400). Revise headers/endpoint.';
   if (e?.status === 401) return 'Não autorizado (401). Chave inválida/ausente.';
 
-  const code = e?.code ? ` (${e.code})` : '';
-  return `${e?.message || 'Erro desconhecido'}${code}`;
+  const codeStr = e?.code ? ` (${e.code})` : '';
+  return `${e?.message || 'Erro desconhecido'}${codeStr}`;
 }
 
 /**
