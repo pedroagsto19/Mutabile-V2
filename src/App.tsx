@@ -9,8 +9,9 @@ import { hasValidSession } from "./lib/supabase";
 
 // Ajuste estes caminhos conforme seus arquivos
 import { WorksApp } from "./components/Works/WorksApp";
-import { NotificationProvider } from "./components/UI/NotificationProvider"; // ou ./context/NotificationContext
-import { ProjectProvider } from "./context/ProjectContext"; // confirme o caminho
+import { SupplierApp } from "./components/Suppliers/SupplierApp";
+import { NotificationProvider } from "./context/NotificationContext";
+import { ProjectProvider } from "./context/ProjectContext";
 
 function AppContent() {
   const [currentModule, setCurrentModule] = React.useState<string | null>(null);
@@ -37,6 +38,8 @@ function AppContent() {
     switch (currentModule) {
       case "obras":
         return <WorksApp onBackToMenu={handleBackToMenu} />;
+      case "fornecedores":
+        return <SupplierApp onBackToMenu={handleBackToMenu} />;
       default:
         return (
           <MainMenu
