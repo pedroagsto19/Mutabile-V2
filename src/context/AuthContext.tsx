@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase, hasValidSession, explainSupabaseError } from '../lib/supabase';
+import { supabase, hasValidSession, explainSupabaseError, isSessionNotFoundError } from '../lib/supabase';
 type SupabaseUser = any;
 import type { User } from '../types/auth';
 
@@ -97,7 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       const { error } = await supabase.auth.signOut();
       
-      if (error && error.code !== 'session_not_found') {
+      if (error && !isSessionNotFoundError(error)) {
         console.error('Erro no logout:', error);
         setError(explainSupabaseError(error));
       } else {
@@ -105,7 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(null);
         setIsAuthenticated(false);
         setError(null);
-        if (error?.code === 'session_not_found') {
+        if (error && isSessionNotFoundError(error)) {
           console.log('Logout realizado - sessão já havia expirado');
         } else {
           console.log('Logout realizado com sucesso');
@@ -114,7 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (e: any) {
       console.error('Erro no logout:', e);
       // If it's a session_not_found error, clear local state anyway
-      if (e?.code === 'session_not_found') {
+      if (isSessionNotFoundError(e)) {
         setUser(null);
         setIsAuthenticated(false);
         setError(null);

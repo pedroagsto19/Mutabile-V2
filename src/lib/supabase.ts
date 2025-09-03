@@ -63,6 +63,20 @@ export async function healthCheck(): Promise<{ ok: boolean; reason?: string; sta
 }
 
 /**
+ * Helper function to detect if an error indicates a 'session not found' condition
+ */
+export function isSessionNotFoundError(error: any): boolean {
+  if (!error) return false;
+  
+  const code = error?.code || '';
+  const message = String(error?.message || '').toLowerCase();
+  
+  return code === 'session_not_found' || 
+         message.includes('session_not_found') ||
+         message.includes('auth session missing');
+}
+
+/**
  * Traduz erros comuns do Supabase/Fetch para mensagens amigáveis.
  */
 export function explainSupabaseError(e: any): string {
