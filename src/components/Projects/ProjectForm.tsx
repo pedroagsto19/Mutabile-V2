@@ -68,7 +68,6 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
 
     const projectData = {
       ...formData,
-      progress: 0,
       progress: project?.progress || 0,
       stages,
       risk: project?.risk || 'on_time'
