@@ -36,7 +36,7 @@ export function MainMenu({ onModuleSelect, currentUser }: MainMenuProps) {
   const modules = [
     {
       id: 'obras',
-      name: 'Acompanhamento de Obras',
+      name: 'Gestão de Projetos',
       description: 'Gerencie projetos, etapas e cronogramas',
       icon: Building2,
       color: 'bg-blue-500',
