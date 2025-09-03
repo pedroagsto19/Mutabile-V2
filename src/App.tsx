@@ -19,7 +19,7 @@ function AppContent() {
     const initData = async () => {
       try {
         const hasSession = await hasValidSession();
-        if (hasSession) {
+        if (!hasSession) {
           console.log("Usuário autenticado, inicializando dados demo...");
           await initializeDemoData();
         }
