@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { supabase, hasValidSession } from '../../lib/supabase';
+import React from 'react';
 import { LoginForm } from './LoginForm';
+import { useAuth } from '../../context/AuthContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -8,39 +8,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requiredPermission }: ProtectedRouteProps) {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    checkAuth();
-    
-    // Listen for auth changes
-    if (supabase) {
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
-        setIsAuthenticated(!!session);
-        setIsLoading(false);
-      });
-
-      return () => subscription.unsubscribe();
-    }
-  }, []);
-
-  const checkAuth = async () => {
-    try {
-      const hasSession = await hasValidSession();
-      setIsAuthenticated(hasSession);
-    } catch (error) {
-      console.error('Erro ao verificar autenticação:', error);
-      setIsAuthenticated(false);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleLoginSuccess = () => {
-    setIsAuthenticated(true);
-  };
+  const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -54,7 +22,7 @@ export function ProtectedRoute({ children, requiredPermission }: ProtectedRouteP
   }
 
   if (!isAuthenticated) {
-    return <LoginForm onLoginSuccess={handleLoginSuccess} />;
+    return <LoginForm onLoginSuccess={() => {}} />;
   }
 
   // If a specific permission is required but we don't have permission system,
