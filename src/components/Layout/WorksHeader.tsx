@@ -54,7 +54,7 @@ export function WorksHeader({ currentView, onViewChange, onBackToMenu }: WorksHe
               <h1 className="text-xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                 Gestão de Projetos
               </h1>
-              <p className="text-sm text-gray-600">Gestão de Projetos e Atividades</p>
+              <p className="text-sm text-gray-600">Acompanhamento de Atividades</p>
             </div>
           </div>
           
