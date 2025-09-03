@@ -132,7 +132,7 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
               <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                 Mutabile
               </h1>
-              <p className="text-sm text-gray-600">Acompanhamento de Obras</p>
+              <p className="text-sm text-gray-600">Gestão de Projetos</p>
             </div>
           </div>
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
