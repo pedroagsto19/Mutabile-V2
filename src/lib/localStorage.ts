@@ -1,11 +1,12 @@
 // Sistema de armazenamento local
+import { supabase } from './supabase';
+
 export interface LocalUser {
   id: string;
   name: string;
   email: string;
   role: string;
   authLevel: 'admin' | 'gestor' | 'equipe' | 'leitor';
-  passwordHash: string;
   teamId?: string;
   managerId?: string;
   createdBy?: string;
@@ -61,25 +62,7 @@ export interface LocalStage {
   notificationRecipients: string[];
   isCustom: boolean;
 }
-// Função simples para hash de senha (apenas para demo local)
-function simpleHash(password: string): string {
-  if (!password) return '';
-  let hash = 0;
-  for (let i = 0; i < password.length; i++) {
-    const char = password.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32bit integer
-  }
-  return Math.abs(hash).toString();
-}
-
-// Função para verificar senha
-function verifyPassword(password: string, hash: string): boolean {
-  if (!password || !hash) return false;
-  const computedHash = simpleHash(password);
-  console.log('Verifying password:', { password, hash, computedHash, match: computedHash === hash });
-  return computedHash === hash;
-}
+// A validação de senha deve ocorrer no servidor (ex.: Supabase)
 
 class LocalStorage {
   private static USERS_KEY = 'mutabile_users';
@@ -102,7 +85,6 @@ class LocalStorage {
             email: 'marina@mutabile.com.br',
             role: 'Administradora',
             authLevel: 'admin',
-            passwordHash: simpleHash('admin123'),
             teamId: 'team1',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
@@ -113,7 +95,6 @@ class LocalStorage {
             email: 'ana@mutabile.com.br',
             role: 'Gerente de Projetos',
             authLevel: 'gestor',
-            passwordHash: simpleHash('gestor123'),
             teamId: 'team1',
             createdBy: '1',
             createdAt: new Date().toISOString(),
@@ -125,7 +106,6 @@ class LocalStorage {
             email: 'carlos@mutabile.com.br',
             role: 'Arquiteto',
             authLevel: 'equipe',
-            passwordHash: simpleHash('equipe123'),
             teamId: 'team1',
             managerId: '2',
             createdBy: '2',
@@ -138,18 +118,16 @@ class LocalStorage {
             email: 'joao@mutabile.com.br',
             role: 'Cliente',
             authLevel: 'leitor',
-            passwordHash: simpleHash('leitor123'),
             teamId: 'team1',
             createdBy: '2',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
           }
         ];
-        
-        console.log('Initializing default users:', defaultUsers.map(u => ({ 
-          email: u.email, 
-          authLevel: u.authLevel,
-          passwordHash: u.passwordHash 
+
+        console.log('Initializing default users:', defaultUsers.map(u => ({
+          email: u.email,
+          authLevel: u.authLevel
         })));
         
         localStorage.setItem(this.USERS_KEY, JSON.stringify(defaultUsers));
@@ -278,7 +256,6 @@ class LocalStorage {
           email: 'marina@mutabile.com.br',
           role: 'Administradora',
           authLevel: 'admin',
-          passwordHash: simpleHash('admin123'),
           teamId: 'team1',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
@@ -311,44 +288,32 @@ class LocalStorage {
     }
   }
 
-  static authenticateUser(email: string, password: string): LocalUser | null {
+  static async authenticateUser(email: string, password: string): Promise<LocalUser | null> {
     try {
-      console.log('Attempting to authenticate:', email);
-      const users = this.getUsers();
-      console.log('Found users:', users.length);
-      const user = users.find(u => u.email === email);
-      
-      if (user) {
-        console.log('User found:', user.email, 'Auth level:', user.authLevel);
-        const isValidPassword = verifyPassword(password, user.passwordHash);
-        console.log('Password valid:', isValidPassword);
-        
-        if (isValidPassword) {
-          return user;
-        } else {
-          console.log('Password verification failed');
-        }
-      } else {
-        console.log('User not found with email:', email);
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        console.log('Password verification failed:', error.message);
+        return null;
       }
+
+      const users = this.getUsers();
+      return users.find(u => u.email === email) || null;
     } catch (error) {
       console.error('Error authenticating user:', error);
+      return null;
     }
-    
-    return null;
   }
 
-  static createUser(userData: Omit<LocalUser, 'id' | 'createdAt' | 'updatedAt' | 'passwordHash'> & { password: string }): LocalUser {
+  static createUser(userData: Omit<LocalUser, 'id' | 'createdAt' | 'updatedAt'>): LocalUser {
     try {
       const users = this.getUsers();
       const newUser: LocalUser = {
         ...userData,
         id: Date.now().toString(),
-        passwordHash: simpleHash(userData.password),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
-      
+
       users.push(newUser);
       this.saveUsers(users);
       return newUser;
@@ -358,22 +323,18 @@ class LocalStorage {
     }
   }
 
-  static updateUser(id: string, updates: Partial<LocalUser> & { password?: string }): boolean {
+  static updateUser(id: string, updates: Partial<LocalUser>): boolean {
     try {
       const users = this.getUsers();
       const userIndex = users.findIndex(u => u.id === id);
-      
+
       if (userIndex === -1) return false;
-      
+
       const updatedUser = { ...users[userIndex], ...updates };
-      
-      if (updates.password) {
-        updatedUser.passwordHash = simpleHash(updates.password);
-      }
-      
+
       updatedUser.updatedAt = new Date().toISOString();
       users[userIndex] = updatedUser;
-      
+
       this.saveUsers(users);
       return true;
     } catch (error) {
