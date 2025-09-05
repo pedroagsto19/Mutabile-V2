@@ -77,7 +77,9 @@ function simpleHash(password: string): string {
 function verifyPassword(password: string, hash: string): boolean {
   if (!password || !hash) return false;
   const computedHash = simpleHash(password);
-  console.log('Verifying password:', { password, hash, computedHash, match: computedHash === hash });
+  if (!import.meta.env.PROD) {
+    console.debug('Verifying password hash');
+  }
   return computedHash === hash;
 }
 
@@ -146,11 +148,12 @@ class LocalStorage {
           }
         ];
         
-        console.log('Initializing default users:', defaultUsers.map(u => ({ 
-          email: u.email, 
-          authLevel: u.authLevel,
-          passwordHash: u.passwordHash 
-        })));
+        if (!import.meta.env.PROD) {
+          console.debug('Initializing default users:', defaultUsers.map(u => ({
+            email: u.email,
+            authLevel: u.authLevel
+          })));
+        }
         
         localStorage.setItem(this.USERS_KEY, JSON.stringify(defaultUsers));
       }
@@ -313,23 +316,26 @@ class LocalStorage {
 
   static authenticateUser(email: string, password: string): LocalUser | null {
     try {
-      console.log('Attempting to authenticate:', email);
       const users = this.getUsers();
-      console.log('Found users:', users.length);
       const user = users.find(u => u.email === email);
-      
+
       if (user) {
-        console.log('User found:', user.email, 'Auth level:', user.authLevel);
         const isValidPassword = verifyPassword(password, user.passwordHash);
-        console.log('Password valid:', isValidPassword);
-        
+
         if (isValidPassword) {
+          if (!import.meta.env.PROD) {
+            console.debug('User authenticated successfully');
+          }
           return user;
         } else {
-          console.log('Password verification failed');
+          if (!import.meta.env.PROD) {
+            console.debug('Password verification failed');
+          }
         }
       } else {
-        console.log('User not found with email:', email);
+        if (!import.meta.env.PROD) {
+          console.debug('User not found');
+        }
       }
     } catch (error) {
       console.error('Error authenticating user:', error);
