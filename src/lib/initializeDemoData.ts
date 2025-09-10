@@ -1,5 +1,5 @@
 import { supabase, hasValidSession } from './supabase';
-import { LocalStorage } from './localStorage';
+import LocalStorage from './localStorage';
 
 export async function initializeDemoData() {
   try {
