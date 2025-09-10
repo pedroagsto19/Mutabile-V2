@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, hasValidSession, explainSupabaseError } from '../lib/supabase';
+import { LocalStorage } from '../lib/localStorage';
 import type { User } from '../types/auth';
 
 interface AuthContextType {
@@ -26,18 +27,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUserProfile = async (authUser: any): Promise<User | null> => {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('email', authUser.email)
-        .single();
-
-      if (error) {
-        console.error('Erro ao buscar perfil do usuário:', error);
+      const users = LocalStorage.getUsers();
+      const user = users.find(u => u.email === authUser.email);
+      
+      if (!user) {
+        console.error('Usuário não encontrado no localStorage');
         return null;
       }
 
-      return data;
+      // Convert date strings to Date objects
+      return {
+        ...user,
+        createdAt: new Date(user.createdAt),
+        updatedAt: new Date(user.updatedAt)
+      };
     } catch (e) {
       console.error('Erro ao buscar perfil do usuário:', e);
       return null;
@@ -149,19 +152,66 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Placeholder functions for compatibility
   const getAllUsers = (): User[] => {
-    return [];
+    const users = LocalStorage.getUsers();
+    return users.map(user => ({
+      ...user,
+      createdAt: new Date(user.createdAt),
+      updatedAt: new Date(user.updatedAt)
+    }));
   };
 
   const register = async (userData: any): Promise<void> => {
-    throw new Error('Registration is disabled');
+    try {
+      // Create user in Supabase Auth first
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: userData.email,
+        password: userData.password
+      });
+
+      if (authError) {
+        throw new Error(explainSupabaseError(authError));
+      }
+
+      if (authData?.user) {
+        // Create user profile in localStorage
+        const newUser = {
+          id: authData.user.id,
+          name: userData.name,
+          email: userData.email,
+          role: userData.role,
+          authLevel: userData.authLevel,
+          teamId: userData.teamId || null,
+          managerId: userData.managerId || null,
+          createdBy: user?.id || null,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+
+        LocalStorage.createUser(newUser);
+      }
+    } catch (e: any) {
+      throw new Error(explainSupabaseError(e));
+    }
   };
 
   const updateUser = async (id: string, updates: any): Promise<void> => {
-    throw new Error('User updates not implemented');
+    try {
+      const updatedUser = {
+        ...updates,
+        updatedAt: new Date()
+      };
+      LocalStorage.updateUser(id, updatedUser);
+    } catch (e: any) {
+      throw new Error(`Erro ao atualizar usuário: ${e.message}`);
+    }
   };
 
   const deleteUser = async (id: string): Promise<void> => {
-    throw new Error('User deletion not implemented');
+    try {
+      LocalStorage.deleteUser(id);
+    } catch (e: any) {
+      throw new Error(`Erro ao deletar usuário: ${e.message}`);
+    }
   };
 
   const hasPermission = (permission: string): boolean => {
@@ -188,7 +238,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const canEditUser = (user: User): boolean => {
-    return false;
+    if (!user) return false;
+    
+    // Admin can edit anyone
+    if (user.authLevel === 'admin') return true;
+    
+    // Gestor can edit team members
+    if (user.authLevel === 'gestor') {
+      return user.authLevel !== 'admin';
+    }
+    
+    // Users can only edit themselves
+    return user.id === user.id;
   };
 
   return (
