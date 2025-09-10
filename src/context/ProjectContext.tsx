@@ -258,10 +258,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Sem permissão para editar esta atividade');
     }
     
-    // For timer operations, check if user can use timer (everyone except 'leitor')
-    if (isTimerUpdate && currentUser?.authLevel === 'leitor') {
-      throw new Error('Leitores não podem usar o timer');
-    }
+    // Timer operations are available for all users regardless of permission level
     
     const updatedProject = {
       ...project,
