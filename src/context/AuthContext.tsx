@@ -219,19 +219,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     // Use actual auth level from database
     const permissions = {
-      canCreateProjects: user.auth_level === 'admin' || user.auth_level === 'gestor',
-      canEditProjects: user.auth_level === 'admin' || user.auth_level === 'gestor',
-      canDeleteProjects: user.auth_level === 'admin',
-      canCreateActivities: user.auth_level === 'admin' || user.auth_level === 'gestor' || user.auth_level === 'equipe',
+      canCreateProjects: user.authLevel === 'admin' || user.authLevel === 'gestor',
+      canEditProjects: user.authLevel === 'admin' || user.authLevel === 'gestor',
+      canDeleteProjects: user.authLevel === 'admin',
+      canCreateActivities: user.authLevel === 'admin' || user.authLevel === 'gestor' || user.authLevel === 'equipe',
       canEditOwnActivities: true,
-      canEditAllActivities: user.auth_level === 'admin' || user.auth_level === 'gestor',
-      canDeleteActivities: user.auth_level === 'admin' || user.auth_level === 'gestor',
+      canEditAllActivities: user.authLevel === 'admin' || user.authLevel === 'gestor',
+      canDeleteActivities: user.authLevel === 'admin' || user.authLevel === 'gestor',
       canUseTimer: true, // Everyone can use timer
       canUpdateProgress: true,
-      canManageUsers: user.auth_level === 'admin',
-      canChangeUserAuthLevel: user.auth_level === 'admin',
+      canManageUsers: user.authLevel === 'admin',
+      canChangeUserAuthLevel: user.authLevel === 'admin',
       canViewReports: true,
-      canAccessSettings: user.auth_level === 'admin' || user.auth_level === 'gestor'
+      canAccessSettings: user.authLevel === 'admin' || user.authLevel === 'gestor'
     };
     
     return permissions[permission as keyof typeof permissions] || false;
