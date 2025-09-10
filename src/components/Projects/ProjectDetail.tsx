@@ -750,7 +750,7 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
                         )}
                         
                         {/* Timer Controls */}
-                        {canUserEditActivity(activity) && activity.status !== 'completed' && (
+                        {activity.status !== 'completed' && (
                           <Button
                             variant={activity.isTimerActive ? "primary" : "outline"}
                             size="sm"
@@ -765,13 +765,13 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
                             ) : (
                               <>
                                 <Play className="h-4 w-4 mr-1" />
-                                Play
+                                Iniciar
                               </>
                             )}
                           </Button>
                         )}
                         
-                        {activity.isTimerActive && canUserEditActivity(activity) && activity.status !== 'completed' && (
+                        {activity.isTimerActive && activity.status !== 'completed' && (
                           <Button
                             variant="outline"
                             size="sm"

@@ -97,7 +97,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     
     if (activity.plannedDuration > 0) {
       const timeProgress = (totalTimeSpent / activity.plannedDuration) * 100;
-      return Math.round(timeProgress);
+      // Cap progress at 100% for display purposes, but allow calculation to exceed for tracking
+      return Math.min(Math.round(timeProgress), 100);
     }
     
     return 0;

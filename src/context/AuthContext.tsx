@@ -143,7 +143,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       canEditOwnActivities: true,
       canEditAllActivities: user.email?.includes('admin') || user.email?.includes('gestor'),
       canDeleteActivities: user.email?.includes('admin') || user.email?.includes('gestor'),
-      canUseTimer: true,
+      canUseTimer: true, // Everyone can use timer
       canUpdateProgress: true,
       canManageUsers: user.email?.includes('admin'),
       canChangeUserAuthLevel: user.email?.includes('admin'),
