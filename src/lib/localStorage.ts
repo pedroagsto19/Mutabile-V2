@@ -177,7 +177,7 @@ class LocalStorage {
             status: 'not_started',
             stageId: 'stage1',
             dependencies: [],
-            isTimerActive: false
+            isTimerActive: false,
             checklist: []
           },
           {
@@ -194,7 +194,7 @@ class LocalStorage {
             status: 'not_started',
             stageId: 'stage1',
             dependencies: [{ id: 'dep1', dependsOn: 'act1', type: 'finish_start' }],
-            isTimerActive: false
+            isTimerActive: false,
             checklist: []
           }
         ];
