@@ -1,10 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, hasValidSession, explainSupabaseError } from '../lib/supabase';
-type SupabaseUser = any;
 import type { User } from '../types/auth';
 
 interface AuthContextType {
-  user: SupabaseUser | null;
+  user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   logout: () => Promise<void>;
@@ -20,10 +19,30 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const fetchUserProfile = async (authUser: any): Promise<User | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', authUser.email)
+        .single();
+
+      if (error) {
+        console.error('Erro ao buscar perfil do usuário:', error);
+        return null;
+      }
+
+      return data;
+    } catch (e) {
+      console.error('Erro ao buscar perfil do usuário:', e);
+      return null;
+    }
+  };
 
   useEffect(() => {
     if (!supabase) {
@@ -41,9 +60,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('Auth event:', event, session?.user?.email);
         
         if (session?.user) {
-          setUser(session.user);
-          setIsAuthenticated(true);
-          setError(null);
+          const userProfile = await fetchUserProfile(session.user);
+          if (userProfile) {
+            setUser(userProfile);
+            setIsAuthenticated(true);
+            setError(null);
+          } else {
+            setError('Perfil do usuário não encontrado');
+            setUser(null);
+            setIsAuthenticated(false);
+          }
         } else {
           setUser(null);
           setIsAuthenticated(false);
@@ -71,9 +97,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsAuthenticated(false);
         setUser(null);
       } else if (session?.user) {
-        setUser(session.user);
-        setIsAuthenticated(true);
-        setError(null);
+        const userProfile = await fetchUserProfile(session.user);
+        if (userProfile) {
+          setUser(userProfile);
+          setIsAuthenticated(true);
+          setError(null);
+        } else {
+          setError('Perfil do usuário não encontrado');
+          setUser(null);
+          setIsAuthenticated(false);
+        }
       } else {
         setUser(null);
         setIsAuthenticated(false);
@@ -134,21 +167,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const hasPermission = (permission: string): boolean => {
     if (!user) return false;
     
-    // Simulate basic permissions based on auth level from database
+    // Use actual auth level from database
     const permissions = {
-      canCreateProjects: user.email?.includes('admin') || user.email?.includes('gestor'),
-      canEditProjects: user.email?.includes('admin') || user.email?.includes('gestor'),
-      canDeleteProjects: user.email?.includes('admin'),
-      canCreateActivities: user.email?.includes('admin') || user.email?.includes('gestor') || user.email?.includes('equipe'),
+      canCreateProjects: user.auth_level === 'admin' || user.auth_level === 'gestor',
+      canEditProjects: user.auth_level === 'admin' || user.auth_level === 'gestor',
+      canDeleteProjects: user.auth_level === 'admin',
+      canCreateActivities: user.auth_level === 'admin' || user.auth_level === 'gestor' || user.auth_level === 'equipe',
       canEditOwnActivities: true,
-      canEditAllActivities: user.email?.includes('admin') || user.email?.includes('gestor'),
-      canDeleteActivities: user.email?.includes('admin') || user.email?.includes('gestor'),
+      canEditAllActivities: user.auth_level === 'admin' || user.auth_level === 'gestor',
+      canDeleteActivities: user.auth_level === 'admin' || user.auth_level === 'gestor',
       canUseTimer: true, // Everyone can use timer
       canUpdateProgress: true,
-      canManageUsers: user.email?.includes('admin'),
-      canChangeUserAuthLevel: user.email?.includes('admin'),
+      canManageUsers: user.auth_level === 'admin',
+      canChangeUserAuthLevel: user.auth_level === 'admin',
       canViewReports: true,
-      canAccessSettings: user.email?.includes('admin') || user.email?.includes('gestor')
+      canAccessSettings: user.auth_level === 'admin' || user.auth_level === 'gestor'
     };
     
     return permissions[permission as keyof typeof permissions] || false;

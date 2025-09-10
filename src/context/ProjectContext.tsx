@@ -65,12 +65,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     if (!currentUser) return [];
     
     // Admin and Gestor can see all projects
-    if (currentUser.authLevel === 'admin' || currentUser.authLevel === 'gestor') {
+    if (currentUser.auth_level === 'admin' || currentUser.auth_level === 'gestor') {
       return projects;
     }
     
     // Equipe can only see projects where they have activities
-    if (currentUser.authLevel === 'equipe') {
+    if (currentUser.auth_level === 'equipe') {
       return projects.filter(project => 
         project.stages.some(stage => 
           stage.activities.some(activity => 
