@@ -8,7 +8,7 @@ interface ProjectContextType {
   projects: Project[];
   currentProject: Project | null;
   addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => void;
-  updateProject: (id: string, updates: Partial<Project>) => void;
+  updateProject: (id: string, updates: Partial<Project>, bypassPermissions?: boolean) => void;
   deleteProject: (id: string) => void;
   setCurrentProject: (project: Project | null) => void;
   addStage: (projectId: string, stage: Omit<Stage, 'id' | 'projectId'>) => void;
@@ -134,8 +134,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     return newProject;
   };
 
-  const updateProject = (id: string, updates: Partial<Project>) => {
-    if (!hasPermission('canEditProjects')) {
+  const updateProject = (
+    id: string,
+    updates: Partial<Project>,
+    bypassPermissions = false
+  ) => {
+    if (!bypassPermissions && !hasPermission('canEditProjects')) {
       throw new Error('Sem permissão para editar projetos');
     }
     
@@ -251,17 +255,17 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     if (!activity) return;
     
     // Check permissions based on update type
-    const isTimerUpdate = 'isTimerActive' in updates || 'actualDuration' in updates || 'actualStartDate' in updates || 'status' in updates;
+    const isTimerUpdate =
+      'isTimerActive' in updates ||
+      'actualDuration' in updates ||
+      'actualStartDate' in updates;
     const isManualEdit = !isTimerUpdate;
     
     if (isManualEdit && !canUserEditActivity(activity)) {
       throw new Error('Sem permissão para editar esta atividade');
     }
     
-    // For timer operations, check if user can use timer (everyone except 'leitor')
-    if (isTimerUpdate && currentUser?.authLevel === 'leitor') {
-      throw new Error('Leitores não podem usar o timer');
-    }
+    // Timer operations are available for all users regardless of permission level
     
     const updatedProject = {
       ...project,
@@ -274,7 +278,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       updatedAt: new Date()
     };
     
-    updateProject(project.id, updatedProject);
+    updateProject(project.id, updatedProject, isTimerUpdate || canUserEditActivity(activity));
   };
 
   const startActivityTimer = (activityId: string) => {
@@ -288,11 +292,11 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const canUserEditActivity = (activity: Activity): boolean => {
     if (!currentUser) return false;
     
-    // Admin e Gestor podem editar todas as atividades
-    if (hasPermission('canEditAllActivities')) return true;
+    // Admin e Gestor sempre podem editar todas as atividades
+    if (currentUser.authLevel === 'admin' || currentUser.authLevel === 'gestor') return true;
     
-    // Usuários da equipe podem editar apenas suas próprias atividades
-    if (hasPermission('canEditOwnActivities')) {
+    // Usuários da equipe podem editar apenas suas próprias atividades  
+    if (currentUser.authLevel === 'equipe') {
       return activity.responsible === currentUser.name;
     }
     

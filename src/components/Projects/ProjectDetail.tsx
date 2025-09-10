@@ -765,7 +765,11 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
                       
                       <div className="flex items-center space-x-2 ml-4">
                         {/* Complete Activity Button */}
-                        {canUserEditActivity(activity) && activity.status !== 'completed' && (
+                        {activity.status !== 'completed' && (
+                          currentUser?.authLevel === 'admin' || 
+                          currentUser?.authLevel === 'gestor' || 
+                          (currentUser?.authLevel === 'equipe' && activity.responsible === currentUser.name)
+                        ) && (
                           <Button
                             variant="outline"
                             size="sm"
@@ -778,7 +782,7 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
                         )}
                         
                         {/* Timer Controls */}
-                        {activity.status !== 'completed' && currentUser && currentUser.authLevel !== 'leitor' && (
+                        {activity.status !== 'completed' && currentUser && (
                           <Button
                             variant={activity.isTimerActive ? "primary" : "outline"}
                             size="sm"
@@ -799,7 +803,7 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
                           </Button>
                         )}
                         
-                        {activity.isTimerActive && activity.status !== 'completed' && currentUser && currentUser.authLevel !== 'leitor' && (
+                        {activity.isTimerActive && activity.status !== 'completed' && currentUser && (
                           <Button
                             variant="outline"
                             size="sm"
