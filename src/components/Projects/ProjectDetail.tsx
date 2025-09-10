@@ -750,39 +750,49 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
                         )}
                         
                         {/* Timer Controls */}
-                        {hasPermission('canUseTimer') && canUserEditActivity(activity) && activity.status !== 'completed' && (
+                        {canUserEditActivity(activity) && activity.status !== 'completed' && (
                           <Button
                             variant={activity.isTimerActive ? "primary" : "outline"}
                             size="sm"
                             onClick={() => handleTimerAction(activity)}
+                            title={activity.isTimerActive ? "Pausar timer" : "Iniciar timer"}
                           >
                             {activity.isTimerActive ? (
-                              <Pause className="h-4 w-4" />
+                              <>
+                                <Pause className="h-4 w-4 mr-1" />
+                                Pausar
+                              </>
                             ) : (
-                              <Play className="h-4 w-4" />
+                              <>
+                                <Play className="h-4 w-4 mr-1" />
+                                Play
+                              </>
                             )}
                           </Button>
                         )}
                         
-                        {activity.isTimerActive && hasPermission('canUseTimer') && canUserEditActivity(activity) && activity.status !== 'completed' && (
+                        {activity.isTimerActive && canUserEditActivity(activity) && activity.status !== 'completed' && (
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => stopActivityTimer(activity.id)}
+                            title="Parar timer"
                           >
-                            <Square className="h-4 w-4" />
+                            <Square className="h-4 w-4 mr-1" />
+                            Parar
                           </Button>
                         )}
                         
                         {/* Time Editor for Admin */}
-                        {currentUser.authLevel === 'admin' && (
+                        {currentUser?.authLevel === 'admin' && (
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleEditTime(activity)}
                             title="Editar tempo realizado e data de início real"
                           >
-                            <Clock className="h-4 w-4" />
+                            <Clock className="h-4 w-4 mr-1" />
+                            Editar Tempo
                           </Button>
                         )}
                         
@@ -794,8 +804,10 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
                               setEditingActivity(activity);
                               setShowActivityForm(true);
                             }}
+                            title="Editar atividade"
                           >
-                            <Edit className="h-4 w-4" />
+                            <Edit className="h-4 w-4 mr-1" />
+                            Editar
                           </Button>
                         )}
                       </div>

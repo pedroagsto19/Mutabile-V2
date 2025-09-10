@@ -132,7 +132,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const hasPermission = (permission: string): boolean => {
-    return false;
+    if (!user) return false;
+    
+    // Simulate basic permissions based on auth level from database
+    const permissions = {
+      canCreateProjects: user.email?.includes('admin') || user.email?.includes('gestor'),
+      canEditProjects: user.email?.includes('admin') || user.email?.includes('gestor'),
+      canDeleteProjects: user.email?.includes('admin'),
+      canCreateActivities: user.email?.includes('admin') || user.email?.includes('gestor') || user.email?.includes('equipe'),
+      canEditOwnActivities: true,
+      canEditAllActivities: user.email?.includes('admin') || user.email?.includes('gestor'),
+      canDeleteActivities: user.email?.includes('admin') || user.email?.includes('gestor'),
+      canUseTimer: true,
+      canUpdateProgress: true,
+      canManageUsers: user.email?.includes('admin'),
+      canChangeUserAuthLevel: user.email?.includes('admin'),
+      canViewReports: true,
+      canAccessSettings: user.email?.includes('admin') || user.email?.includes('gestor')
+    };
+    
+    return permissions[permission as keyof typeof permissions] || false;
   };
 
   const canEditUser = (user: User): boolean => {

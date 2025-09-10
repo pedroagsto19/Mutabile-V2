@@ -266,10 +266,6 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   };
 
   const startActivityTimer = (activityId: string) => {
-    if (!hasPermission('canUseTimer')) {
-      throw new Error('Sem permissão para usar o timer');
-    }
-    
     // Stop any currently active timer first
     if (activeTimer?.isActive && activeTimer.activityId !== activityId) {
       const elapsed = stopTimer();
@@ -308,10 +304,6 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   };
 
   const stopActivityTimer = (activityId: string) => {
-    if (!hasPermission('canUseTimer')) {
-      throw new Error('Sem permissão para usar o timer');
-    }
-    
     const elapsed = stopTimer();
     const activity = projects
       .flatMap(p => p.stages)
