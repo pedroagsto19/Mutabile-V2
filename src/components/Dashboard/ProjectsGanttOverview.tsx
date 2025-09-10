@@ -40,6 +40,7 @@ export function ProjectsGanttOverview() {
   const [tooltip, setTooltip] = useState<ActivityTooltip | null>(null);
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   // Filter active projects by default
   const activeProjects = projects.filter(p => 
@@ -624,6 +625,7 @@ export function ProjectsGanttOverview() {
                         </div>
                       )}
                     </div>
+                  </>
                 )}
               </div>
               <Button
