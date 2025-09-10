@@ -398,40 +398,10 @@ export function GanttChart({ project }: GanttChartProps) {
         )}
 
         {/* Time Information */}
-        <div className="border-t border-gray-100 pt-3">
-          <div className="flex items-center space-x-1 mb-2">
-            <Clock className="h-3 w-3 text-blue-500" />
-            <span className="text-xs font-medium text-gray-700">Tempo de Trabalho</span>
-          </div>
-          <div className="space-y-1">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-gray-600">Planejado:</span>
-              <span className="font-medium text-gray-900">
-                {activity.plannedDuration}h
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-gray-600">Realizado:</span>
-              <span className="font-medium text-gray-900">
-                {activity.actualDuration.toFixed(1)}h
-              </span>
-            </div>
-            {activity.actualDuration > 0 && (
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-600">Eficiência:</span>
-                <span className={`font-medium ${
-                  activity.actualDuration <= activity.plannedDuration ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {((activity.plannedDuration / activity.actualDuration) * 100).toFixed(0)}%
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
 
         {/* Dependencies */}
         {activity.dependencies.length > 0 && (
-          <div className="border-t border-gray-100 pt-3 mt-3">
+          <div className="border-t border-gray-100 pt-3">
             <div className="flex items-center space-x-1 mb-2">
               <User className="h-3 w-3 text-purple-500" />
               <span className="text-xs font-medium text-gray-700">Dependências</span>
