@@ -39,7 +39,28 @@ function CustomStageModal({ isOpen, onClose, onAdd }: CustomStageModalProps) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Nova Etapa Personalizada" size="sm">
+    <div className={`${isOpen ? 'fixed inset-0 z-[60] overflow-y-auto' : 'hidden'}`}>
+      <div className="flex min-h-screen items-center justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onClick={handleClose} />
+        
+        <div className="inline-block w-full max-w-md transform overflow-hidden rounded-lg bg-white text-left align-bottom shadow-xl transition-all sm:my-8 sm:align-middle">
+          <div className="bg-white px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Nova Etapa Personalizada</h3>
+              <button
+                type="button"
+                onClick={handleClose}
+                className="text-gray-400 hover:text-gray-600 focus:outline-none"
+              >
+                <span className="sr-only">Fechar</span>
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          
+          <div className="bg-white px-6 py-4">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -66,7 +87,10 @@ function CustomStageModal({ isOpen, onClose, onAdd }: CustomStageModalProps) {
           </Button>
         </div>
       </form>
-    </Modal>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormProps) {
