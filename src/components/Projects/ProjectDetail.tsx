@@ -750,7 +750,7 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
                         )}
                         
                         {/* Timer Controls */}
-                        {activity.status !== 'completed' && (
+                        {activity.status !== 'completed' && currentUser && (
                           <Button
                             variant={activity.isTimerActive ? "primary" : "outline"}
                             size="sm"
@@ -771,7 +771,7 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
                           </Button>
                         )}
                         
-                        {activity.isTimerActive && activity.status !== 'completed' && (
+                        {activity.isTimerActive && activity.status !== 'completed' && currentUser && (
                           <Button
                             variant="outline"
                             size="sm"

@@ -248,7 +248,9 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     
     if (!activity) return;
     
-    if (!canUserEditActivity(activity)) {
+    // Only check permissions for non-timer updates
+    const isTimerUpdate = 'isTimerActive' in updates || 'actualDuration' in updates;
+    if (!isTimerUpdate && !canUserEditActivity(activity)) {
       throw new Error('Sem permissão para editar esta atividade');
     }
     
@@ -267,6 +269,10 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   };
 
   const startActivityTimer = (activityId: string) => {
+    if (!currentUser) {
+      throw new Error('Usuário não autenticado');
+    }
+    
     // Stop any currently active timer first
     if (activeTimer?.isActive && activeTimer.activityId !== activityId) {
       const elapsed = stopTimer();
@@ -305,6 +311,10 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   };
 
   const stopActivityTimer = (activityId: string) => {
+    if (!currentUser) {
+      throw new Error('Usuário não autenticado');
+    }
+    
     const elapsed = stopTimer();
     const activity = projects
       .flatMap(p => p.stages)
