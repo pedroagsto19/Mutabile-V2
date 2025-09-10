@@ -315,8 +315,11 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
         ? editingActivity.plannedEndDate.toISOString().split('T')[0] 
         : new Date().toISOString().split('T')[0],
       plannedDuration: editingActivity?.plannedDuration || 8,
-      dependencies: editingActivity?.dependencies || []
+      dependencies: editingActivity?.dependencies || [],
+      checklist: editingActivity?.checklist || []
     });
+    
+    const [newChecklistItem, setNewChecklistItem] = useState('');
 
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
@@ -342,6 +345,7 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
         progress: editingActivity?.progress || 0,
         status: editingActivity?.status || 'not_started' as const,
         dependencies: formData.dependencies,
+        checklist: formData.checklist,
         isTimerActive: false,
         actualStartDate: editingActivity?.actualStartDate || undefined
       };
@@ -362,6 +366,38 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
         dependencies: prev.dependencies.some(dep => dep.dependsOn === activityId)
           ? prev.dependencies.filter(dep => dep.dependsOn !== activityId)
           : [...prev.dependencies, { id: Math.random().toString(36).substr(2, 9), dependsOn: activityId, type: 'finish_start' }]
+      }));
+    };
+
+    const addChecklistItem = () => {
+      if (newChecklistItem.trim()) {
+        const newItem = {
+          id: Math.random().toString(36).substr(2, 9),
+          title: newChecklistItem.trim(),
+          completed: false,
+          createdAt: new Date()
+        };
+        setFormData(prev => ({
+          ...prev,
+          checklist: [...prev.checklist, newItem]
+        }));
+        setNewChecklistItem('');
+      }
+    };
+
+    const removeChecklistItem = (itemId: string) => {
+      setFormData(prev => ({
+        ...prev,
+        checklist: prev.checklist.filter(item => item.id !== itemId)
+      }));
+    };
+
+    const toggleChecklistItem = (itemId: string) => {
+      setFormData(prev => ({
+        ...prev,
+        checklist: prev.checklist.map(item =>
+          item.id === itemId ? { ...item, completed: !item.completed } : item
+        )
       }));
     };
 
@@ -503,6 +539,67 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
                   </label>
                 ))}
             </div>
+          </div>
+
+          {/* Checklist Section */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Sub-etapas (Checklist)
+            </label>
+            
+            {/* Add new checklist item */}
+            <div className="flex space-x-2 mb-3">
+              <input
+                type="text"
+                value={newChecklistItem}
+                onChange={(e) => setNewChecklistItem(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && addChecklistItem()}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
+                placeholder="Digite uma sub-etapa..."
+              />
+              <Button
+                type="button"
+                onClick={addChecklistItem}
+                disabled={!newChecklistItem.trim()}
+                size="sm"
+              >
+                Adicionar
+              </Button>
+            </div>
+            
+            {/* Checklist items */}
+            {formData.checklist.length > 0 && (
+              <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-lg p-3 space-y-2">
+                {formData.checklist.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between group">
+                    <label className="flex items-center space-x-2 flex-1 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={item.completed}
+                        onChange={() => toggleChecklistItem(item.id)}
+                        className="h-4 w-4 text-black focus:ring-black border-gray-300 rounded"
+                      />
+                      <span className={`text-sm ${item.completed ? 'line-through text-gray-500' : 'text-gray-700'}`}>
+                        {item.title}
+                      </span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => removeChecklistItem(item.id)}
+                      className="opacity-0 group-hover:opacity-100 text-red-600 hover:text-red-800 text-sm transition-opacity"
+                    >
+                      Remover
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {formData.checklist.length === 0 && (
+              <p className="text-sm text-gray-500 italic">
+                Nenhuma sub-etapa adicionada. Use o campo acima para adicionar itens do checklist.
+              </p>
+            )}
           </div>
 
           <div className="flex justify-end space-x-3 pt-6">
@@ -764,6 +861,43 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
                             </p>
                           )}
                         </div>
+                        
+                        {/* Checklist Display */}
+                        {activity.checklist && activity.checklist.length > 0 && (
+                          <div className="mt-4 bg-gray-50 rounded-lg p-3">
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="text-sm font-medium text-gray-900">Sub-etapas</h4>
+                              <span className="text-xs text-gray-500">
+                                {activity.checklist.filter(item => item.completed).length} de {activity.checklist.length} concluídas
+                              </span>
+                            </div>
+                            <div className="space-y-1 max-h-24 overflow-y-auto">
+                              {activity.checklist.map((item) => (
+                                <div key={item.id} className="flex items-center space-x-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={item.completed}
+                                    onChange={() => {
+                                      const updatedChecklist = activity.checklist.map(checkItem =>
+                                        checkItem.id === item.id 
+                                          ? { ...checkItem, completed: !checkItem.completed }
+                                          : checkItem
+                                      );
+                                      updateActivity(activity.id, { checklist: updatedChecklist });
+                                    }}
+                                    className="h-3 w-3 text-black focus:ring-black border-gray-300 rounded"
+                                    disabled={!canUserEditActivity(activity)}
+                                  />
+                                  <span className={`text-xs ${
+                                    item.completed ? 'line-through text-gray-500' : 'text-gray-700'
+                                  }`}>
+                                    {item.title}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                       
                       <div className="flex items-center space-x-2 ml-4">

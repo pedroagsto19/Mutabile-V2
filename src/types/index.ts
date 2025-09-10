@@ -49,6 +49,14 @@ export interface Activity {
   dependencies: ActivityDependency[];
   isTimerActive: boolean;
   timerStartTime?: Date;
+  checklist: ChecklistItem[];
+}
+
+export interface ChecklistItem {
+  id: string;
+  title: string;
+  completed: boolean;
+  createdAt: Date;
 }
 
 export interface ActivityDependency {

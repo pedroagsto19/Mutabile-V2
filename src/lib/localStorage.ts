@@ -48,6 +48,12 @@ export interface LocalActivity {
   dependencies: any[];
   isTimerActive: boolean;
   timerStartTime?: string;
+  checklist: Array<{
+    id: string;
+    title: string;
+    completed: boolean;
+    createdAt: string;
+  }>;
 }
 
 export interface LocalStage {
@@ -172,6 +178,7 @@ class LocalStorage {
             stageId: 'stage1',
             dependencies: [],
             isTimerActive: false
+            checklist: []
           },
           {
             id: 'act2',
@@ -188,6 +195,7 @@ class LocalStorage {
             stageId: 'stage1',
             dependencies: [{ id: 'dep1', dependsOn: 'act1', type: 'finish_start' }],
             isTimerActive: false
+            checklist: []
           }
         ];
 
