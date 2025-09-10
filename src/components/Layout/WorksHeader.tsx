@@ -68,7 +68,6 @@ export function WorksHeader({ currentView, onViewChange, onBackToMenu }: WorksHe
             <Button
               variant={currentView === 'projects' ? 'primary' : 'ghost'}
               onClick={() => onViewChange('projects')}
-              disabled={!hasPermission('canViewReports')}
             >
               Projetos
             </Button>
