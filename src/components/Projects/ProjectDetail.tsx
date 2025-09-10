@@ -675,15 +675,18 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-semibold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                {project.stages[activeStage]?.name}
+                {project.stages[activeStage]?.name || 'Nenhuma etapa'}
               </h2>
               <p className="text-gray-600 mt-1">
-                {project.stages[activeStage]?.activities.length || 0} atividades
+                {project.stages[activeStage] ? `${project.stages[activeStage].activities.length} atividades` : 'Adicione uma etapa primeiro'}
               </p>
             </div>
             
             <ProtectedRoute requiredPermission="canCreateActivities">
-              <Button onClick={() => setShowActivityForm(true)}>
+              <Button 
+                onClick={() => setShowActivityForm(true)}
+                disabled={!project.stages[activeStage]}
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Nova Atividade
               </Button>
@@ -858,16 +861,23 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
             
             {(!project.stages[activeStage]?.activities || project.stages[activeStage].activities.length === 0) && (
               <div className="text-center py-12">
-                <p className="text-gray-500">Nenhuma atividade cadastrada nesta etapa.</p>
+                <p className="text-gray-500">
+                  {!project.stages[activeStage] 
+                    ? 'Este projeto não possui etapas. Adicione uma etapa primeiro para criar atividades.'
+                    : 'Nenhuma atividade cadastrada nesta etapa.'
+                  }
+                </p>
                 <ProtectedRoute requiredPermission="canCreateActivities">
-                  <Button 
-                    variant="outline" 
-                    className="mt-4"
-                    onClick={() => setShowActivityForm(true)}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Criar primeira atividade
-                  </Button>
+                  {project.stages[activeStage] && (
+                    <Button 
+                      variant="outline" 
+                      className="mt-4"
+                      onClick={() => setShowActivityForm(true)}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Criar primeira atividade
+                    </Button>
+                  )}
                 </ProtectedRoute>
               </div>
             )}
