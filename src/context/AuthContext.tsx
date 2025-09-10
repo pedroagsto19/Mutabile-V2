@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, hasValidSession, explainSupabaseError } from '../lib/supabase';
-import { LocalStorage } from '../lib/localStorage';
+import LocalStorage from '../lib/localStorage';
 import type { User } from '../types/auth';
 
 interface AuthContextType {
