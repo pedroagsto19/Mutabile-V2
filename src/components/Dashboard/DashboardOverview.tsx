@@ -5,6 +5,7 @@ import { Card, CardHeader, CardContent } from '../UI/Card';
 import { Modal } from '../UI/Modal';
 import { Button } from '../UI/Button';
 import { ProgressBar } from '../UI/ProgressBar';
+import { ProjectsGanttOverview } from './ProjectsGanttOverview';
 import { useProject } from '../../context/ProjectContext';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -335,6 +336,9 @@ export function DashboardOverview({ onProjectSelect }: DashboardOverviewProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Projects Gantt Overview */}
+      <ProjectsGanttOverview />
 
       {/* Progress Overview */}
       <Card>
