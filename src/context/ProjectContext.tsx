@@ -292,8 +292,11 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const canUserEditActivity = (activity: Activity): boolean => {
     if (!currentUser) return false;
     
-    // Admin e Gestor podem editar todas as atividades
-    if (hasPermission('canEditAllActivities')) return true;
+    // Admin sempre pode editar todas as atividades
+    if (currentUser.auth_level === 'admin') return true;
+    
+    // Gestor pode editar todas as atividades
+    if (currentUser.auth_level === 'gestor' && hasPermission('canEditAllActivities')) return true;
     
     // Usuários da equipe podem editar apenas suas próprias atividades
     if (hasPermission('canEditOwnActivities')) {
