@@ -784,9 +784,10 @@ export function ProjectsGanttOverview() {
               </div>
 
               {/* Legend */}
-              <div className="mt-6 flex items-center space-x-6 text-xs text-gray-600">
+              <div className="mt-6 space-y-3 text-xs text-gray-600">
+                {/* Primeira fileira - Previsto */}
                 {(showMode === 'planned' || showMode === 'both') && (
-                  <>
+                  <div className="flex items-center space-x-6">
                     <div className="flex items-center space-x-2">
                       <div className="w-4 h-2 bg-gray-300 rounded opacity-60"></div>
                       <span>Previsto - Não Iniciado</span>
@@ -799,10 +800,12 @@ export function ProjectsGanttOverview() {
                       <div className="w-4 h-2 bg-green-300 rounded opacity-60"></div>
                       <span>Previsto - Concluído</span>
                     </div>
-                  </>
+                  </div>
                 )}
+                
+                {/* Segunda fileira - Real */}
                 {(showMode === 'actual' || showMode === 'both') && (
-                  <>
+                  <div className="flex items-center space-x-6">
                     <div className="flex items-center space-x-2">
                       <div className="w-4 h-2 bg-gray-600 rounded"></div>
                       <span>Real - Não Iniciado</span>
@@ -815,7 +818,7 @@ export function ProjectsGanttOverview() {
                       <div className="w-4 h-2 bg-green-600 rounded"></div>
                       <span>Real - Concluído</span>
                     </div>
-                  </>
+                  </div>
                 )}
               </div>
 
