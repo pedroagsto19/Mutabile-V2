@@ -55,7 +55,7 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
   const handleTimerAction = async (activity: Activity) => {
     if (activity.isTimerActive) {
       // Pause timer
-      const elapsed = stopTimer();
+      const elapsed = stopActivityTimer();
       updateActivity(activity.id, {
         isTimerActive: false,
         actualDuration: activity.actualDuration + elapsed
@@ -86,7 +86,7 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
           .find(a => a.isTimerActive);
         
         if (activeActivity) {
-          const elapsed = stopTimer();
+          const elapsed = stopActivityTimer();
           updateActivity(activeActivity.id, {
             isTimerActive: false,
             actualDuration: activeActivity.actualDuration + elapsed
@@ -95,7 +95,7 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
       }
       
       // Start timer
-      startTimer(activity.id);
+      startActivityTimer(activity.id);
       const updateData: any = { 
         isTimerActive: true,
         status: 'in_progress'
@@ -804,7 +804,7 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                              const elapsed = stopTimer();
+                              const elapsed = stopActivityTimer();
                               updateActivity(activity.id, {
                                 isTimerActive: false,
                                 actualDuration: activity.actualDuration + elapsed

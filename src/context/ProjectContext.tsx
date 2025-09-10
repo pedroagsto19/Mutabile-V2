@@ -19,6 +19,8 @@ interface ProjectContextType {
   stopActivityTimer: (activityId: string) => void;
   activeTimer: any;
   getElapsedTime: () => number;
+  startActivityTimer: (activityId: string) => void;
+  stopActivityTimer: () => number;
   calculateActivityProgress: (activity: Activity) => number;
   canUserEditActivity: (activity: Activity) => boolean;
 }
@@ -276,13 +278,11 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   };
 
   const startActivityTimer = (activityId: string) => {
-    // This function is now handled directly in ProjectDetail component
-    // Keeping for compatibility but functionality moved to component
+    startTimer(activityId);
   };
 
-  const stopActivityTimer = (activityId: string) => {
-    // This function is now handled directly in ProjectDetail component
-    // Keeping for compatibility but functionality moved to component
+  const stopActivityTimer = () => {
+    return stopTimer();
   };
 
   const canUserEditActivity = (activity: Activity): boolean => {
