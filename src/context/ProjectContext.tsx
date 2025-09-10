@@ -249,7 +249,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     if (!activity) return;
     
     // Only check permissions for non-timer updates
-    const isTimerUpdate = 'isTimerActive' in updates || 'actualDuration' in updates;
+    const isTimerUpdate = 'isTimerActive' in updates || 'actualDuration' in updates || 'actualStartDate' in updates;
     if (!isTimerUpdate && !canUserEditActivity(activity)) {
       throw new Error('Sem permissão para editar esta atividade');
     }
