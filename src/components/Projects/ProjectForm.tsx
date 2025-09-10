@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '../UI/Button';
+import { Plus, X } from 'lucide-react';
 import { Modal } from '../UI/Modal';
 import { useProject } from '../../context/ProjectContext';
 import { useAuth } from '../../context/AuthContext';
@@ -14,11 +15,66 @@ interface ProjectFormProps {
   project?: Project;
 }
 
+interface CustomStageModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onAdd: (stageName: string) => void;
+}
+
+function CustomStageModal({ isOpen, onClose, onAdd }: CustomStageModalProps) {
+  const [stageName, setStageName] = useState('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (stageName.trim()) {
+      onAdd(stageName.trim());
+      setStageName('');
+      onClose();
+    }
+  };
+
+  const handleClose = () => {
+    setStageName('');
+    onClose();
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={handleClose} title="Nova Etapa Personalizada" size="sm">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Nome da Etapa *
+          </label>
+          <input
+            type="text"
+            required
+            value={stageName}
+            onChange={(e) => setStageName(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
+            placeholder="Ex: Aprovação de Licenças, Detalhamento..."
+            autoFocus
+          />
+        </div>
+        
+        <div className="flex justify-end space-x-3 pt-4">
+          <Button type="button" variant="outline" onClick={handleClose}>
+            Cancelar
+          </Button>
+          <Button type="submit" disabled={!stageName.trim()}>
+            <Plus className="h-4 w-4 mr-2" />
+            Adicionar Etapa
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
 export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormProps) {
   const { addProject } = useProject();
   const { getAllUsers } = useAuth();
   const { toast } = useNotification();
   const users = getAllUsers();
+  const [showCustomStageModal, setShowCustomStageModal] = useState(false);
   
   const [formData, setFormData] = useState({
     name: project?.name || '',
@@ -111,12 +167,11 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
     }));
   };
 
-  const addCustomStage = () => {
-    const customName = prompt('Nome da etapa personalizada:');
-    if (customName && !formData.selectedStages.includes(customName) && !formData.customStages.includes(customName)) {
+  const addCustomStage = (stageName: string) => {
+    if (!formData.selectedStages.includes(stageName) && !formData.customStages.includes(stageName)) {
       setFormData(prev => ({
         ...prev,
-        customStages: [...prev.customStages, customName]
+        customStages: [...prev.customStages, stageName]
       }));
     }
   };
@@ -129,7 +184,14 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={project ? 'Editar Projeto' : 'Novo Projeto'} size="lg">
+    <>
+      <CustomStageModal
+        isOpen={showCustomStageModal}
+        onClose={() => setShowCustomStageModal(false)}
+        onAdd={addCustomStage}
+      />
+      
+      <Modal isOpen={isOpen} onClose={onClose} title={project ? 'Editar Projeto' : 'Novo Projeto'} size="lg">
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -263,8 +325,9 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
             </div>
           )}
           
-          <Button type="button" variant="outline" size="sm" onClick={addCustomStage}>
-            + Adicionar Etapa Personalizada
+          <Button type="button" variant="outline" size="sm" onClick={() => setShowCustomStageModal(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Adicionar Etapa Personalizada
           </Button>
         </div>
 
@@ -278,5 +341,6 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
         </div>
       </form>
     </Modal>
+    </>
   );
 }
