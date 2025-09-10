@@ -22,3 +22,4 @@ export async function initializeDemoData() {
     console.error('initializeDemoData error:', e);
     throw new Error(`Falha ao inicializar dados: ${e?.message || 'erro desconhecido'}`);
   }
+}
