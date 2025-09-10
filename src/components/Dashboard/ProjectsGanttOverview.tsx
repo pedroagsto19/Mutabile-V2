@@ -557,7 +557,6 @@ export function ProjectsGanttOverview() {
                       className="fixed inset-0 z-10" 
                       onClick={() => setShowProjectDropdown(false)}
                     />
-                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-20 max-h-96 overflow-hidden">
                     <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-20 max-h-96 overflow-hidden">
                       <div className="p-4 border-b border-gray-200">
                         <div className="flex items-center justify-between">
@@ -625,7 +624,6 @@ export function ProjectsGanttOverview() {
                         </div>
                       )}
                     </div>
-                  </>
                 )}
               </div>
               <Button
