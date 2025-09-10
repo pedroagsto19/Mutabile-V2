@@ -54,7 +54,13 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
 
   const handleTimerAction = async (activity: Activity) => {
     if (activity.isTimerActive) {
-      stopActivityTimer(activity.id);
+      // Pause timer
+      const elapsed = stopTimer();
+      updateActivity(activity.id, {
+        isTimerActive: false,
+        actualDuration: activity.actualDuration + elapsed
+      });
+      toast.success('Timer pausado');
     } else {
       // Check if there's another active timer and warn user
       const hasActiveTimer = projects
@@ -72,14 +78,36 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
         });
         
         if (!confirmed) return;
+        
+        // Stop the currently active timer
+        const activeActivity = projects
+          .flatMap(p => p.stages)
+          .flatMap(s => s.activities)
+          .find(a => a.isTimerActive);
+        
+        if (activeActivity) {
+          const elapsed = stopTimer();
+          updateActivity(activeActivity.id, {
+            isTimerActive: false,
+            actualDuration: activeActivity.actualDuration + elapsed
+          });
+        }
       }
       
-      // Set actual start date if this is the first time starting the timer
+      // Start timer
+      startTimer(activity.id);
+      const updateData: any = { 
+        isTimerActive: true,
+        status: 'in_progress'
+      };
+      
+      // Set actual start date if this is the first time starting
       if (!activity.actualStartDate) {
-        updateActivity(activity.id, { actualStartDate: new Date() });
+        updateData.actualStartDate = new Date();
       }
       
-      startActivityTimer(activity.id);
+      updateActivity(activity.id, updateData);
+      toast.success('Timer iniciado');
     }
   };
 
@@ -750,7 +778,7 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
                         )}
                         
                         {/* Timer Controls */}
-                        {activity.status !== 'completed' && currentUser && (
+                        {activity.status !== 'completed' && currentUser && currentUser.authLevel !== 'leitor' && (
                           <Button
                             variant={activity.isTimerActive ? "primary" : "outline"}
                             size="sm"
@@ -765,17 +793,24 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
                             ) : (
                               <>
                                 <Play className="h-4 w-4 mr-1" />
-                                Iniciar
+                                {activity.actualDuration > 0 ? 'Continuar' : 'Iniciar'}
                               </>
                             )}
                           </Button>
                         )}
                         
-                        {activity.isTimerActive && activity.status !== 'completed' && currentUser && (
+                        {activity.isTimerActive && activity.status !== 'completed' && currentUser && currentUser.authLevel !== 'leitor' && (
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => stopActivityTimer(activity.id)}
+                            onClick={() => {
+                              const elapsed = stopTimer();
+                              updateActivity(activity.id, {
+                                isTimerActive: false,
+                                actualDuration: activity.actualDuration + elapsed
+                              });
+                              toast.success('Timer parado');
+                            }}
                             title="Parar timer"
                           >
                             <Square className="h-4 w-4 mr-1" />

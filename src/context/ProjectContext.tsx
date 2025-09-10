@@ -248,10 +248,17 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     
     if (!activity) return;
     
-    // Only check permissions for non-timer updates
-    const isTimerUpdate = 'isTimerActive' in updates || 'actualDuration' in updates || 'actualStartDate' in updates;
-    if (!isTimerUpdate && !canUserEditActivity(activity)) {
+    // Check permissions based on update type
+    const isTimerUpdate = 'isTimerActive' in updates || 'actualDuration' in updates || 'actualStartDate' in updates || 'status' in updates;
+    const isManualEdit = !isTimerUpdate;
+    
+    if (isManualEdit && !canUserEditActivity(activity)) {
       throw new Error('Sem permissão para editar esta atividade');
+    }
+    
+    // For timer operations, check if user can use timer (everyone except 'leitor')
+    if (isTimerUpdate && currentUser?.authLevel === 'leitor') {
+      throw new Error('Leitores não podem usar o timer');
     }
     
     const updatedProject = {
