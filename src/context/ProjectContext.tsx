@@ -276,64 +276,13 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   };
 
   const startActivityTimer = (activityId: string) => {
-    if (!currentUser) {
-      throw new Error('Usuário não autenticado');
-    }
-    
-    // Stop any currently active timer first
-    if (activeTimer?.isActive && activeTimer.activityId !== activityId) {
-      const elapsed = stopTimer();
-      const currentActiveActivity = projects
-        .flatMap(p => p.stages)
-        .flatMap(s => s.activities)
-        .find(a => a.id === activeTimer.activityId);
-      
-      if (currentActiveActivity) {
-        updateActivity(activeTimer.activityId, {
-          isTimerActive: false,
-          actualDuration: currentActiveActivity.actualDuration + elapsed
-        });
-      }
-    }
-    
-    // Get the activity to check if it's the first time starting
-    const activity = projects
-      .flatMap(p => p.stages)
-      .flatMap(s => s.activities)
-      .find(a => a.id === activityId);
-    
-    startTimer(activityId);
-    
-    const updateData: any = { 
-      isTimerActive: true,
-      status: 'in_progress'
-    };
-    
-    // Only set actualStartDate if it's the first time starting the timer
-    if (activity && !activity.actualStartDate) {
-      updateData.actualStartDate = new Date();
-    }
-    
-    updateActivity(activityId, updateData);
+    // This function is now handled directly in ProjectDetail component
+    // Keeping for compatibility but functionality moved to component
   };
 
   const stopActivityTimer = (activityId: string) => {
-    if (!currentUser) {
-      throw new Error('Usuário não autenticado');
-    }
-    
-    const elapsed = stopTimer();
-    const activity = projects
-      .flatMap(p => p.stages)
-      .flatMap(s => s.activities)
-      .find(a => a.id === activityId);
-    
-    if (activity) {
-      updateActivity(activityId, {
-        isTimerActive: false,
-        actualDuration: activity.actualDuration + elapsed
-      });
-    }
+    // This function is now handled directly in ProjectDetail component
+    // Keeping for compatibility but functionality moved to component
   };
 
   const canUserEditActivity = (activity: Activity): boolean => {
