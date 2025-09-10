@@ -41,7 +41,11 @@ const convertLocalProject = (localProject: any): Project => ({
       plannedEndDate: new Date(activity.plannedEndDate),
       actualStartDate: activity.actualStartDate ? new Date(activity.actualStartDate) : undefined,
       actualEndDate: activity.actualEndDate ? new Date(activity.actualEndDate) : undefined,
-      timerStartTime: activity.timerStartTime ? new Date(activity.timerStartTime) : undefined
+      timerStartTime: activity.timerStartTime ? new Date(activity.timerStartTime) : undefined,
+      checklist: activity.checklist ? activity.checklist.map((item: any) => ({
+        ...item,
+        createdAt: new Date(item.createdAt)
+      })) : []
     }))
   }))
 });
@@ -122,7 +126,11 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
           plannedEndDate: activity.plannedEndDate.toISOString(),
           actualStartDate: activity.actualStartDate?.toISOString(),
           actualEndDate: activity.actualEndDate?.toISOString(),
-          timerStartTime: activity.timerStartTime?.toISOString()
+          timerStartTime: activity.timerStartTime?.toISOString(),
+          checklist: activity.checklist ? activity.checklist.map(item => ({
+            ...item,
+            createdAt: item.createdAt.toISOString()
+          })) : []
         }))
       }))
     };
@@ -154,7 +162,11 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
           plannedEndDate: activity.plannedEndDate.toISOString(),
           actualStartDate: activity.actualStartDate?.toISOString(),
           actualEndDate: activity.actualEndDate?.toISOString(),
-          timerStartTime: activity.timerStartTime?.toISOString()
+          timerStartTime: activity.timerStartTime?.toISOString(),
+          checklist: activity.checklist ? activity.checklist.map(item => ({
+            ...item,
+            createdAt: item.createdAt.toISOString()
+          })) : []
         }))
       }))
     };
@@ -223,7 +235,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     const newActivity: Activity = {
       ...activityData,
       id: generateId(),
-      stageId
+      stageId,
+      checklist: activityData.checklist || []
     };
     
     const project = projects.find(p => p.stages.some(s => s.id === stageId));
