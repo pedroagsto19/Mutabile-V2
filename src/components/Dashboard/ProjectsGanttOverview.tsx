@@ -3,7 +3,7 @@ import { format, differenceInDays, addDays, startOfDay, endOfDay } from 'date-fn
 import { ptBR } from 'date-fns/locale';
 import { Card, CardHeader, CardContent } from '../UI/Card';
 import { Button } from '../UI/Button';
-import { Calendar, Clock, User, TrendingUp, AlertTriangle, Filter, X } from 'lucide-react';
+import { Calendar, Clock, User, TrendingUp, AlertTriangle, Filter, X, ChevronDown, Check } from 'lucide-react';
 import { useProject } from '../../context/ProjectContext';
 import type { Activity, Project } from '../../types';
 
@@ -39,7 +39,7 @@ export function ProjectsGanttOverview() {
   const [showMode, setShowMode] = useState<'planned' | 'actual' | 'both'>('both');
   const [tooltip, setTooltip] = useState<ActivityTooltip | null>(null);
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
-  const [showFilters, setShowFilters] = useState(false);
+  const [showProjectDropdown, setShowProjectDropdown] = useState(false);
 
   // Filter active projects by default
   const activeProjects = projects.filter(p => 
@@ -294,6 +294,7 @@ export function ProjectsGanttOverview() {
 
   const clearFilters = () => {
     setSelectedProjects([]);
+    setShowProjectDropdown(false);
   };
 
   // Group activities by project for better organization
@@ -534,19 +535,113 @@ export function ProjectsGanttOverview() {
               </p>
             </div>
             <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowFilters(!showFilters)}
-              >
-                <Filter className="h-4 w-4 mr-2" />
-                Filtros
-                {selectedProjects.length > 0 && (
-                  <span className="ml-1 bg-blue-500 text-white text-xs rounded-full px-2 py-1">
-                    {selectedProjects.length}
-                  </span>
+              <div className="relative">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowProjectDropdown(!showProjectDropdown)}
+                >
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filtros
+                  {selectedProjects.length > 0 && (
+                    <span className="ml-1 bg-blue-500 text-white text-xs rounded-full px-2 py-1">
+                      {selectedProjects.length}
+                    </span>
+                  )}
+                  <ChevronDown className="h-4 w-4 ml-2" />
+                </Button>
+                
+                {showProjectDropdown && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-10" 
+                      onClick={() => setShowProjectDropdown(false)}
+                    />
+                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-20 max-h-96 overflow-hidden">
+                      <div className="p-4 border-b border-gray-200">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-medium text-gray-900">Selecionar Projetos</h4>
+                          {selectedProjects.length > 0 && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={clearFilters}
+                              className="text-xs"
+                            >
+                              <X className="h-3 w-3 mr-1" />
+                              Limpar
+                            </Button>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {selectedProjects.length === 0 
+                            ? 'Mostrando apenas projetos ativos' 
+                            : `${selectedProjects.length} projeto${selectedProjects.length !== 1 ? 's' : ''} selecionado${selectedProjects.length !== 1 ? 's' : ''}`
+                          }
+                        </p>
+                      </div>
+                      
+                      <div className="max-h-64 overflow-y-auto">
+                        <div className="p-2">
+                          {projects.map(project => {
+                            const isSelected = selectedProjects.includes(project.id);
+                            return (
+                              <button
+                                key={project.id}
+                                onClick={() => toggleProjectFilter(project.id)}
+                                className="w-full flex items-center justify-between p-3 text-left hover:bg-gray-50 rounded-lg transition-colors"
+                              >
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center space-x-3">
+                                    <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                                      isSelected 
+                                        ? 'bg-black border-black' 
+                                        : 'border-gray-300 bg-white'
+                                    }`}>
+                                      {isSelected && (
+                                        <Check className="h-3 w-3 text-white" />
+                                      )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium text-gray-900 truncate">
+                                        {project.name}
+                                      </p>
+                                      <p className="text-xs text-gray-500 truncate">
+                                        {project.client} • {project.location}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center space-x-2 ml-3">
+                                  <span className={`px-2 py-1 text-xs rounded-full ${
+                                    project.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                    project.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                                    project.status === 'on_hold' ? 'bg-yellow-100 text-yellow-800' :
+                                    'bg-gray-100 text-gray-800'
+                                  }`}>
+                                    {project.status === 'completed' ? 'Concluído' :
+                                     project.status === 'in_progress' ? 'Em Andamento' :
+                                     project.status === 'on_hold' ? 'Pausado' : 'Planejamento'}
+                                  </span>
+                                  <div className="w-12 text-xs text-gray-500 text-right">
+                                    {project.progress}%
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      
+                      {projects.length === 0 && (
+                        <div className="p-8 text-center">
+                          <p className="text-sm text-gray-500">Nenhum projeto encontrado</p>
+                        </div>
+                      )}
+                    </div>
+                  </>
                 )}
-              </Button>
+              </div>
               <Button
                 variant={showMode === 'planned' ? 'primary' : 'outline'}
                 size="sm"
@@ -572,35 +667,6 @@ export function ProjectsGanttOverview() {
           </div>
         </CardHeader>
         <CardContent>
-          {/* Project Filters */}
-          {showFilters && (
-            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-sm font-medium text-gray-900">Filtrar Projetos</h4>
-                {selectedProjects.length > 0 && (
-                  <Button variant="ghost" size="sm" onClick={clearFilters}>
-                    <X className="h-4 w-4 mr-1" />
-                    Limpar Filtros
-                  </Button>
-                )}
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                {projects.map(project => (
-                  <label key={project.id} className="flex items-center space-x-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={selectedProjects.includes(project.id)}
-                      onChange={() => toggleProjectFilter(project.id)}
-                      className="h-4 w-4 text-black focus:ring-black border-gray-300 rounded"
-                    />
-                    <span className="truncate" title={`${project.name} (${project.client})`}>
-                      {project.name}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
 
           <div className="overflow-x-auto">
             <div className="min-w-[1000px]">
