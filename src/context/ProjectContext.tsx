@@ -278,7 +278,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       updatedAt: new Date()
     };
     
-    updateProject(project.id, updatedProject, isTimerUpdate);
+    updateProject(project.id, updatedProject, isTimerUpdate || canUserEditActivity(activity));
   };
 
   const startActivityTimer = (activityId: string) => {
