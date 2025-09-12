@@ -704,3 +704,24 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
               Segure Ctrl (ou Cmd no Mac) para selecionar múltiplas etapas
             </p>
           </div>
+
+          <div className="flex justify-end space-x-3 pt-6">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button type="submit">
+              {project ? 'Atualizar Projeto' : 'Criar Projeto'}
+            </Button>
+          </div>
+        </div>
+      </form>
+      </Modal>
+
+      <CustomStageModal
+        isOpen={showCustomStageModal}
+        onClose={() => setShowCustomStageModal(false)}
+        onAdd={addCustomStage}
+      />
+    </>
+  );
+}
