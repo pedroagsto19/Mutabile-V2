@@ -241,16 +241,19 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     
     const project = projects.find(p => p.stages.some(s => s.id === stageId));
     if (project) {
+      // Ensure stages array exists
+      const stages = project.stages || [];
+      
       const updatedProject = {
         ...project,
-        stages: project.stages.map(s => 
+        stages: stages.map(s => 
           s.id === stageId 
-            ? { ...s, activities: [...s.activities, newActivity] }
+            ? { ...s, activities: [...(s.activities || []), newActivity] }
             : s
         ),
         updatedAt: new Date()
       };
-      updateProject(project.id, updatedProject);
+      updateProject(project.id, updatedProject, true);
     }
   };
 

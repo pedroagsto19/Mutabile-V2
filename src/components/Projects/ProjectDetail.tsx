@@ -823,17 +823,17 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-semibold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                {project.stages[activeStage]?.name || 'Nenhuma etapa'}
+                {project.stages && project.stages[activeStage] ? project.stages[activeStage].name : 'Nenhuma etapa'}
               </h2>
               <p className="text-gray-600 mt-1">
-                {project.stages[activeStage] ? `${project.stages[activeStage].activities.length} atividades` : 'Adicione uma etapa primeiro'}
+                {project.stages && project.stages[activeStage] ? `${project.stages[activeStage].activities?.length || 0} atividades` : 'Adicione uma etapa primeiro'}
               </p>
             </div>
             
             <ProtectedRoute requiredPermission="canCreateActivities">
               <Button 
                 onClick={() => setShowActivityForm(true)}
-                disabled={!project.stages[activeStage]}
+                disabled={!project.stages || !project.stages[activeStage]}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Nova Atividade
@@ -843,7 +843,8 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
 
           {/* Activities */}
           <div className="space-y-4">
-            {project.stages[activeStage]?.activities.map(activity => {
+            {project.stages && project.stages[activeStage] && project.stages[activeStage].activities ? 
+              project.stages[activeStage].activities.map(activity => {
               const progress = calculateActivityProgress(activity);
               const elapsedTime = getElapsedTimeForActivity(activity.id);
               const totalTime = activity.actualDuration + elapsedTime;
@@ -1054,18 +1055,18 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
                   </CardContent>
                 </Card>
               );
-            })}
+            }) : null}
             
-            {(!project.stages[activeStage]?.activities || project.stages[activeStage].activities.length === 0) && (
+            {(!project.stages || !project.stages[activeStage] || !project.stages[activeStage].activities || project.stages[activeStage].activities.length === 0) && (
               <div className="text-center py-12">
                 <p className="text-gray-500">
-                  {!project.stages[activeStage] 
+                  {!project.stages || !project.stages[activeStage] 
                     ? 'Este projeto não possui etapas. Adicione uma etapa primeiro para criar atividades.'
                     : 'Nenhuma atividade cadastrada nesta etapa.'
                   }
                 </p>
                 <ProtectedRoute requiredPermission="canCreateActivities">
-                  {project.stages[activeStage] && (
+                  {project.stages && project.stages[activeStage] && (
                     <Button 
                       variant="outline" 
                       className="mt-4"
