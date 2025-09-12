@@ -125,15 +125,42 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
   const handleCompleteProject = () => {
     confirm({
       title: 'Concluir Projeto',
-      message: 'Tem certeza que deseja marcar este projeto como concluído?',
+      message: 'Tem certeza que deseja marcar este projeto como concluído? Todas as atividades também serão automaticamente concluídas.',
       type: 'success',
       confirmText: 'Concluir',
       cancelText: 'Cancelar'
     }).then((confirmed) => {
       if (confirmed) {
+        // Salvar estado atual das atividades antes de concluir
+        const currentActivitiesState = project.stages.map(stage => ({
+          stageId: stage.id,
+          activities: stage.activities.map(activity => ({
+            id: activity.id,
+            status: activity.status,
+            progress: activity.progress,
+            actualEndDate: activity.actualEndDate
+          }))
+        }));
+        
+        // Concluir todas as atividades
+        const updatedStages = project.stages.map(stage => ({
+          ...stage,
+          activities: stage.activities.map(activity => ({
+            ...activity,
+            status: 'completed' as const,
+            progress: 100,
+            actualEndDate: activity.actualEndDate || new Date()
+          })),
+          progress: 100,
+          status: 'completed' as const
+        }));
+        
         updateProject(projectId, { 
           status: 'completed',
-          progress: 100
+          progress: 100,
+          stages: updatedStages,
+          // Salvar estado anterior das atividades para poder restaurar
+          previousActivitiesState: currentActivitiesState
         });
         toast.success('Projeto marcado como concluído!');
       }
@@ -143,15 +170,67 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
   const handleUncompleteProject = () => {
     confirm({
       title: 'Desconcluir Projeto',
-      message: 'Tem certeza que deseja marcar este projeto como não concluído?',
+      message: 'Tem certeza que deseja marcar este projeto como não concluído? As atividades voltarão ao estado anterior.',
       type: 'warning',
       confirmText: 'Desconcluir',
       cancelText: 'Cancelar'
     }).then((confirmed) => {
       if (confirmed) {
+        // Restaurar estado anterior das atividades se existir
+        let updatedStages = project.stages;
+        
+        if (project.previousActivitiesState) {
+          updatedStages = project.stages.map(stage => {
+            const savedStageState = project.previousActivitiesState?.find(s => s.stageId === stage.id);
+            
+            if (savedStageState) {
+              const restoredActivities = stage.activities.map(activity => {
+                const savedActivityState = savedStageState.activities.find(a => a.id === activity.id);
+                
+                if (savedActivityState) {
+                  return {
+                    ...activity,
+                    status: savedActivityState.status,
+                    progress: savedActivityState.progress,
+                    actualEndDate: savedActivityState.actualEndDate
+                  };
+                }
+                return activity;
+              });
+              
+              // Recalcular progresso da etapa baseado nas atividades restauradas
+              const stageProgress = restoredActivities.length > 0 
+                ? Math.round(restoredActivities.reduce((sum, act) => sum + act.progress, 0) / restoredActivities.length)
+                : 0;
+              
+              const stageStatus = stageProgress === 100 ? 'completed' : 
+                                stageProgress > 0 ? 'in_progress' : 'not_started';
+              
+              return {
+                ...stage,
+                activities: restoredActivities,
+                progress: stageProgress,
+                status: stageStatus
+              };
+            }
+            
+            return stage;
+          });
+        }
+        
+        // Recalcular progresso geral do projeto
+        const totalActivities = updatedStages.reduce((sum, stage) => sum + stage.activities.length, 0);
+        const completedActivities = updatedStages.reduce((sum, stage) => 
+          sum + stage.activities.filter(act => act.status === 'completed').length, 0
+        );
+        const projectProgress = totalActivities > 0 ? Math.round((completedActivities / totalActivities) * 100) : 0;
+        
         updateProject(projectId, { 
-          status: 'in_progress'
-          // Não alteramos o progress aqui, mantemos o progresso atual
+          status: 'in_progress',
+          progress: projectProgress,
+          stages: updatedStages,
+          // Limpar estado salvo após restaurar
+          previousActivitiesState: undefined
         });
         toast.success('Projeto marcado como não concluído!');
       }

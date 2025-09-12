@@ -17,6 +17,15 @@ export interface Project {
   stages: Stage[];
   risk: 'on_time' | 'at_risk' | 'delayed';
   nextDeadline?: Date;
+  previousActivitiesState?: Array<{
+    stageId: string;
+    activities: Array<{
+      id: string;
+      status: 'not_started' | 'in_progress' | 'completed';
+      progress: number;
+      actualEndDate?: Date;
+    }>;
+  }>;
 }
 
 export interface Stage {
