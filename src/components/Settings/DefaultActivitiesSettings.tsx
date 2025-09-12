@@ -898,7 +898,7 @@ export function DefaultActivitiesSettings() {
   );
 }
           stageName: stage.name,
-          activities: []
+          activities: [];
         }));
         setStageActivities(initialData);
       }
