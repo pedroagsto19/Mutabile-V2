@@ -10,11 +10,17 @@ export async function initializeDemoData() {
     
     if (existingUsers.length > 0) {
       console.log('Dados demo já existem, pulando inicialização');
+      
+      // Adicionar atividades de exemplo aos projetos existentes
+      LocalStorage.addSampleActivitiesToExistingProjects();
       return;
     }
     
     // Inicializar dados padrão no localStorage
     LocalStorage.initializeDefaultData();
+    
+    // Adicionar atividades de exemplo
+    LocalStorage.addSampleActivitiesToExistingProjects();
     
     console.log('Dados demo criados com sucesso');
     

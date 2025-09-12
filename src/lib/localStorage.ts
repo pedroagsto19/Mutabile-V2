@@ -781,6 +781,459 @@ class LocalStorage {
     }
   }
 
+  // Método para adicionar atividades de exemplo aos projetos existentes
+  static addSampleActivitiesToExistingProjects() {
+    try {
+      const projects = this.getProjects();
+      
+      if (projects.length === 0) {
+        console.log('Nenhum projeto encontrado para adicionar atividades');
+        return;
+      }
+
+      const updatedProjects = projects.map(project => {
+        // Se o projeto já tem atividades, não sobrescrever
+        const hasActivities = project.stages.some(stage => 
+          stage.activities && stage.activities.length > 0
+        );
+        
+        if (hasActivities) {
+          console.log(`Projeto ${project.name} já tem atividades, pulando...`);
+          return project;
+        }
+
+        console.log(`Adicionando atividades ao projeto: ${project.name}`);
+        
+        if (project.id === '1' || project.name === 'Residência Jardins') {
+          // Atividades para Residência Jardins
+          const updatedStages = project.stages.map(stage => {
+            if (stage.name === 'Anteprojeto') {
+              return {
+                ...stage,
+                progress: 25,
+                status: 'in_progress' as const,
+                activities: [
+                  {
+                    id: 'act1',
+                    title: 'Levantamento topográfico',
+                    description: 'Análise detalhada das condições do terreno, medições e levantamento planialtimétrico',
+                    responsible: 'Carlos Santos',
+                    priority: 'high' as const,
+                    plannedStartDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+                    plannedEndDate: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString(),
+                    plannedDuration: 32,
+                    actualDuration: 18,
+                    progress: 75,
+                    status: 'in_progress' as const,
+                    stageId: stage.id,
+                    dependencies: [],
+                    isTimerActive: false,
+                    actualStartDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+                    checklist: [
+                      {
+                        id: 'check1',
+                        title: 'Solicitar certidão de inteiro teor',
+                        completed: true,
+                        createdAt: new Date().toISOString()
+                      },
+                      {
+                        id: 'check2',
+                        title: 'Realizar medições in loco',
+                        completed: true,
+                        createdAt: new Date().toISOString()
+                      },
+                      {
+                        id: 'check3',
+                        title: 'Elaborar planta topográfica',
+                        completed: false,
+                        createdAt: new Date().toISOString()
+                      }
+                    ]
+                  },
+                  {
+                    id: 'act2',
+                    title: 'Análise de viabilidade urbanística',
+                    description: 'Verificação de zoneamento, coeficientes de aproveitamento e restrições legais',
+                    responsible: 'Ana Silva',
+                    priority: 'medium' as const,
+                    plannedStartDate: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000).toISOString(),
+                    plannedEndDate: new Date(Date.now() + 13 * 24 * 60 * 60 * 1000).toISOString(),
+                    plannedDuration: 24,
+                    actualDuration: 0,
+                    progress: 0,
+                    status: 'not_started' as const,
+                    stageId: stage.id,
+                    dependencies: [{ id: 'dep1', dependsOn: 'act1', type: 'finish_start' }],
+                    isTimerActive: false,
+                    checklist: [
+                      {
+                        id: 'check4',
+                        title: 'Consultar lei de zoneamento',
+                        completed: false,
+                        createdAt: new Date().toISOString()
+                      },
+                      {
+                        id: 'check5',
+                        title: 'Verificar recuos obrigatórios',
+                        completed: false,
+                        createdAt: new Date().toISOString()
+                      }
+                    ]
+                  },
+                  {
+                    id: 'act3',
+                    title: 'Programa de necessidades',
+                    description: 'Definição detalhada dos ambientes e suas características funcionais',
+                    responsible: 'Carlos Santos',
+                    priority: 'high' as const,
+                    plannedStartDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+                    plannedEndDate: new Date(Date.now() + 18 * 24 * 60 * 60 * 1000).toISOString(),
+                    plannedDuration: 20,
+                    actualDuration: 0,
+                    progress: 0,
+                    status: 'not_started' as const,
+                    stageId: stage.id,
+                    dependencies: [{ id: 'dep2', dependsOn: 'act2', type: 'finish_start' }],
+                    isTimerActive: false,
+                    checklist: [
+                      {
+                        id: 'check6',
+                        title: 'Reunião com cliente para briefing',
+                        completed: false,
+                        createdAt: new Date().toISOString()
+                      },
+                      {
+                        id: 'check7',
+                        title: 'Elaborar lista de ambientes',
+                        completed: false,
+                        createdAt: new Date().toISOString()
+                      }
+                    ]
+                  },
+                  {
+                    id: 'act4',
+                    title: 'Estudo volumétrico',
+                    description: 'Desenvolvimento de alternativas volumétricas e implantação no terreno',
+                    responsible: 'Carlos Santos',
+                    priority: 'medium' as const,
+                    plannedStartDate: new Date(Date.now() + 19 * 24 * 60 * 60 * 1000).toISOString(),
+                    plannedEndDate: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000).toISOString(),
+                    plannedDuration: 40,
+                    actualDuration: 0,
+                    progress: 0,
+                    status: 'not_started' as const,
+                    stageId: stage.id,
+                    dependencies: [{ id: 'dep3', dependsOn: 'act3', type: 'finish_start' }],
+                    isTimerActive: false,
+                    checklist: [
+                      {
+                        id: 'check9',
+                        title: 'Criar maquete eletrônica preliminar',
+                        completed: false,
+                        createdAt: new Date().toISOString()
+                      },
+                      {
+                        id: 'check10',
+                        title: 'Estudar insolação e ventilação',
+                        completed: false,
+                        createdAt: new Date().toISOString()
+                      }
+                    ]
+                  }
+                ]
+              };
+            } else if (stage.name === 'Projeto Legal') {
+              return {
+                ...stage,
+                activities: [
+                  {
+                    id: 'act5',
+                    title: 'Desenvolvimento de plantas baixas',
+                    description: 'Elaboração das plantas baixas de todos os pavimentos conforme normas municipais',
+                    responsible: 'Carlos Santos',
+                    priority: 'high' as const,
+                    plannedStartDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                    plannedEndDate: new Date(Date.now() + 40 * 24 * 60 * 60 * 1000).toISOString(),
+                    plannedDuration: 60,
+                    actualDuration: 0,
+                    progress: 0,
+                    status: 'not_started' as const,
+                    stageId: stage.id,
+                    dependencies: [{ id: 'dep4', dependsOn: 'act4', type: 'finish_start' }],
+                    isTimerActive: false,
+                    checklist: [
+                      {
+                        id: 'check11',
+                        title: 'Planta baixa térreo',
+                        completed: false,
+                        createdAt: new Date().toISOString()
+                      },
+                      {
+                        id: 'check12',
+                        title: 'Planta baixa pavimento superior',
+                        completed: false,
+                        createdAt: new Date().toISOString()
+                      }
+                    ]
+                  },
+                  {
+                    id: 'act6',
+                    title: 'Elaboração de cortes e fachadas',
+                    description: 'Desenvolvimento dos cortes longitudinais, transversais e fachadas principais',
+                    responsible: 'Ana Silva',
+                    priority: 'high' as const,
+                    plannedStartDate: new Date(Date.now() + 35 * 24 * 60 * 60 * 1000).toISOString(),
+                    plannedEndDate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(),
+                    plannedDuration: 48,
+                    actualDuration: 0,
+                    progress: 0,
+                    status: 'not_started' as const,
+                    stageId: stage.id,
+                    dependencies: [{ id: 'dep5', dependsOn: 'act5', type: 'finish_start' }],
+                    isTimerActive: false,
+                    checklist: [
+                      {
+                        id: 'check14',
+                        title: 'Corte longitudinal AA',
+                        completed: false,
+                        createdAt: new Date().toISOString()
+                      },
+                      {
+                        id: 'check15',
+                        title: 'Fachada principal',
+                        completed: false,
+                        createdAt: new Date().toISOString()
+                      }
+                    ]
+                  }
+                ]
+              };
+            } else if (stage.name === 'Projeto Executivo') {
+              return {
+                ...stage,
+                activities: [
+                  {
+                    id: 'act8',
+                    title: 'Detalhamento arquitetônico',
+                    description: 'Desenvolvimento de detalhes construtivos, esquadrias e elementos especiais',
+                    responsible: 'Carlos Santos',
+                    priority: 'high' as const,
+                    plannedStartDate: new Date(Date.now() + 55 * 24 * 60 * 60 * 1000).toISOString(),
+                    plannedEndDate: new Date(Date.now() + 70 * 24 * 60 * 60 * 1000).toISOString(),
+                    plannedDuration: 80,
+                    actualDuration: 0,
+                    progress: 0,
+                    status: 'not_started' as const,
+                    stageId: stage.id,
+                    dependencies: [{ id: 'dep7', dependsOn: 'act6', type: 'finish_start' }],
+                    isTimerActive: false,
+                    checklist: [
+                      {
+                        id: 'check20',
+                        title: 'Detalhes de esquadrias',
+                        completed: false,
+                        createdAt: new Date().toISOString()
+                      },
+                      {
+                        id: 'check21',
+                        title: 'Detalhes de escadas',
+                        completed: false,
+                        createdAt: new Date().toISOString()
+                      }
+                    ]
+                  },
+                  {
+                    id: 'act9',
+                    title: 'Compatibilização com projetos complementares',
+                    description: 'Verificação e compatibilização com projetos estrutural, hidráulico e elétrico',
+                    responsible: 'Ana Silva',
+                    priority: 'high' as const,
+                    plannedStartDate: new Date(Date.now() + 65 * 24 * 60 * 60 * 1000).toISOString(),
+                    plannedEndDate: new Date(Date.now() + 75 * 24 * 60 * 60 * 1000).toISOString(),
+                    plannedDuration: 56,
+                    actualDuration: 0,
+                    progress: 0,
+                    status: 'not_started' as const,
+                    stageId: stage.id,
+                    dependencies: [{ id: 'dep8', dependsOn: 'act8', type: 'finish_start' }],
+                    isTimerActive: false,
+                    checklist: [
+                      {
+                        id: 'check23',
+                        title: 'Compatibilização estrutural',
+                        completed: false,
+                        createdAt: new Date().toISOString()
+                      },
+                      {
+                        id: 'check24',
+                        title: 'Compatibilização hidrossanitária',
+                        completed: false,
+                        createdAt: new Date().toISOString()
+                      }
+                    ]
+                  }
+                ]
+              };
+            }
+            return stage;
+          });
+          
+          return {
+            ...project,
+            stages: updatedStages,
+            progress: 8,
+            updatedAt: new Date().toISOString()
+          };
+        } else if (project.id === '2' || project.name === 'Edifício Comercial Centro') {
+          // Atividades para Edifício Comercial Centro
+          const updatedStages = project.stages.map(stage => {
+            if (stage.name === 'Anteprojeto') {
+              return {
+                ...stage,
+                progress: 15,
+                status: 'in_progress' as const,
+                activities: [
+                  {
+                    id: 'act11',
+                    title: 'Análise do programa comercial',
+                    description: 'Estudo das necessidades comerciais e definição do mix de lojas',
+                    responsible: 'Carlos Santos',
+                    priority: 'high' as const,
+                    plannedStartDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+                    plannedEndDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
+                    plannedDuration: 48,
+                    actualDuration: 12,
+                    progress: 25,
+                    status: 'in_progress' as const,
+                    stageId: stage.id,
+                    dependencies: [],
+                    isTimerActive: false,
+                    actualStartDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+                    checklist: [
+                      {
+                        id: 'check29',
+                        title: 'Reunião com investidores',
+                        completed: true,
+                        createdAt: new Date().toISOString()
+                      },
+                      {
+                        id: 'check30',
+                        title: 'Estudo de mercado local',
+                        completed: false,
+                        createdAt: new Date().toISOString()
+                      }
+                    ]
+                  },
+                  {
+                    id: 'act12',
+                    title: 'Estudo de fluxos e circulação',
+                    description: 'Análise dos fluxos de pedestres e veículos, definição de acessos',
+                    responsible: 'Ana Silva',
+                    priority: 'medium' as const,
+                    plannedStartDate: new Date(Date.now() + 11 * 24 * 60 * 60 * 1000).toISOString(),
+                    plannedEndDate: new Date(Date.now() + 18 * 24 * 60 * 60 * 1000).toISOString(),
+                    plannedDuration: 32,
+                    actualDuration: 0,
+                    progress: 0,
+                    status: 'not_started' as const,
+                    stageId: stage.id,
+                    dependencies: [{ id: 'dep10', dependsOn: 'act11', type: 'finish_start' }],
+                    isTimerActive: false,
+                    checklist: [
+                      {
+                        id: 'check31',
+                        title: 'Mapeamento de fluxos existentes',
+                        completed: false,
+                        createdAt: new Date().toISOString()
+                      }
+                    ]
+                  }
+                ]
+              };
+            } else if (stage.name === 'Projeto Legal') {
+              return {
+                ...stage,
+                activities: [
+                  {
+                    id: 'act13',
+                    title: 'Projeto de prevenção contra incêndio',
+                    description: 'Desenvolvimento do projeto de segurança contra incêndio conforme normas do Corpo de Bombeiros',
+                    responsible: 'Marina Costa',
+                    priority: 'high' as const,
+                    plannedStartDate: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000).toISOString(),
+                    plannedEndDate: new Date(Date.now() + 40 * 24 * 60 * 60 * 1000).toISOString(),
+                    plannedDuration: 72,
+                    actualDuration: 0,
+                    progress: 0,
+                    status: 'not_started' as const,
+                    stageId: stage.id,
+                    dependencies: [{ id: 'dep11', dependsOn: 'act12', type: 'finish_start' }],
+                    isTimerActive: false,
+                    checklist: [
+                      {
+                        id: 'check33',
+                        title: 'Cálculo de população e saídas de emergência',
+                        completed: false,
+                        createdAt: new Date().toISOString()
+                      }
+                    ]
+                  }
+                ]
+              };
+            } else if (stage.name === 'Projeto Executivo') {
+              return {
+                ...stage,
+                activities: [
+                  {
+                    id: 'act14',
+                    title: 'Projeto de fachadas e revestimentos',
+                    description: 'Detalhamento das fachadas com especificação de materiais e sistemas construtivos',
+                    responsible: 'Carlos Santos',
+                    priority: 'medium' as const,
+                    plannedStartDate: new Date(Date.now() + 50 * 24 * 60 * 60 * 1000).toISOString(),
+                    plannedEndDate: new Date(Date.now() + 70 * 24 * 60 * 60 * 1000).toISOString(),
+                    plannedDuration: 96,
+                    actualDuration: 0,
+                    progress: 0,
+                    status: 'not_started' as const,
+                    stageId: stage.id,
+                    dependencies: [{ id: 'dep12', dependsOn: 'act13', type: 'finish_start' }],
+                    isTimerActive: false,
+                    checklist: [
+                      {
+                        id: 'check36',
+                        title: 'Detalhes de fixação de revestimentos',
+                        completed: false,
+                        createdAt: new Date().toISOString()
+                      }
+                    ]
+                  }
+                ]
+              };
+            }
+            return stage;
+          });
+          
+          return {
+            ...project,
+            stages: updatedStages,
+            progress: 5,
+            updatedAt: new Date().toISOString()
+          };
+        }
+        
+        return project;
+      });
+      
+      // Salvar os projetos atualizados
+      this.saveProjects(updatedProjects);
+      console.log('Atividades de exemplo adicionadas com sucesso!');
+      
+    } catch (error) {
+      console.error('Erro ao adicionar atividades de exemplo:', error);
+    }
+  }
+
   // Métodos para usuários
   static getUsers(): LocalUser[] {
     try {
