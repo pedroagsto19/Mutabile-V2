@@ -196,6 +196,13 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
               title: item.title,
               completed: false,
               createdAt: new Date()
+            })),
+            driveLinks: (defaultActivity.driveLinks || []).map((link: any) => ({
+              id: Math.random().toString(36).substr(2, 9),
+              title: link.title,
+              url: link.url,
+              description: link.description,
+              createdAt: new Date()
             }))
           }));
           

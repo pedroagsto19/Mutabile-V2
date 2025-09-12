@@ -130,7 +130,11 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
           checklist: activity.checklist ? activity.checklist.map(item => ({
             ...item,
             createdAt: item.createdAt.toISOString()
-          })) : []
+          })) : [],
+          driveLinks: (activity.driveLinks || []).map(link => ({
+            ...link,
+            createdAt: link.createdAt.toISOString()
+          }))
         }))
       }))
     };
@@ -179,7 +183,11 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
           checklist: activity.checklist ? activity.checklist.map(item => ({
             ...item,
             createdAt: item.createdAt.toISOString()
-          })) : []
+          })) : [],
+          driveLinks: (activity.driveLinks || []).map(link => ({
+            ...link,
+            createdAt: link.createdAt.toISOString()
+          }))
         }))
       }))
     };
@@ -254,7 +262,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       ...activityData,
       id: generateId(),
       stageId,
-      checklist: activityData.checklist || []
+      checklist: activityData.checklist || [],
+      driveLinks: activityData.driveLinks || []
     };
     
     const project = projects.find(p => p.stages.some(s => s.id === stageId));
