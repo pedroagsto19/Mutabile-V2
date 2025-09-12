@@ -76,6 +76,22 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
   const [showCityDropdown, setShowCityDropdown] = useState(false);
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
 
+  // Get unique countries and cities from existing suppliers
+  const getUniqueCountries = () => {
+    const countries = suppliers
+      .map(s => s.location.country)
+      .filter(country => country && country !== 'Brasil')
+      .filter(country => country.toLowerCase().includes(countrySearch.toLowerCase()));
+    return [...new Set(countries)].sort();
+  };
+
+  const getUniqueCities = () => {
+    const cities = suppliers
+      .map(s => s.location.city)
+      .filter(city => city && city.toLowerCase().includes(citySearch.toLowerCase()));
+    return [...new Set(cities)].sort();
+  };
+
   // Filter active projects only and update when projects change
   const activeProjects = React.useMemo(() => {
     console.log('All projects:', projects); // Debug log
@@ -163,7 +179,6 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
           price: 5,
           recommendation: 5
         },
-        evaluations: [],
         linkedProjects: []
       });
       
@@ -221,6 +236,7 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
         }
       }));
       setCountrySearch('Brasil');
+      setCitySearch(prev.location.city || '');
     } else {
       setFormData(prev => ({
         ...prev,
@@ -231,6 +247,7 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
         }
       }));
       setCountrySearch('');
+      setCitySearch(prev.location.city || '');
     }
   };
 
@@ -393,16 +410,52 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Cidade *
               </label>
-              <input
-                type="text"
-                required
-                value={formData.location.city}
-                onChange={(e) => setFormData(prev => ({ 
-                  ...prev, 
-                  location: { ...prev.location, city: e.target.value }
-                }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  required
+                  value={citySearch}
+                  onChange={(e) => {
+                    setCitySearch(e.target.value);
+                    setShowCityDropdown(true);
+                    setFormData(prev => ({ 
+                      ...prev, 
+                      location: { ...prev.location, city: e.target.value }
+                    }));
+                  }}
+                  onFocus={() => setShowCityDropdown(true)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
+                  placeholder="Digite a cidade..."
+                />
+                
+                {showCityDropdown && getUniqueCities().length > 0 && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-10" 
+                      onClick={() => setShowCityDropdown(false)}
+                    />
+                    <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      {getUniqueCities().map((city, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => {
+                            setCitySearch(city);
+                            setFormData(prev => ({ 
+                              ...prev, 
+                              location: { ...prev.location, city }
+                            }));
+                            setShowCityDropdown(false);
+                          }}
+                          className="w-full text-left px-3 py-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none text-sm"
+                        >
+                          {city}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
             
             <div>
@@ -433,20 +486,52 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 País *
               </label>
-              <AutocompleteInput
-                value={countrySearch}
-                onChange={setCountrySearch}
-                onSelect={(country) => {
-                  setCountrySearch(country);
-                  setFormData(prev => ({ 
-                    ...prev, 
-                    location: { ...prev.location, country }
-                  }));
-                }}
-                options={getFilteredCountries()}
-                placeholder="Digite o país..."
-                showDropdown={showCountryDropdown}
-                setShowDropdown={setShowCountryDropdown}
+              <div className="relative">
+                <input
+                  type="text"
+                  required
+                  value={countrySearch}
+                  onChange={(e) => {
+                    setCountrySearch(e.target.value);
+                    setShowCountryDropdown(true);
+                    setFormData(prev => ({ 
+                      ...prev, 
+                      location: { ...prev.location, country: e.target.value }
+                    }));
+                  }}
+                  onFocus={() => setShowCountryDropdown(true)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
+                  placeholder="Digite o país..."
+                />
+                
+                {showCountryDropdown && getUniqueCountries().length > 0 && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-10" 
+                      onClick={() => setShowCountryDropdown(false)}
+                    />
+                    <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      {getUniqueCountries().map((country, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => {
+                            setCountrySearch(country);
+                            setFormData(prev => ({ 
+                              ...prev, 
+                              location: { ...prev.location, country }
+                            }));
+                            setShowCountryDropdown(false);
+                          }}
+                          className="w-full text-left px-3 py-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none text-sm"
+                        >
+                          {country}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
                 required
               />
             </div>
@@ -471,16 +556,52 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Cidade *
               </label>
-              <input
-                type="text"
-                required
-                value={formData.location.city}
-                onChange={(e) => setFormData(prev => ({ 
-                  ...prev, 
-                  location: { ...prev.location, city: e.target.value }
-                }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  required
+                  value={citySearch}
+                  onChange={(e) => {
+                    setCitySearch(e.target.value);
+                    setShowCityDropdown(true);
+                    setFormData(prev => ({ 
+                      ...prev, 
+                      location: { ...prev.location, city: e.target.value }
+                    }));
+                  }}
+                  onFocus={() => setShowCityDropdown(true)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
+                  placeholder="Digite a cidade..."
+                />
+                
+                {showCityDropdown && getUniqueCities().length > 0 && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-10" 
+                      onClick={() => setShowCityDropdown(false)}
+                    />
+                    <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      {getUniqueCities().map((city, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => {
+                            setCitySearch(city);
+                            setFormData(prev => ({ 
+                              ...prev, 
+                              location: { ...prev.location, city }
+                            }));
+                            setShowCityDropdown(false);
+                          }}
+                          className="w-full text-left px-3 py-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none text-sm"
+                        >
+                          {city}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         )}
