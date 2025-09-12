@@ -111,6 +111,7 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
     status: project?.status || 'planning' as const,
     selectedStages: project?.stages.map(s => s.name) || ['Anteprojeto']
   });
+  const [customStagesCreatedInForm, setCustomStagesCreatedInForm] = useState<string[]>([]);
 
   // Update form data when project changes
   React.useEffect(() => {
@@ -512,6 +513,9 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
         selectedStages: [...prev.selectedStages, stageName]
       }));
       
+      // Mark as created in form for UI differentiation
+      setCustomStagesCreatedInForm(prev => [...prev, stageName]);
+      
       toast.success(`Etapa "${stageName}" criada com sucesso!`, 'Você pode configurar suas atividades padrão em Configurações → Atividades Padrão.');
     } catch (error) {
       console.error('Error adding custom stage:', error);
@@ -520,6 +524,12 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
   };
 
   const deleteCustomStage = async (stageName: string) => {
+    // Only allow deletion of stages created in this form session
+    if (!customStagesCreatedInForm.includes(stageName)) {
+      toast.warning('Ação não permitida', 'Esta etapa só pode ser removida através das Configurações → Atividades Padrão.');
+      return;
+    }
+    
     const confirmed = await confirm({
       title: 'Excluir Etapa Personalizada',
       message: `Tem certeza que deseja excluir a etapa "${stageName}"? Esta ação removerá a etapa de todos os projetos futuros, mas não afetará projetos já existentes.`,
@@ -541,6 +551,9 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
             ...prev,
             selectedStages: prev.selectedStages.filter(s => s !== stageName)
           }));
+          
+          // Remove from custom stages created in form
+          setCustomStagesCreatedInForm(prev => prev.filter(s => s !== stageName));
           
           toast.success(`Etapa "${stageName}" excluída com sucesso!`);
         }
@@ -688,6 +701,7 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
                       ? 'border-black bg-black text-white' 
                       : 'border-gray-200 bg-white hover:border-gray-300'
                   }`}
+            const isCreatedInForm = customStagesCreatedInForm.includes(stageName);
                   onClick={() => toggleStage(stageName)}
                 >
                   <div className="text-center">
@@ -711,7 +725,7 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
                           Personalizada
                         </span>
                         <button
-                          type="button"
+                  {!isDefaultStage && isCreatedInForm && (
                           onClick={(e) => {
                             e.stopPropagation();
                             deleteCustomStage(stageName);
