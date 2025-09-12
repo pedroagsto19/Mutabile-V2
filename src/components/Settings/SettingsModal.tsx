@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { X, Users, Settings as SettingsIcon, Shield } from 'lucide-react';
+import { X, Users, Settings as SettingsIcon, Shield, List } from 'lucide-react';
 import { Button } from '../UI/Button';
 import { Modal } from '../UI/Modal';
 import { UserManagement } from '../Users/UserManagement';
+import { DefaultActivitiesSettings } from './DefaultActivitiesSettings';
 import { useAuth } from '../../context/AuthContext';
 
 interface SettingsModalProps {
@@ -28,6 +29,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       available: hasPermission('canManageUsers')
     },
     {
+      id: 'default-activities',
+      name: 'Atividades Padrão',
+      icon: List,
+      available: hasPermission('canManageUsers') // Only admins
+    },
+    {
       id: 'security',
       name: 'Segurança',
       icon: Shield,
@@ -39,6 +46,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     switch (activeTab) {
       case 'users':
         return <UserManagement />;
+      case 'default-activities':
+        return <DefaultActivitiesSettings />;
       case 'security':
         return (
           <div className="text-center py-12">

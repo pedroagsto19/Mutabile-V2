@@ -4,9 +4,9 @@ import { Plus, X } from 'lucide-react';
 import { Modal } from '../UI/Modal';
 import { useProject } from '../../context/ProjectContext';
 import { useAuth } from '../../context/AuthContext';
+import { useNotification } from '../../context/NotificationContext';
 import type { Project } from '../../types';
 import { defaultStages } from '../../data/mockData';
-import { useNotification } from '../../context/NotificationContext';
 
 interface ProjectFormProps {
   isOpen: boolean;
@@ -134,6 +134,21 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
     // Combine default and custom stages
     const allStages = [...formData.selectedStages, ...formData.customStages];
     
+    // Load default activities for each stage
+    const loadDefaultActivities = (stageName: string) => {
+      try {
+        const saved = localStorage.getItem('mutabile_default_activities');
+        if (saved) {
+          const defaultActivities = JSON.parse(saved);
+          const stageData = defaultActivities.find((sa: any) => sa.stageName === stageName);
+          return stageData?.activities || [];
+        }
+      } catch (error) {
+        console.error('Error loading default activities:', error);
+      }
+      return [];
+    };
+    
     let stages;
     
     if (project) {
@@ -153,7 +168,34 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
             projectId: project.id
           };
         } else {
-          // Create new stage (empty)
+          // Create new stage with default activities
+          const defaultActivities = loadDefaultActivities(stageName);
+          const activities = defaultActivities.map((defaultActivity: any) => ({
+            id: Math.random().toString(36).substr(2, 9),
+            title: defaultActivity.title,
+            description: defaultActivity.description,
+            responsible: '', // Will be assigned later
+            priority: defaultActivity.priority,
+            plannedStartDate: new Date(),
+            plannedEndDate: new Date(Date.now() + defaultActivity.plannedDuration * 60 * 60 * 1000),
+            actualStartDate: undefined,
+            actualEndDate: undefined,
+            plannedDuration: defaultActivity.plannedDuration,
+            actualDuration: 0,
+            progress: 0,
+            status: 'not_started' as const,
+            stageId: '',
+            dependencies: [],
+            isTimerActive: false,
+            timerStartTime: undefined,
+            checklist: defaultActivity.checklist.map((item: any) => ({
+              id: Math.random().toString(36).substr(2, 9),
+              title: item.title,
+              completed: false,
+              createdAt: new Date()
+            }))
+          }));
+          
           return {
             id: Math.random().toString(36).substr(2, 9),
             name: stageName,
@@ -161,14 +203,14 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
             order: index + 1,
             progress: 0,
             status: 'not_started' as const,
-            activities: [],
+            activities,
             notificationRecipients: [],
             isCustom: !defaultStages.some(ds => ds.name === stageName)
           };
         }
       });
     } else {
-      // When creating new project, create empty stages
+      // When creating new project, create stages with default activities
       stages = allStages.map((stageName, index) => ({
         id: Math.random().toString(36).substr(2, 9),
         name: stageName,
@@ -176,7 +218,31 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
         order: index + 1,
         progress: 0,
         status: 'not_started' as const,
-        activities: [],
+        activities: loadDefaultActivities(stageName).map((defaultActivity: any) => ({
+          id: Math.random().toString(36).substr(2, 9),
+          title: defaultActivity.title,
+          description: defaultActivity.description,
+          responsible: '', // Will be assigned later
+          priority: defaultActivity.priority,
+          plannedStartDate: new Date(),
+          plannedEndDate: new Date(Date.now() + defaultActivity.plannedDuration * 60 * 60 * 1000),
+          actualStartDate: undefined,
+          actualEndDate: undefined,
+          plannedDuration: defaultActivity.plannedDuration,
+          actualDuration: 0,
+          progress: 0,
+          status: 'not_started' as const,
+          stageId: '',
+          dependencies: [],
+          isTimerActive: false,
+          timerStartTime: undefined,
+          checklist: defaultActivity.checklist.map((item: any) => ({
+            id: Math.random().toString(36).substr(2, 9),
+            title: item.title,
+            completed: false,
+            createdAt: new Date()
+          }))
+        })),
         notificationRecipients: [],
         isCustom: !defaultStages.some(ds => ds.name === stageName)
       }));
@@ -196,7 +262,12 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
     } else {
       // Creating new project
       addProject(projectData);
-      toast.success('Projeto criado com sucesso!');
+      const totalDefaultActivities = stages.reduce((sum, stage) => sum + stage.activities.length, 0);
+      if (totalDefaultActivities > 0) {
+        toast.success(`Projeto criado com sucesso! ${totalDefaultActivities} atividades padrão foram adicionadas automaticamente.`);
+      } else {
+        toast.success('Projeto criado com sucesso!');
+      }
     }
     onSubmit(projectData);
     
