@@ -785,6 +785,313 @@ class LocalStorage {
     try {
       const existingActivities = localStorage.getItem('mutabile_default_activities');
       if (existingActivities) {
+        // Criar atividades padrão para todas as etapas
+        const defaultActivitiesData = [
+          {
+            stageName: 'Anteprojeto',
+            activities: [
+              {
+                id: 'ant_001',
+                title: 'Levantamento e análise do terreno',
+                description: 'Análise topográfica, orientação solar, ventos predominantes e condições do local',
+                plannedDuration: 16,
+                priority: 'high',
+                dependencies: [],
+                checklist: [
+                  { id: 'ant_001_c1', title: 'Levantamento topográfico' },
+                  { id: 'ant_001_c2', title: 'Análise de orientação solar' },
+                  { id: 'ant_001_c3', title: 'Estudo de ventos predominantes' },
+                  { id: 'ant_001_c4', title: 'Análise das condições do solo' }
+                ]
+              },
+              {
+                id: 'ant_002',
+                title: 'Programa de necessidades',
+                description: 'Definição detalhada dos ambientes, áreas e funcionalidades do projeto',
+                plannedDuration: 12,
+                priority: 'high',
+                dependencies: [
+                  { id: 'dep_ant_002_001', dependsOn: 'ant_001', type: 'finish_start' }
+                ],
+                checklist: [
+                  { id: 'ant_002_c1', title: 'Entrevista com cliente' },
+                  { id: 'ant_002_c2', title: 'Definição de ambientes' },
+                  { id: 'ant_002_c3', title: 'Cálculo de áreas necessárias' },
+                  { id: 'ant_002_c4', title: 'Aprovação do programa' }
+                ]
+              },
+              {
+                id: 'ant_003',
+                title: 'Estudo de viabilidade urbanística',
+                description: 'Análise de zoneamento, recuos, taxa de ocupação e restrições legais',
+                plannedDuration: 8,
+                priority: 'high',
+                dependencies: [
+                  { id: 'dep_ant_003_001', dependsOn: 'ant_001', type: 'finish_start' }
+                ],
+                checklist: [
+                  { id: 'ant_003_c1', title: 'Consulta ao zoneamento' },
+                  { id: 'ant_003_c2', title: 'Verificação de recuos obrigatórios' },
+                  { id: 'ant_003_c3', title: 'Cálculo de taxa de ocupação' },
+                  { id: 'ant_003_c4', title: 'Análise de restrições ambientais' }
+                ]
+              },
+              {
+                id: 'ant_004',
+                title: 'Estudo volumétrico e conceitual',
+                description: 'Desenvolvimento do conceito arquitetônico e volumetria inicial',
+                plannedDuration: 20,
+                priority: 'medium',
+                dependencies: [
+                  { id: 'dep_ant_004_001', dependsOn: 'ant_002', type: 'finish_start' },
+                  { id: 'dep_ant_004_002', dependsOn: 'ant_003', type: 'finish_start' }
+                ],
+                checklist: [
+                  { id: 'ant_004_c1', title: 'Definição do conceito arquitetônico' },
+                  { id: 'ant_004_c2', title: 'Estudo de volumetria' },
+                  { id: 'ant_004_c3', title: 'Análise de insolação' },
+                  { id: 'ant_004_c4', title: 'Apresentação ao cliente' }
+                ]
+              },
+              {
+                id: 'ant_005',
+                title: 'Plantas baixas esquemáticas',
+                description: 'Desenvolvimento das plantas baixas preliminares com dimensionamento básico',
+                plannedDuration: 16,
+                priority: 'medium',
+                dependencies: [
+                  { id: 'dep_ant_005_001', dependsOn: 'ant_004', type: 'finish_start' }
+                ],
+                checklist: [
+                  { id: 'ant_005_c1', title: 'Desenho das plantas baixas' },
+                  { id: 'ant_005_c2', title: 'Dimensionamento básico' },
+                  { id: 'ant_005_c3', title: 'Definição de circulações' },
+                  { id: 'ant_005_c4', title: 'Revisão e aprovação' }
+                ]
+              }
+            ]
+          },
+          {
+            stageName: 'Projeto Legal',
+            activities: [
+              {
+                id: 'leg_001',
+                title: 'Desenvolvimento de plantas baixas técnicas',
+                description: 'Plantas baixas técnicas com cotas, especificações e detalhes para aprovação',
+                plannedDuration: 24,
+                priority: 'high',
+                dependencies: [],
+                checklist: [
+                  { id: 'leg_001_c1', title: 'Plantas baixas cotadas' },
+                  { id: 'leg_001_c2', title: 'Especificação de materiais' },
+                  { id: 'leg_001_c3', title: 'Cálculo de áreas oficiais' },
+                  { id: 'leg_001_c4', title: 'Revisão técnica' }
+                ]
+              },
+              {
+                id: 'leg_002',
+                title: 'Cortes e fachadas',
+                description: 'Desenvolvimento de cortes longitudinais, transversais e fachadas',
+                plannedDuration: 20,
+                priority: 'high',
+                dependencies: [
+                  { id: 'dep_leg_002_001', dependsOn: 'leg_001', type: 'finish_start' }
+                ],
+                checklist: [
+                  { id: 'leg_002_c1', title: 'Cortes longitudinais' },
+                  { id: 'leg_002_c2', title: 'Cortes transversais' },
+                  { id: 'leg_002_c3', title: 'Fachadas principais' },
+                  { id: 'leg_002_c4', title: 'Detalhes de esquadrias' }
+                ]
+              },
+              {
+                id: 'leg_003',
+                title: 'Planta de situação e locação',
+                description: 'Planta de situação, locação e implantação do projeto no terreno',
+                plannedDuration: 12,
+                priority: 'medium',
+                dependencies: [
+                  { id: 'dep_leg_003_001', dependsOn: 'leg_001', type: 'finish_start' }
+                ],
+                checklist: [
+                  { id: 'leg_003_c1', title: 'Planta de situação' },
+                  { id: 'leg_003_c2', title: 'Planta de locação' },
+                  { id: 'leg_003_c3', title: 'Cotas de implantação' },
+                  { id: 'leg_003_c4', title: 'Norte magnético e verdadeiro' }
+                ]
+              },
+              {
+                id: 'leg_004',
+                title: 'Memorial descritivo e especificações',
+                description: 'Elaboração do memorial descritivo e especificações técnicas',
+                plannedDuration: 16,
+                priority: 'medium',
+                dependencies: [
+                  { id: 'dep_leg_004_001', dependsOn: 'leg_002', type: 'finish_start' }
+                ],
+                checklist: [
+                  { id: 'leg_004_c1', title: 'Memorial descritivo' },
+                  { id: 'leg_004_c2', title: 'Especificações de materiais' },
+                  { id: 'leg_004_c3', title: 'Quadro de áreas' },
+                  { id: 'leg_004_c4', title: 'Revisão do memorial' }
+                ]
+              },
+              {
+                id: 'leg_005',
+                title: 'Compatibilização e finalização',
+                description: 'Compatibilização final e preparação da documentação para aprovação',
+                plannedDuration: 12,
+                priority: 'high',
+                dependencies: [
+                  { id: 'dep_leg_005_001', dependsOn: 'leg_003', type: 'finish_start' },
+                  { id: 'dep_leg_005_002', dependsOn: 'leg_004', type: 'finish_start' }
+                ],
+                checklist: [
+                  { id: 'leg_005_c1', title: 'Compatibilização geral' },
+                  { id: 'leg_005_c2', title: 'Verificação de normas' },
+                  { id: 'leg_005_c3', title: 'Preparação para protocolo' },
+                  { id: 'leg_005_c4', title: 'Documentação final' }
+                ]
+              }
+            ]
+          },
+          {
+            stageName: 'Projeto Executivo',
+            activities: [
+              {
+                id: 'exe_001',
+                title: 'Detalhamento arquitetônico',
+                description: 'Detalhamento completo de todos os elementos arquitetônicos',
+                plannedDuration: 32,
+                priority: 'high',
+                dependencies: [],
+                checklist: [
+                  { id: 'exe_001_c1', title: 'Detalhes de esquadrias' },
+                  { id: 'exe_001_c2', title: 'Detalhes de acabamentos' },
+                  { id: 'exe_001_c3', title: 'Detalhes construtivos' },
+                  { id: 'exe_001_c4', title: 'Especificações técnicas' }
+                ]
+              },
+              {
+                id: 'exe_002',
+                title: 'Compatibilização com projetos complementares',
+                description: 'Compatibilização com estrutural, hidráulico, elétrico e outros',
+                plannedDuration: 20,
+                priority: 'high',
+                dependencies: [
+                  { id: 'dep_exe_002_001', dependsOn: 'exe_001', type: 'finish_start' }
+                ],
+                checklist: [
+                  { id: 'exe_002_c1', title: 'Compatibilização estrutural' },
+                  { id: 'exe_002_c2', title: 'Compatibilização hidráulica' },
+                  { id: 'exe_002_c3', title: 'Compatibilização elétrica' },
+                  { id: 'exe_002_c4', title: 'Resolução de interferências' }
+                ]
+              },
+              {
+                id: 'exe_003',
+                title: 'Quantitativos e especificações',
+                description: 'Levantamento de quantitativos e especificações detalhadas',
+                plannedDuration: 16,
+                priority: 'medium',
+                dependencies: [
+                  { id: 'dep_exe_003_001', dependsOn: 'exe_001', type: 'finish_start' }
+                ],
+                checklist: [
+                  { id: 'exe_003_c1', title: 'Quantitativo de materiais' },
+                  { id: 'exe_003_c2', title: 'Especificações detalhadas' },
+                  { id: 'exe_003_c3', title: 'Planilha orçamentária' },
+                  { id: 'exe_003_c4', title: 'Cronograma de execução' }
+                ]
+              },
+              {
+                id: 'exe_004',
+                title: 'Documentação final e entrega',
+                description: 'Preparação da documentação final e entrega do projeto executivo',
+                plannedDuration: 12,
+                priority: 'high',
+                dependencies: [
+                  { id: 'dep_exe_004_001', dependsOn: 'exe_002', type: 'finish_start' },
+                  { id: 'dep_exe_004_002', dependsOn: 'exe_003', type: 'finish_start' }
+                ],
+                checklist: [
+                  { id: 'exe_004_c1', title: 'Revisão final dos desenhos' },
+                  { id: 'exe_004_c2', title: 'Organização da documentação' },
+                  { id: 'exe_004_c3', title: 'Preparação para entrega' },
+                  { id: 'exe_004_c4', title: 'Entrega ao cliente' }
+                ]
+              }
+            ]
+          },
+          {
+            stageName: 'Planejamento',
+            activities: [
+              {
+                id: 'pla_001',
+                title: 'Definição de escopo e cronograma',
+                description: 'Definição detalhada do escopo do projeto e cronograma macro',
+                plannedDuration: 8,
+                priority: 'high',
+                dependencies: [],
+                checklist: [
+                  { id: 'pla_001_c1', title: 'Definição do escopo detalhado' },
+                  { id: 'pla_001_c2', title: 'Cronograma macro' },
+                  { id: 'pla_001_c3', title: 'Marcos principais' },
+                  { id: 'pla_001_c4', title: 'Aprovação do cliente' }
+                ]
+              },
+              {
+                id: 'pla_002',
+                title: 'Formação da equipe técnica',
+                description: 'Definição e contratação da equipe técnica necessária',
+                plannedDuration: 12,
+                priority: 'high',
+                dependencies: [
+                  { id: 'dep_pla_002_001', dependsOn: 'pla_001', type: 'finish_start' }
+                ],
+                checklist: [
+                  { id: 'pla_002_c1', title: 'Definição de perfis necessários' },
+                  { id: 'pla_002_c2', title: 'Seleção de profissionais' },
+                  { id: 'pla_002_c3', title: 'Contratação da equipe' },
+                  { id: 'pla_002_c4', title: 'Kick-off da equipe' }
+                ]
+              },
+              {
+                id: 'pla_003',
+                title: 'Planejamento de recursos e orçamento',
+                description: 'Planejamento detalhado de recursos financeiros e materiais',
+                plannedDuration: 10,
+                priority: 'medium',
+                dependencies: [
+                  { id: 'dep_pla_003_001', dependsOn: 'pla_001', type: 'finish_start' }
+                ],
+                checklist: [
+                  { id: 'pla_003_c1', title: 'Orçamento detalhado' },
+                  { id: 'pla_003_c2', title: 'Planejamento de recursos' },
+                  { id: 'pla_003_c3', title: 'Fluxo de caixa' },
+                  { id: 'pla_003_c4', title: 'Aprovação orçamentária' }
+                ]
+              },
+              {
+                id: 'pla_004',
+                title: 'Definição de metodologia e ferramentas',
+                description: 'Definição da metodologia de trabalho e ferramentas a serem utilizadas',
+                plannedDuration: 6,
+                priority: 'medium',
+                dependencies: [
+                  { id: 'dep_pla_004_001', dependsOn: 'pla_002', type: 'finish_start' }
+                ],
+                checklist: [
+                  { id: 'pla_004_c1', title: 'Definição de metodologia' },
+                  { id: 'pla_004_c2', title: 'Seleção de ferramentas' },
+                  { id: 'pla_004_c3', title: 'Treinamento da equipe' },
+                  { id: 'pla_004_c4', title: 'Configuração do ambiente' }
+                ]
+              }
+            ]
+          }
+        ];
+        
         console.log('Atividades padrão já existem, pulando inicialização');
         return;
       }
