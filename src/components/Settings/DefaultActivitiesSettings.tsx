@@ -947,21 +947,72 @@ export function DefaultActivitiesSettings() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Selecionar Etapa para Configurar
             </label>
-            <select
-              value={selectedStage}
-              onChange={(e) => setSelectedStage(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
-            >
-              <option value="">Selecione uma etapa...</option>
+            <div className="space-y-2">
               {stageActivities.map(stageData => {
                 const activityCount = stageData.activities.length;
+                const isSelected = selectedStage === stageData.stageName;
+                
                 return (
-                  <option key={stageData.stageName} value={stageData.stageName}>
-                    {stageData.stageName} ({activityCount} atividade{activityCount !== 1 ? 's' : ''})
-                  </option>
+                  <div
+                    key={stageData.stageName}
+                    className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${
+                      isSelected 
+                        ? 'border-black bg-black text-white' 
+                        : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
+                    onClick={() => setSelectedStage(isSelected ? '' : stageData.stageName)}
+                  >
+                    <div>
+                      <h3 className={`font-medium text-sm ${
+                        isSelected ? 'text-white' : 'text-gray-900'
+                      }`}>
+                        {stageData.stageName}
+                      </h3>
+                      <p className={`text-xs ${
+                        isSelected ? 'text-gray-200' : 'text-gray-500'
+                      }`}>
+                        {activityCount} atividade{activityCount !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      {/* Delete button */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteStage(stageData.stageName);
+                        }}
+                        className={`p-1 rounded transition-colors ${
+                          isSelected 
+                            ? 'text-red-200 hover:text-red-100 hover:bg-red-600' 
+                            : 'text-red-500 hover:text-red-700 hover:bg-red-50'
+                        }`}
+                        title="Excluir etapa"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                      
+                      {/* Selection indicator */}
+                      {isSelected && (
+                        <div className="w-4 h-4 bg-white rounded-full flex items-center justify-center">
+                          <div className="w-2 h-2 bg-black rounded-full"></div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 );
               })}
-            </select>
+              
+              {stageActivities.length === 0 && (
+                <div className="text-center py-8 border border-gray-200 rounded-lg bg-gray-50">
+                  <p className="text-gray-500">Nenhuma etapa configurada ainda.</p>
+                  <p className="text-sm text-gray-400 mt-1">
+                    Use o botão "Nova Etapa" acima para criar a primeira etapa.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
         </CardContent>
