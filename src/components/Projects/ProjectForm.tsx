@@ -108,8 +108,7 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
     controlNumber: project?.controlNumber || '',
     description: project?.description || '',
     status: project?.status || 'planning' as const,
-    selectedStages: project?.stages.map(s => s.name) || ['Anteprojeto'],
-    customStages: [] as string[]
+    selectedStages: project?.stages.map(s => s.name) || ['Anteprojeto']
   });
 
   // Update form data when project changes
@@ -123,8 +122,7 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
         controlNumber: project.controlNumber,
         description: project.description,
         status: project.status,
-        selectedStages: project.stages.map(s => s.name),
-        customStages: []
+        selectedStages: project.stages.map(s => s.name)
       });
     }
   }, [project]);
@@ -279,7 +277,7 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
     }
     
     // Combine default and custom stages
-    const allStages = [...formData.selectedStages, ...formData.customStages];
+    const allStages = formData.selectedStages;
     
     // Load default activities for each stage
     const loadDefaultActivities = (stageName: string) => {
@@ -443,8 +441,7 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
         controlNumber: '',
         description: '',
         status: 'planning',
-        selectedStages: ['Anteprojeto'],
-        customStages: []
+        selectedStages: ['Anteprojeto']
       });
     }
     
@@ -460,30 +457,22 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
     }));
   };
 
-  const addCustomStage = (stageName: string) => {
-    if (!formData.selectedStages.includes(stageName) && !formData.customStages.includes(stageName)) {
-      setFormData(prev => ({
-        ...prev,
-        customStages: [...prev.customStages, stageName]
-      }));
+  // Get all available stages (default + custom)
+  const getAllAvailableStages = () => {
+    try {
+      const saved = localStorage.getItem('mutabile_default_activities');
+      if (saved) {
+        const stageActivities = JSON.parse(saved);
+        return stageActivities.map((sa: any) => sa.stageName);
+      }
+    } catch (error) {
+      console.error('Error loading available stages:', error);
     }
-  };
-
-  const removeCustomStage = (stageName: string) => {
-    setFormData(prev => ({
-      ...prev,
-      customStages: prev.customStages.filter(s => s !== stageName)
-    }));
+    return defaultStages.map(s => s.name);
   };
 
   return (
     <>
-      <CustomStageModal
-        isOpen={showCustomStageModal}
-        onClose={() => setShowCustomStageModal(false)}
-        onAdd={addCustomStage}
-      />
-      
       <Modal isOpen={isOpen} onClose={onClose} title={project ? 'Editar Projeto' : 'Novo Projeto'} size="lg">
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-2 gap-4">
@@ -583,45 +572,38 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
           <label className="block text-sm font-medium text-gray-700 mb-3">
             Etapas do Projeto
           </label>
-          <div className="space-y-2 mb-3">
-            {defaultStages.map(stage => (
-              <label key={stage.name} className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={formData.selectedStages.includes(stage.name)}
-                  onChange={() => toggleStage(stage.name)}
-                  className="h-4 w-4 text-black focus:ring-black border-gray-300 rounded"
-                />
-                <span className="ml-2 text-sm text-gray-700">{stage.name}</span>
-              </label>
-            ))}
+          
+          <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>💡 Dica:</strong> Para criar novas etapas personalizadas com atividades padrão, 
+              acesse <strong>Configurações → Atividades Padrão</strong> no menu principal.
+            </p>
           </div>
           
-          {/* Custom Stages */}
-          {formData.customStages.length > 0 && (
-            <div className="mb-3">
-              <p className="text-sm text-gray-600 mb-2">Etapas personalizadas:</p>
-              <div className="space-y-2">
-                {formData.customStages.map(stageName => (
-                  <div key={stageName} className="flex items-center justify-between bg-blue-50 px-3 py-2 rounded-lg">
-                    <span className="text-sm text-blue-800">{stageName}</span>
-                    <button
-                      type="button"
-                      onClick={() => removeCustomStage(stageName)}
-                      className="text-red-600 hover:text-red-800 text-sm"
-                    >
-                      Remover
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          <Button type="button" variant="outline" size="sm" onClick={() => setShowCustomStageModal(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Adicionar Etapa Personalizada
-          </Button>
+          <div className="space-y-2 mb-3">
+            {getAllAvailableStages().map(stageName => {
+              const isDefaultStage = defaultStages.some(ds => ds.name === stageName);
+              
+              return (
+              <label key={stageName} className="flex items-center justify-between">
+                <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={formData.selectedStages.includes(stageName)}
+                  onChange={() => toggleStage(stageName)}
+                  className="h-4 w-4 text-black focus:ring-black border-gray-300 rounded"
+                />
+                <span className="ml-2 text-sm text-gray-700">{stageName}</span>
+                </div>
+                {!isDefaultStage && (
+                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                    Personalizada
+                  </span>
+                )}
+              </label>
+              );
+            })}
+          </div>
         </div>
 
         <div className="flex justify-end space-x-3 pt-6">

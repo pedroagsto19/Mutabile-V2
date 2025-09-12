@@ -8,6 +8,34 @@ export async function initializeDemoData() {
     // Sempre inicializar atividades padrão primeiro
     LocalStorage.initializeDefaultActivities();
     
+    // Garantir que as etapas padrão existam no sistema de atividades padrão
+    const saved = localStorage.getItem('mutabile_default_activities');
+    if (!saved) {
+      LocalStorage.initializeDefaultActivities();
+    } else {
+      // Verificar se todas as etapas padrão existem
+      const stageActivities = JSON.parse(saved);
+      const existingStageNames = stageActivities.map((sa: any) => sa.stageName);
+      const defaultStageNames = ['Anteprojeto', 'Projeto Legal', 'Projeto Executivo', 'Planejamento'];
+      
+      let needsUpdate = false;
+      const updatedStageActivities = [...stageActivities];
+      
+      defaultStageNames.forEach(stageName => {
+        if (!existingStageNames.includes(stageName)) {
+          updatedStageActivities.push({
+            stageName,
+            activities: []
+          });
+          needsUpdate = true;
+        }
+      });
+      
+      if (needsUpdate) {
+        localStorage.setItem('mutabile_default_activities', JSON.stringify(updatedStageActivities));
+      }
+    }
+    
     // Verificar se já existem usuários no localStorage
     const existingUsers = LocalStorage.getUsers();
     

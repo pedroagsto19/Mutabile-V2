@@ -46,6 +46,8 @@ export function DefaultActivitiesSettings() {
   const [selectedStage, setSelectedStage] = useState<string>('');
   const [showActivityForm, setShowActivityForm] = useState(false);
   const [editingActivity, setEditingActivity] = useState<DefaultActivity | null>(null);
+  const [showNewStageForm, setShowNewStageForm] = useState(false);
+  const [newStageName, setNewStageName] = useState('');
 
   // Load default activities from localStorage
   useEffect(() => {
@@ -457,6 +459,42 @@ export function DefaultActivitiesSettings() {
     }
   };
 
+  const addNewStage = () => {
+    if (newStageName.trim()) {
+      const updatedStageActivities = [
+        ...stageActivities,
+        {
+          stageName: newStageName.trim(),
+          activities: []
+        }
+      ];
+      saveDefaultActivities(updatedStageActivities);
+      setSelectedStage(newStageName.trim());
+      setNewStageName('');
+      setShowNewStageForm(false);
+      toast.success(`Etapa "${newStageName.trim()}" criada com sucesso!`);
+    }
+  };
+
+  const deleteStage = async (stageName: string) => {
+    const confirmed = await confirm({
+      title: 'Excluir Etapa',
+      message: `Tem certeza que deseja excluir a etapa "${stageName}" e todas suas atividades padrão?`,
+      type: 'danger',
+      confirmText: 'Excluir',
+      cancelText: 'Cancelar'
+    });
+
+    if (confirmed) {
+      const updatedStageActivities = stageActivities.filter(sa => sa.stageName !== stageName);
+      saveDefaultActivities(updatedStageActivities);
+      if (selectedStage === stageName) {
+        setSelectedStage('');
+      }
+      toast.success(`Etapa "${stageName}" excluída com sucesso!`);
+    }
+  };
+
   const ActivityForm = () => {
     const [formData, setFormData] = useState({
       title: editingActivity?.title || '',
@@ -856,31 +894,128 @@ export function DefaultActivitiesSettings() {
       {/* Stage Selection */}
       <Card>
         <CardHeader>
-          <h2 className="text-lg font-semibold text-gray-900">Selecionar Etapa</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900">Gerenciar Etapas</h2>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowNewStageForm(true)}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Etapa
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
+          {/* New Stage Form */}
+          {showNewStageForm && (
+            <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <h3 className="text-sm font-medium text-blue-900 mb-3">Criar Nova Etapa</h3>
+              <div className="flex space-x-3">
+                <input
+                  type="text"
+                  value={newStageName}
+                  onChange={(e) => setNewStageName(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && addNewStage()}
+                  className="flex-1 px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  placeholder="Nome da nova etapa..."
+                  autoFocus
+                />
+                <Button
+                  onClick={addNewStage}
+                  disabled={!newStageName.trim()}
+                  size="sm"
+                >
+                  Criar
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowNewStageForm(false);
+                    setNewStageName('');
+                  }}
+                  size="sm"
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Stage Selection Dropdown */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Selecionar Etapa para Configurar
+            </label>
+            <select
+              value={selectedStage}
+              onChange={(e) => setSelectedStage(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
+            >
+              <option value="">Selecione uma etapa...</option>
+              {stageActivities.map(stageData => {
+                const activityCount = stageData.activities.length;
+                return (
+                  <option key={stageData.stageName} value={stageData.stageName}>
+                    {stageData.stageName} ({activityCount} atividade{activityCount !== 1 ? 's' : ''})
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+
+          {/* Stage Cards Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {defaultStages.map(stage => {
-              const stageData = stageActivities.find(sa => sa.stageName === stage.name);
-              const activityCount = stageData?.activities.length || 0;
+            {stageActivities.map(stageData => {
+              const activityCount = stageData.activities.length;
+              const isDefaultStage = defaultStages.some(ds => ds.name === stageData.stageName);
               
               return (
-                <button
-                  key={stage.name}
-                  onClick={() => setSelectedStage(stage.name)}
-                  className={`p-4 rounded-lg border-2 transition-all text-left ${
-                    selectedStage === stage.name
+                <div
+                  key={stageData.stageName}
+                  className={`relative p-4 rounded-lg border-2 transition-all ${
+                    selectedStage === stageData.stageName
                       ? 'border-black bg-black text-white'
                       : 'border-gray-200 bg-white text-gray-900 hover:border-gray-300'
                   }`}
                 >
-                  <div className="font-medium">{stage.name}</div>
-                  <div className={`text-sm mt-1 ${
-                    selectedStage === stage.name ? 'text-gray-300' : 'text-gray-500'
-                  }`}>
-                    {activityCount} atividade{activityCount !== 1 ? 's' : ''}
-                  </div>
-                </button>
+                  <button
+                    onClick={() => setSelectedStage(stageData.stageName)}
+                    className="w-full text-left"
+                  >
+                    <div className="font-medium">{stageData.stageName}</div>
+                    <div className={`text-sm mt-1 ${
+                      selectedStage === stageData.stageName ? 'text-gray-300' : 'text-gray-500'
+                    }`}>
+                      {activityCount} atividade{activityCount !== 1 ? 's' : ''}
+                    </div>
+                    {!isDefaultStage && (
+                      <div className={`text-xs mt-1 ${
+                        selectedStage === stageData.stageName ? 'text-blue-300' : 'text-blue-600'
+                      }`}>
+                        Personalizada
+                      </div>
+                    )}
+                  </button>
+                  
+                  {/* Delete button for custom stages */}
+                  {!isDefaultStage && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteStage(stageData.stageName);
+                      }}
+                      className={`absolute top-2 right-2 p-1 rounded-full transition-colors ${
+                        selectedStage === stageData.stageName
+                          ? 'text-white hover:bg-white hover:bg-opacity-20'
+                          : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
+                      }`}
+                      title="Excluir etapa personalizada"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
               );
             })}
           </div>
