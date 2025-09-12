@@ -151,8 +151,21 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Sem permissão para editar projetos');
     }
     
+    // Calculate project progress based on activities
+    let calculatedProgress = updates.progress;
+    if (updates.stages) {
+      const allActivities = updates.stages.flatMap(stage => stage.activities);
+      if (allActivities.length > 0) {
+        const totalProgress = allActivities.reduce((sum, activity) => {
+          return sum + calculateActivityProgress(activity);
+        }, 0);
+        calculatedProgress = Math.round(totalProgress / allActivities.length);
+      }
+    }
+    
     const updateData = {
       ...updates,
+      progress: calculatedProgress !== undefined ? calculatedProgress : updates.progress,
       nextDeadline: updates.nextDeadline?.toISOString(),
       stages: updates.stages?.map(stage => ({
         ...stage,
@@ -177,7 +190,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     if (currentProject?.id === id) {
       const updatedProject = projects.find(p => p.id === id);
       if (updatedProject) {
-        setCurrentProject({ ...updatedProject, ...updates, updatedAt: new Date() });
+        setCurrentProject({ 
+          ...updatedProject, 
+          ...updates, 
+          progress: calculatedProgress !== undefined ? calculatedProgress : updates.progress,
+          updatedAt: new Date() 
+        });
       }
     }
   };
@@ -293,6 +311,15 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       })),
       updatedAt: new Date()
     };
+    
+    // Recalculate project progress based on all activities
+    const allActivities = updatedProject.stages.flatMap(stage => stage.activities);
+    if (allActivities.length > 0) {
+      const totalProgress = allActivities.reduce((sum, act) => {
+        return sum + calculateActivityProgress(act);
+      }, 0);
+      updatedProject.progress = Math.round(totalProgress / allActivities.length);
+    }
     
     updateProject(project.id, updatedProject, isTimerUpdate || canUserEditActivity(activity));
   };

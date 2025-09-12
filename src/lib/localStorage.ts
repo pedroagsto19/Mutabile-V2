@@ -2072,6 +2072,21 @@ class LocalStorage {
       
       if (projectIndex === -1) return false;
       
+      // If stages are being updated, recalculate project progress
+      if (updates.stages) {
+        const allActivities = updates.stages.flatMap((stage: any) => stage.activities);
+        if (allActivities.length > 0) {
+          const totalProgress = allActivities.reduce((sum: number, activity: any) => {
+            // Calculate activity progress based on actual vs planned duration
+            const actualDuration = activity.actualDuration || 0;
+            const plannedDuration = activity.plannedDuration || 1;
+            const progress = Math.min(Math.round((actualDuration / plannedDuration) * 100), 100);
+            return sum + progress;
+          }, 0);
+          updates.progress = Math.round(totalProgress / allActivities.length);
+        }
+      }
+      
       const updatedProject = { 
         ...projects[projectIndex], 
         ...updates,

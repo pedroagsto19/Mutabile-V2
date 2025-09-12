@@ -152,7 +152,6 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
           activities: stage.activities.map(activity => ({
             ...activity,
             status: 'completed' as const,
-            progress: 100,
             actualEndDate: activity.actualEndDate || new Date(),
             checklist: activity.checklist.map(item => ({
               ...item,
@@ -165,7 +164,6 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
         
         updateProject(projectId, { 
           status: 'completed',
-          progress: 100,
           stages: updatedStages,
           // Salvar estado anterior das atividades para poder restaurar
           previousActivitiesState: currentActivitiesState
@@ -234,15 +232,18 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
         }
         
         // Recalcular progresso geral do projeto
-        const totalActivities = updatedStages.reduce((sum, stage) => sum + stage.activities.length, 0);
-        const completedActivities = updatedStages.reduce((sum, stage) => 
-          sum + stage.activities.filter(act => act.status === 'completed').length, 0
-        );
-        const projectProgress = totalActivities > 0 ? Math.round((completedActivities / totalActivities) * 100) : 0;
+        // Recalcular progresso baseado no progresso real das atividades
+        const allActivities = updatedStages.flatMap(stage => stage.activities);
+        let projectProgress = 0;
+        if (allActivities.length > 0) {
+          const totalProgress = allActivities.reduce((sum, act) => {
+            return sum + calculateActivityProgress(act);
+          }, 0);
+          projectProgress = Math.round(totalProgress / allActivities.length);
+        }
         
         updateProject(projectId, { 
           status: 'in_progress',
-          progress: projectProgress,
           stages: updatedStages,
           // Limpar estado salvo após restaurar
           previousActivitiesState: undefined
