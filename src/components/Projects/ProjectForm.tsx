@@ -673,37 +673,76 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
             </p>
           </div>
           
-          {/* Dropdown para seleção de etapas */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Selecionar Etapas *
-            </label>
-            <select
-              multiple
-              value={formData.selectedStages}
-              onChange={(e) => {
-                const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
-                setFormData(prev => ({ ...prev, selectedStages: selectedOptions }));
-              }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none min-h-[120px]"
-              size={6}
-            >
-              {getAllAvailableStages().map(stageName => {
-                const isDefaultStage = defaultStages.some(ds => ds.name === stageName);
-                const stageActivities = getStageActivitiesCount(stageName);
-                
-                return (
-                  <option key={stageName} value={stageName}>
-                    {stageName} ({stageActivities} atividade{stageActivities !== 1 ? 's' : ''})
-                    {!isDefaultStage ? ' - Personalizada' : ''}
-                  </option>
-                );
-              })}
-            </select>
-            <p className="text-xs text-gray-500 mt-2">
-              Segure Ctrl (ou Cmd no Mac) para selecionar múltiplas etapas
-            </p>
+          {/* Stage Selection Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            {getAllAvailableStages().map(stageName => {
+              const isSelected = formData.selectedStages.includes(stageName);
+              const isDefaultStage = defaultStages.some(ds => ds.name === stageName);
+              const stageActivities = getStageActivitiesCount(stageName);
+              
+              return (
+                <div
+                  key={stageName}
+                  className={`relative border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                    isSelected 
+                      ? 'border-black bg-black text-white' 
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                  }`}
+                  onClick={() => toggleStage(stageName)}
+                >
+                  <div className="text-center">
+                    <h3 className={`font-medium text-sm mb-1 ${
+                      isSelected ? 'text-white' : 'text-gray-900'
+                    }`}>
+                      {stageName}
+                    </h3>
+                    <p className={`text-xs ${
+                      isSelected ? 'text-gray-200' : 'text-gray-500'
+                    }`}>
+                      {stageActivities} atividade{stageActivities !== 1 ? 's' : ''}
+                    </p>
+                    {!isDefaultStage && (
+                      <div className="flex items-center justify-between mt-2">
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          isSelected 
+                            ? 'bg-white bg-opacity-20 text-white' 
+                            : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          Personalizada
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteCustomStage(stageName);
+                          }}
+                          className={`text-xs hover:text-red-600 transition-colors ${
+                            isSelected ? 'text-red-200' : 'text-red-500'
+                          }`}
+                          title="Excluir etapa personalizada"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Selection indicator */}
+                  {isSelected && (
+                    <div className="absolute top-2 right-2">
+                      <div className="w-4 h-4 bg-white rounded-full flex items-center justify-center">
+                        <div className="w-2 h-2 bg-black rounded-full"></div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
+          
+          <p className="text-xs text-gray-500 mb-4">
+            Selecione as etapas que farão parte deste projeto. Atividades padrão serão automaticamente adicionadas.
+          </p>
 
           <div className="flex justify-end space-x-3 pt-6">
             <Button type="button" variant="outline" onClick={onClose}>
