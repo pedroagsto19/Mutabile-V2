@@ -5,6 +5,7 @@ import { ProtectedRoute } from "./components/Auth/ProtectedRoute";
 import { MainMenu } from "./components/MainMenu/MainMenu";
 import { initializeDemoData } from "./lib/initializeDemoData";
 import { hasValidSession } from "./lib/supabase";
+import { NotificationSystemProvider } from "./context/NotificationSystemContext";
 
 // Ajuste estes caminhos conforme seus arquivos
 import { WorksApp } from "./components/Works/WorksApp";
@@ -59,11 +60,13 @@ function AppContent() {
 export default function App() {
   return (
     <AuthProvider>
-      <NotificationProvider>
-        <ProjectProvider>
-          <AppContent />
-        </ProjectProvider>
-      </NotificationProvider>
+      <NotificationSystemProvider>
+        <NotificationProvider>
+          <ProjectProvider>
+            <AppContent />
+          </ProjectProvider>
+        </NotificationProvider>
+      </NotificationSystemProvider>
     </AuthProvider>
   );
 }

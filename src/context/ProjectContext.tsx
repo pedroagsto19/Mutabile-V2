@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { Project, Stage, Activity } from '../types';
 import { useTimer } from '../hooks/useTimer';
 import { useAuth } from './AuthContext';
+import { useNotificationTriggers } from '../hooks/useNotificationTriggers';
 import LocalStorage from '../lib/localStorage';
 
 interface ProjectContextType {
@@ -55,6 +56,11 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const { user: currentUser, hasPermission } = useAuth();
   const { activeTimer, startTimer, stopTimer, getElapsedTime } = useTimer();
+  const { 
+    triggerProjectCreatedNotification, 
+    triggerProjectAssignedNotification, 
+    triggerActivityAssignedNotification 
+  } = useNotificationTriggers();
 
   // Load projects from localStorage on mount
   useEffect(() => {
@@ -143,6 +149,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     const newProject = convertLocalProject(newLocalProject);
     
     setProjects(prev => [...prev, newProject]);
+    
+    // Trigger notifications
+    if (currentUser) {
+      triggerProjectCreatedNotification(newProject, currentUser.id);
+    }
+    
     return newProject;
   };
 
@@ -154,6 +166,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     if (!bypassPermissions && !hasPermission('canEditProjects')) {
       throw new Error('Sem permissão para editar projetos');
     }
+    
+    const existingProject = projects.find(p => p.id === id);
     
     // Calculate project progress based on activities
     let calculatedProgress = updates.progress;
@@ -194,6 +208,16 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     
     LocalStorage.updateProject(id, updateData);
     loadProjects();
+    
+    // Check for project responsible change
+    if (existingProject && updates.responsible && 
+        existingProject.responsible !== updates.responsible && currentUser) {
+      triggerProjectAssignedNotification(
+        { ...existingProject, ...updates } as Project,
+        updates.responsible,
+        currentUser.id
+      );
+    }
     
     if (currentProject?.id === id) {
       const updatedProject = projects.find(p => p.id === id);
@@ -281,6 +305,16 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         updatedAt: new Date()
       };
       updateProject(project.id, updatedProject, true);
+      
+      // Trigger notification if activity has a responsible
+      if (newActivity.responsible && currentUser) {
+        triggerActivityAssignedNotification(
+          newActivity,
+          updatedProject,
+          newActivity.responsible,
+          currentUser.id
+        );
+      }
     }
   };
 
@@ -328,6 +362,16 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         return sum + calculateActivityProgress(act);
       }, 0);
       updatedProject.progress = Math.round(totalProgress / allActivities.length);
+    }
+    
+    // Check for responsible change
+    if (updates.responsible && activity.responsible !== updates.responsible && currentUser) {
+      triggerActivityAssignedNotification(
+        { ...activity, ...updates } as Activity,
+        updatedProject,
+        updates.responsible,
+        currentUser.id
+      );
     }
     
     updateProject(project.id, updatedProject, isTimerUpdate || canUserEditActivity(activity));

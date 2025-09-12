@@ -14,6 +14,7 @@ import {
 import { Card } from '../UI/Card';
 import { Button } from '../UI/Button';
 import { SettingsModal } from '../Settings/SettingsModal';
+import { NotificationCenter } from '../Notifications/NotificationCenter';
 import { useAuth } from '../../context/AuthContext';
 
 interface MainMenuProps {
@@ -103,6 +104,7 @@ export function MainMenu({ onModuleSelect, currentUser }: MainMenuProps) {
               <h1 className="text-2xl font-bold text-gray-900">Mutabile</h1>
             </div>
             <div className="flex items-center space-x-4">
+              <NotificationCenter />
               <Button variant="ghost" size="sm" onClick={handleSettings}>
                 <Settings className="h-4 w-4" />
               </Button>
