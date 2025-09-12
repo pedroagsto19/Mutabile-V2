@@ -13,6 +13,11 @@ interface DefaultActivity {
   description: string;
   plannedDuration: number; // hours
   priority: 'low' | 'medium' | 'high' | 'urgent';
+  dependencies: Array<{
+    id: string;
+    dependsOn: string;
+    type: 'finish_start' | 'start_start' | 'finish_finish' | 'start_finish';
+  }>;
   checklist: Array<{
     id: string;
     title: string;
@@ -131,7 +136,8 @@ export function DefaultActivitiesSettings() {
       description: editingActivity?.description || '',
       plannedDuration: editingActivity?.plannedDuration || 8,
       priority: editingActivity?.priority || 'medium' as const,
-      checklist: editingActivity?.checklist || []
+      checklist: editingActivity?.checklist || [],
+      dependencies: editingActivity?.dependencies || []
     });
     const [newChecklistItem, setNewChecklistItem] = useState('');
 
@@ -166,6 +172,19 @@ export function DefaultActivitiesSettings() {
       setFormData(prev => ({
         ...prev,
         checklist: prev.checklist.filter(item => item.id !== itemId)
+      }));
+    };
+
+    const toggleDependency = (activityId: string) => {
+      setFormData(prev => ({
+        ...prev,
+        dependencies: prev.dependencies.some(dep => dep.dependsOn === activityId)
+          ? prev.dependencies.filter(dep => dep.dependsOn !== activityId)
+          : [...prev.dependencies, { 
+              id: Date.now().toString(), 
+              dependsOn: activityId, 
+              type: 'finish_start' 
+            }]
       }));
     };
 
@@ -290,6 +309,38 @@ export function DefaultActivitiesSettings() {
                 Nenhuma sub-etapa adicionada. Use o campo acima para adicionar itens do checklist.
               </p>
             )}
+          </div>
+
+          {/* Dependencies Section */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Dependências
+            </label>
+            <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-lg p-3">
+              {getCurrentStageActivities()
+                .filter(activity => activity.id !== editingActivity?.id)
+                .map(activity => (
+                  <label key={activity.id} className="flex items-center mb-2 last:mb-0">
+                    <input
+                      type="checkbox"
+                      checked={formData.dependencies.some(dep => dep.dependsOn === activity.id)}
+                      onChange={() => toggleDependency(activity.id)}
+                      className="h-4 w-4 text-black focus:ring-black border-gray-300 rounded"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">
+                      {activity.title}
+                    </span>
+                  </label>
+                ))}
+              {getCurrentStageActivities().filter(activity => activity.id !== editingActivity?.id).length === 0 && (
+                <p className="text-sm text-gray-500 italic">
+                  Nenhuma outra atividade disponível nesta etapa para criar dependências.
+                </p>
+              )}
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              Selecione as atividades que devem ser concluídas antes desta começar.
+            </p>
           </div>
 
           <div className="flex justify-end space-x-3 pt-6">
@@ -457,6 +508,23 @@ export function DefaultActivitiesSettings() {
                           </div>
                         )}
                       </div>
+                      
+                      {/* Dependencies Display */}
+                      {activity.dependencies && activity.dependencies.length > 0 && (
+                        <div className="mt-3 bg-purple-50 rounded-lg p-3">
+                          <h4 className="text-sm font-medium text-gray-900 mb-2">Dependências:</h4>
+                          <div className="space-y-1">
+                            {activity.dependencies.map((dep) => {
+                              const depActivity = getCurrentStageActivities().find(a => a.id === dep.dependsOn);
+                              return depActivity ? (
+                                <div key={dep.id} className="text-sm text-gray-700">
+                                  • {depActivity.title}
+                                </div>
+                              ) : null;
+                            })}
+                          </div>
+                        </div>
+                      )}
                       
                       <div className="flex items-center space-x-2 ml-4">
                         <Button

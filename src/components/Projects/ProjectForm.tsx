@@ -185,7 +185,10 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
             progress: 0,
             status: 'not_started' as const,
             stageId: '',
-            dependencies: [],
+            dependencies: (defaultActivity.dependencies || []).map((dep: any) => ({
+              ...dep,
+              id: Math.random().toString(36).substr(2, 9)
+            })),
             isTimerActive: false,
             timerStartTime: undefined,
             checklist: defaultActivity.checklist.map((item: any) => ({
@@ -233,7 +236,10 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
           progress: 0,
           status: 'not_started' as const,
           stageId: '',
-          dependencies: [],
+          dependencies: (defaultActivity.dependencies || []).map((dep: any) => ({
+            ...dep,
+            id: Math.random().toString(36).substr(2, 9)
+          })),
           isTimerActive: false,
           timerStartTime: undefined,
           checklist: defaultActivity.checklist.map((item: any) => ({
