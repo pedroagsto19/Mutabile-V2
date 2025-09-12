@@ -551,38 +551,6 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
     }
   };
 
-  // Get all available stages from localStorage (same as settings)
-  const getAllAvailableStages = () => {
-    try {
-      const saved = localStorage.getItem('mutabile_default_activities');
-      if (saved) {
-        const stageActivities = JSON.parse(saved);
-        return stageActivities.map((sa: any) => sa.stageName);
-      }
-    } catch (error) {
-      console.error('Error loading available stages:', error);
-    }
-    return defaultStages.map(s => s.name);
-  };
-
-  const getStageActivitiesCount = (stageName: string) => {
-    try {
-      const saved = localStorage.getItem('mutabile_default_activities');
-      if (saved) {
-        const stageActivities = JSON.parse(saved);
-        const stageData = stageActivities.find((sa: any) => sa.stageName === stageName);
-        return stageData?.activities?.length || 0;
-      }
-    } catch (error) {
-      console.error('Error loading stage activities count:', error);
-    }
-    return 0;
-  };
-
-  const isDefaultStage = (stageName: string) => {
-    return defaultStages.some(ds => ds.name === stageName);
-  };
-
   return (
     <>
       <Modal isOpen={isOpen} onClose={onClose} title={project ? 'Editar Projeto' : 'Novo Projeto'} size="lg">
@@ -709,6 +677,7 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
             {getAllAvailableStages().map(stageName => {
               const isSelected = formData.selectedStages.includes(stageName);
+              const isDefaultStage = defaultStages.some(ds => ds.name === stageName);
               const stageActivities = getStageActivitiesCount(stageName);
               
               return (
@@ -732,7 +701,7 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
                     }`}>
                       {stageActivities} atividade{stageActivities !== 1 ? 's' : ''}
                     </p>
-                    {!isDefaultStage(stageName) && (
+                    {!isDefaultStage && (
                       <div className="flex items-center justify-between mt-2">
                         <span className={`text-xs px-2 py-1 rounded-full ${
                           isSelected 
