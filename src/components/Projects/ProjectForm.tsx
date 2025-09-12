@@ -5,6 +5,7 @@ import { Modal } from '../UI/Modal';
 import { useProject } from '../../context/ProjectContext';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
+import { useConfirm } from '../../hooks/useConfirm';
 import type { Project } from '../../types';
 import { defaultStages } from '../../data/mockData';
 
@@ -96,7 +97,7 @@ function CustomStageModal({ isOpen, onClose, onAdd }: CustomStageModalProps) {
 export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormProps) {
   const { addProject } = useProject();
   const { getAllUsers } = useAuth();
-  const { toast } = useNotification();
+  const { toast, confirm } = useNotification();
   const users = getAllUsers();
   const [showCustomStageModal, setShowCustomStageModal] = useState(false);
   
@@ -471,6 +472,85 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
     return defaultStages.map(s => s.name);
   };
 
+  const getStageActivitiesCount = (stageName: string) => {
+    try {
+      const saved = localStorage.getItem('mutabile_default_activities');
+      if (saved) {
+        const stageActivities = JSON.parse(saved);
+        const stageData = stageActivities.find((sa: any) => sa.stageName === stageName);
+        return stageData?.activities?.length || 0;
+      }
+    } catch (error) {
+      console.error('Error loading stage activities count:', error);
+    }
+    return 0;
+  };
+
+  const addCustomStage = (stageName: string) => {
+    try {
+      const saved = localStorage.getItem('mutabile_default_activities');
+      const stageActivities = saved ? JSON.parse(saved) : [];
+      
+      // Check if stage already exists
+      if (stageActivities.some((sa: any) => sa.stageName === stageName)) {
+        toast.warning('Etapa já existe', `A etapa "${stageName}" já foi criada anteriormente.`);
+        return;
+      }
+      
+      // Add new stage with empty activities
+      const newStageData = {
+        stageName: stageName,
+        activities: []
+      };
+      
+      const updatedStageActivities = [...stageActivities, newStageData];
+      localStorage.setItem('mutabile_default_activities', JSON.stringify(updatedStageActivities));
+      
+      // Automatically select the new stage
+      setFormData(prev => ({
+        ...prev,
+        selectedStages: [...prev.selectedStages, stageName]
+      }));
+      
+      toast.success(`Etapa "${stageName}" criada com sucesso!`, 'Você pode configurar suas atividades padrão em Configurações → Atividades Padrão.');
+    } catch (error) {
+      console.error('Error adding custom stage:', error);
+      toast.error('Erro ao criar etapa personalizada');
+    }
+  };
+
+  const deleteCustomStage = async (stageName: string) => {
+    const confirmed = await confirm({
+      title: 'Excluir Etapa Personalizada',
+      message: `Tem certeza que deseja excluir a etapa "${stageName}"? Esta ação removerá a etapa de todos os projetos futuros, mas não afetará projetos já existentes.`,
+      type: 'danger',
+      confirmText: 'Excluir',
+      cancelText: 'Cancelar'
+    });
+
+    if (confirmed) {
+      try {
+        const saved = localStorage.getItem('mutabile_default_activities');
+        if (saved) {
+          const stageActivities = JSON.parse(saved);
+          const updatedStageActivities = stageActivities.filter((sa: any) => sa.stageName !== stageName);
+          localStorage.setItem('mutabile_default_activities', JSON.stringify(updatedStageActivities));
+          
+          // Remove from selected stages if it was selected
+          setFormData(prev => ({
+            ...prev,
+            selectedStages: prev.selectedStages.filter(s => s !== stageName)
+          }));
+          
+          toast.success(`Etapa "${stageName}" excluída com sucesso!`);
+        }
+      } catch (error) {
+        console.error('Error deleting custom stage:', error);
+        toast.error('Erro ao excluir etapa personalizada');
+      }
+    }
+  };
+
   return (
     <>
       <Modal isOpen={isOpen} onClose={onClose} title={project ? 'Editar Projeto' : 'Novo Projeto'} size="lg">
@@ -573,37 +653,95 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
             Etapas do Projeto
           </label>
           
-          <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-            <p className="text-sm text-blue-800">
-              <strong>💡 Dica:</strong> Para criar novas etapas personalizadas com atividades padrão, 
-              acesse <strong>Configurações → Atividades Padrão</strong> no menu principal.
+          {/* Add Custom Stage Section */}
+          <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-medium text-gray-900">Adicionar Nova Etapa</h4>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowCustomStageModal(true)}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Criar Etapa Personalizada
+              </Button>
+            </div>
+            <p className="text-xs text-gray-600">
+              Você pode criar etapas personalizadas que serão salvas para uso em futuros projetos.
+              As atividades padrão para essas etapas podem ser configuradas em <strong>Configurações → Atividades Padrão</strong>.
             </p>
           </div>
           
-          <div className="space-y-2 mb-3">
+          {/* Available Stages List */}
+          <div className="space-y-3 mb-3 max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-3">
             {getAllAvailableStages().map(stageName => {
               const isDefaultStage = defaultStages.some(ds => ds.name === stageName);
+              const stageActivities = getStageActivitiesCount(stageName);
               
               return (
-              <label key={stageName} className="flex items-center justify-between">
-                <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={formData.selectedStages.includes(stageName)}
-                  onChange={() => toggleStage(stageName)}
-                  className="h-4 w-4 text-black focus:ring-black border-gray-300 rounded"
-                />
-                <span className="ml-2 text-sm text-gray-700">{stageName}</span>
-                </div>
-                {!isDefaultStage && (
-                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                    Personalizada
-                  </span>
-                )}
-              </label>
+                <label key={stageName} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                  <div className="flex items-center flex-1">
+                    <input
+                      type="checkbox"
+                      checked={formData.selectedStages.includes(stageName)}
+                      onChange={() => toggleStage(stageName)}
+                      className="h-4 w-4 text-black focus:ring-black border-gray-300 rounded"
+                    />
+                    <div className="ml-3 flex-1">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm font-medium text-gray-900">{stageName}</span>
+                        {!isDefaultStage && (
+                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                            Personalizada
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {stageActivities} atividade{stageActivities !== 1 ? 's' : ''} padrão configurada{stageActivities !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                  </div>
+                  {!isDefaultStage && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        deleteCustomStage(stageName);
+                      }}
+                      className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                      title="Excluir etapa personalizada"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </label>
               );
             })}
+            
+            {getAllAvailableStages().length === 0 && (
+              <div className="text-center py-8">
+                <p className="text-sm text-gray-500 mb-3">Nenhuma etapa disponível.</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowCustomStageModal(true)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Criar Primeira Etapa
+                </div>
+                </Button>
+              </div>
+            )}
           </div>
+          
+          <p className="text-xs text-gray-500">
+            Selecione as etapas que farão parte deste projeto. As atividades padrão serão criadas automaticamente.
+          </p>
         </div>
 
         <div className="flex justify-end space-x-3 pt-6">
@@ -616,6 +754,12 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
         </div>
       </form>
     </Modal>
+      
+      <CustomStageModal
+        isOpen={showCustomStageModal}
+        onClose={() => setShowCustomStageModal(false)}
+        onAdd={addCustomStage}
+      />
     </>
   );
 }
