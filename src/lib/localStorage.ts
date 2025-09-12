@@ -165,37 +165,136 @@ class LocalStorage {
         const sampleActivities: LocalActivity[] = [
           {
             id: 'act1',
-            title: 'Levantamento do terreno',
-            description: 'Análise topográfica e condições do local',
+            title: 'Levantamento topográfico',
+            description: 'Análise detalhada das condições do terreno, medições e levantamento planialtimétrico',
             responsible: 'Carlos Santos',
             priority: 'high',
             plannedStartDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
             plannedEndDate: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString(),
-            plannedDuration: 24,
-            actualDuration: 0,
-            progress: 0,
-            status: 'not_started',
+            plannedDuration: 32,
+            actualDuration: 18,
+            progress: 75,
+            status: 'in_progress',
             stageId: 'stage1',
             dependencies: [],
             isTimerActive: false,
-            checklist: []
+            actualStartDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+            checklist: [
+              {
+                id: 'check1',
+                title: 'Solicitar certidão de inteiro teor',
+                completed: true,
+                createdAt: new Date().toISOString()
+              },
+              {
+                id: 'check2',
+                title: 'Realizar medições in loco',
+                completed: true,
+                createdAt: new Date().toISOString()
+              },
+              {
+                id: 'check3',
+                title: 'Elaborar planta topográfica',
+                completed: false,
+                createdAt: new Date().toISOString()
+              }
+            ]
           },
           {
             id: 'act2',
-            title: 'Estudo de viabilidade',
-            description: 'Análise de zoneamento e restrições legais',
+            title: 'Análise de viabilidade urbanística',
+            description: 'Verificação de zoneamento, coeficientes de aproveitamento e restrições legais',
             responsible: 'Ana Silva',
             priority: 'medium',
             plannedStartDate: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000).toISOString(),
             plannedEndDate: new Date(Date.now() + 13 * 24 * 60 * 60 * 1000).toISOString(),
-            plannedDuration: 16,
+            plannedDuration: 24,
             actualDuration: 0,
             progress: 0,
             status: 'not_started',
             stageId: 'stage1',
             dependencies: [{ id: 'dep1', dependsOn: 'act1', type: 'finish_start' }],
             isTimerActive: false,
-            checklist: []
+            checklist: [
+              {
+                id: 'check4',
+                title: 'Consultar lei de zoneamento',
+                completed: false,
+                createdAt: new Date().toISOString()
+              },
+              {
+                id: 'check5',
+                title: 'Verificar recuos obrigatórios',
+                completed: false,
+                createdAt: new Date().toISOString()
+              }
+            ]
+          },
+          {
+            id: 'act3',
+            title: 'Programa de necessidades',
+            description: 'Definição detalhada dos ambientes e suas características funcionais',
+            responsible: 'Carlos Santos',
+            priority: 'high',
+            plannedStartDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+            plannedEndDate: new Date(Date.now() + 18 * 24 * 60 * 60 * 1000).toISOString(),
+            plannedDuration: 20,
+            actualDuration: 0,
+            progress: 0,
+            status: 'not_started',
+            stageId: 'stage1',
+            dependencies: [{ id: 'dep2', dependsOn: 'act2', type: 'finish_start' }],
+            isTimerActive: false,
+            checklist: [
+              {
+                id: 'check6',
+                title: 'Reunião com cliente para briefing',
+                completed: false,
+                createdAt: new Date().toISOString()
+              },
+              {
+                id: 'check7',
+                title: 'Elaborar lista de ambientes',
+                completed: false,
+                createdAt: new Date().toISOString()
+              },
+              {
+                id: 'check8',
+                title: 'Definir dimensionamento preliminar',
+                completed: false,
+                createdAt: new Date().toISOString()
+              }
+            ]
+          },
+          {
+            id: 'act4',
+            title: 'Estudo volumétrico',
+            description: 'Desenvolvimento de alternativas volumétricas e implantação no terreno',
+            responsible: 'Carlos Santos',
+            priority: 'medium',
+            plannedStartDate: new Date(Date.now() + 19 * 24 * 60 * 60 * 1000).toISOString(),
+            plannedEndDate: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000).toISOString(),
+            plannedDuration: 40,
+            actualDuration: 0,
+            progress: 0,
+            status: 'not_started',
+            stageId: 'stage1',
+            dependencies: [{ id: 'dep3', dependsOn: 'act3', type: 'finish_start' }],
+            isTimerActive: false,
+            checklist: [
+              {
+                id: 'check9',
+                title: 'Criar maquete eletrônica preliminar',
+                completed: false,
+                createdAt: new Date().toISOString()
+              },
+              {
+                id: 'check10',
+                title: 'Estudar insolação e ventilação',
+                completed: false,
+                createdAt: new Date().toISOString()
+              }
+            ]
           }
         ];
 
@@ -205,8 +304,8 @@ class LocalStorage {
             name: 'Anteprojeto',
             projectId: '1',
             order: 1,
-            progress: 0,
-            status: 'not_started',
+            progress: 25,
+            status: 'in_progress',
             activities: sampleActivities,
             notificationRecipients: ['ana@mutabile.com.br'],
             isCustom: false
@@ -218,7 +317,116 @@ class LocalStorage {
             order: 2,
             progress: 0,
             status: 'not_started',
-            activities: [],
+            activities: [
+              {
+                id: 'act5',
+                title: 'Desenvolvimento de plantas baixas',
+                description: 'Elaboração das plantas baixas de todos os pavimentos conforme normas municipais',
+                responsible: 'Carlos Santos',
+                priority: 'high',
+                plannedStartDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                plannedEndDate: new Date(Date.now() + 40 * 24 * 60 * 60 * 1000).toISOString(),
+                plannedDuration: 60,
+                actualDuration: 0,
+                progress: 0,
+                status: 'not_started',
+                stageId: 'stage2',
+                dependencies: [{ id: 'dep4', dependsOn: 'act4', type: 'finish_start' }],
+                isTimerActive: false,
+                checklist: [
+                  {
+                    id: 'check11',
+                    title: 'Planta baixa térreo',
+                    completed: false,
+                    createdAt: new Date().toISOString()
+                  },
+                  {
+                    id: 'check12',
+                    title: 'Planta baixa pavimento superior',
+                    completed: false,
+                    createdAt: new Date().toISOString()
+                  },
+                  {
+                    id: 'check13',
+                    title: 'Planta de cobertura',
+                    completed: false,
+                    createdAt: new Date().toISOString()
+                  }
+                ]
+              },
+              {
+                id: 'act6',
+                title: 'Elaboração de cortes e fachadas',
+                description: 'Desenvolvimento dos cortes longitudinais, transversais e fachadas principais',
+                responsible: 'Ana Silva',
+                priority: 'high',
+                plannedStartDate: new Date(Date.now() + 35 * 24 * 60 * 60 * 1000).toISOString(),
+                plannedEndDate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(),
+                plannedDuration: 48,
+                actualDuration: 0,
+                progress: 0,
+                status: 'not_started',
+                stageId: 'stage2',
+                dependencies: [{ id: 'dep5', dependsOn: 'act5', type: 'finish_start' }],
+                isTimerActive: false,
+                checklist: [
+                  {
+                    id: 'check14',
+                    title: 'Corte longitudinal AA',
+                    completed: false,
+                    createdAt: new Date().toISOString()
+                  },
+                  {
+                    id: 'check15',
+                    title: 'Corte transversal BB',
+                    completed: false,
+                    createdAt: new Date().toISOString()
+                  },
+                  {
+                    id: 'check16',
+                    title: 'Fachada principal',
+                    completed: false,
+                    createdAt: new Date().toISOString()
+                  },
+                  {
+                    id: 'check17',
+                    title: 'Fachadas laterais',
+                    completed: false,
+                    createdAt: new Date().toISOString()
+                  }
+                ]
+              },
+              {
+                id: 'act7',
+                title: 'Memorial descritivo e especificações',
+                description: 'Elaboração do memorial descritivo com especificações técnicas dos materiais',
+                responsible: 'Ana Silva',
+                priority: 'medium',
+                plannedStartDate: new Date(Date.now() + 46 * 24 * 60 * 60 * 1000).toISOString(),
+                plannedEndDate: new Date(Date.now() + 50 * 24 * 60 * 60 * 1000).toISOString(),
+                plannedDuration: 24,
+                actualDuration: 0,
+                progress: 0,
+                status: 'not_started',
+                stageId: 'stage2',
+                dependencies: [{ id: 'dep6', dependsOn: 'act6', type: 'finish_start' }],
+                isTimerActive: false,
+                checklist: [
+                  {
+                    id: 'check18',
+                    title: 'Especificações de acabamentos',
+                    completed: false,
+                    createdAt: new Date().toISOString()
+                  },
+                  {
+                    id: 'check19',
+                    title: 'Memorial de cálculo de áreas',
+                    completed: false,
+                    createdAt: new Date().toISOString()
+                  }
+                ]
+              }
+            ],
             notificationRecipients: ['ana@mutabile.com.br'],
             isCustom: false
           },
@@ -229,7 +437,116 @@ class LocalStorage {
             order: 3,
             progress: 0,
             status: 'not_started',
-            activities: [],
+            activities: [
+              {
+                id: 'act8',
+                title: 'Detalhamento arquitetônico',
+                description: 'Desenvolvimento de detalhes construtivos, esquadrias e elementos especiais',
+                responsible: 'Carlos Santos',
+                priority: 'high',
+                plannedStartDate: new Date(Date.now() + 55 * 24 * 60 * 60 * 1000).toISOString(),
+                plannedEndDate: new Date(Date.now() + 70 * 24 * 60 * 60 * 1000).toISOString(),
+                plannedDuration: 80,
+                actualDuration: 0,
+                progress: 0,
+                status: 'not_started',
+                stageId: 'stage3',
+                dependencies: [{ id: 'dep7', dependsOn: 'act7', type: 'finish_start' }],
+                isTimerActive: false,
+                checklist: [
+                  {
+                    id: 'check20',
+                    title: 'Detalhes de esquadrias',
+                    completed: false,
+                    createdAt: new Date().toISOString()
+                  },
+                  {
+                    id: 'check21',
+                    title: 'Detalhes de escadas',
+                    completed: false,
+                    createdAt: new Date().toISOString()
+                  },
+                  {
+                    id: 'check22',
+                    title: 'Detalhes de forro e sancas',
+                    completed: false,
+                    createdAt: new Date().toISOString()
+                  }
+                ]
+              },
+              {
+                id: 'act9',
+                title: 'Compatibilização com projetos complementares',
+                description: 'Verificação e compatibilização com projetos estrutural, hidráulico e elétrico',
+                responsible: 'Ana Silva',
+                priority: 'high',
+                plannedStartDate: new Date(Date.now() + 65 * 24 * 60 * 60 * 1000).toISOString(),
+                plannedEndDate: new Date(Date.now() + 75 * 24 * 60 * 60 * 1000).toISOString(),
+                plannedDuration: 56,
+                actualDuration: 0,
+                progress: 0,
+                status: 'not_started',
+                stageId: 'stage3',
+                dependencies: [{ id: 'dep8', dependsOn: 'act8', type: 'finish_start' }],
+                isTimerActive: false,
+                checklist: [
+                  {
+                    id: 'check23',
+                    title: 'Compatibilização estrutural',
+                    completed: false,
+                    createdAt: new Date().toISOString()
+                  },
+                  {
+                    id: 'check24',
+                    title: 'Compatibilização hidrossanitária',
+                    completed: false,
+                    createdAt: new Date().toISOString()
+                  },
+                  {
+                    id: 'check25',
+                    title: 'Compatibilização elétrica',
+                    completed: false,
+                    createdAt: new Date().toISOString()
+                  }
+                ]
+              },
+              {
+                id: 'act10',
+                title: 'Quantitativos e orçamento',
+                description: 'Levantamento de quantitativos de materiais e elaboração de orçamento estimativo',
+                responsible: 'Marina Costa',
+                priority: 'medium',
+                plannedStartDate: new Date(Date.now() + 76 * 24 * 60 * 60 * 1000).toISOString(),
+                plannedEndDate: new Date(Date.now() + 85 * 24 * 60 * 60 * 1000).toISOString(),
+                plannedDuration: 40,
+                actualDuration: 0,
+                progress: 0,
+                status: 'not_started',
+                stageId: 'stage3',
+                dependencies: [{ id: 'dep9', dependsOn: 'act9', type: 'finish_start' }],
+                isTimerActive: false,
+                checklist: [
+                  {
+                    id: 'check26',
+                    title: 'Quantitativo de materiais',
+                    completed: false,
+                    createdAt: new Date().toISOString()
+                  },
+                  {
+                    id: 'check27',
+                    title: 'Pesquisa de preços',
+                    completed: false,
+                    createdAt: new Date().toISOString()
+                  },
+                  {
+                    id: 'check28',
+                    title: 'Planilha orçamentária',
+                    completed: false,
+                    createdAt: new Date().toISOString()
+                  }
+                ]
+              }
+            ],
             notificationRecipients: ['ana@mutabile.com.br'],
             isCustom: false
           }
@@ -245,7 +562,7 @@ class LocalStorage {
             controlNumber: 'MUT-2025-001',
             description: 'Casa unifamiliar de alto padrão com 380m²',
             status: 'in_progress',
-            progress: 15,
+            progress: 8,
             risk: 'on_time',
             nextDeadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
             stages: sampleStages,
@@ -263,7 +580,171 @@ class LocalStorage {
             status: 'planning',
             progress: 5,
             risk: 'on_time',
-            stages: [],
+            stages: [
+              {
+                id: 'stage4',
+                name: 'Anteprojeto',
+                projectId: '2',
+                order: 1,
+                progress: 15,
+                status: 'in_progress',
+                activities: [
+                  {
+                    id: 'act11',
+                    title: 'Análise do programa comercial',
+                    description: 'Estudo das necessidades comerciais e definição do mix de lojas',
+                    responsible: 'Carlos Santos',
+                    priority: 'high',
+                    plannedStartDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+                    plannedEndDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
+                    plannedDuration: 48,
+                    actualDuration: 12,
+                    progress: 25,
+                    status: 'in_progress',
+                    stageId: 'stage4',
+                    dependencies: [],
+                    isTimerActive: false,
+                    actualStartDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+                    checklist: [
+                      {
+                        id: 'check29',
+                        title: 'Reunião com investidores',
+                        completed: true,
+                        createdAt: new Date().toISOString()
+                      },
+                      {
+                        id: 'check30',
+                        title: 'Estudo de mercado local',
+                        completed: false,
+                        createdAt: new Date().toISOString()
+                      }
+                    ]
+                  },
+                  {
+                    id: 'act12',
+                    title: 'Estudo de fluxos e circulação',
+                    description: 'Análise dos fluxos de pedestres e veículos, definição de acessos',
+                    responsible: 'Ana Silva',
+                    priority: 'medium',
+                    plannedStartDate: new Date(Date.now() + 11 * 24 * 60 * 60 * 1000).toISOString(),
+                    plannedEndDate: new Date(Date.now() + 18 * 24 * 60 * 60 * 1000).toISOString(),
+                    plannedDuration: 32,
+                    actualDuration: 0,
+                    progress: 0,
+                    status: 'not_started',
+                    stageId: 'stage4',
+                    dependencies: [{ id: 'dep10', dependsOn: 'act11', type: 'finish_start' }],
+                    isTimerActive: false,
+                    checklist: [
+                      {
+                        id: 'check31',
+                        title: 'Mapeamento de fluxos existentes',
+                        completed: false,
+                        createdAt: new Date().toISOString()
+                      },
+                      {
+                        id: 'check32',
+                        title: 'Definição de acessos principais',
+                        completed: false,
+                        createdAt: new Date().toISOString()
+                      }
+                    ]
+                  }
+                ],
+                notificationRecipients: ['carlos@mutabile.com.br'],
+                isCustom: false
+              },
+              {
+                id: 'stage5',
+                name: 'Projeto Legal',
+                projectId: '2',
+                order: 2,
+                progress: 0,
+                status: 'not_started',
+                activities: [
+                  {
+                    id: 'act13',
+                    title: 'Projeto de prevenção contra incêndio',
+                    description: 'Desenvolvimento do projeto de segurança contra incêndio conforme normas do Corpo de Bombeiros',
+                    responsible: 'Marina Costa',
+                    priority: 'high',
+                    plannedStartDate: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000).toISOString(),
+                    plannedEndDate: new Date(Date.now() + 40 * 24 * 60 * 60 * 1000).toISOString(),
+                    plannedDuration: 72,
+                    actualDuration: 0,
+                    progress: 0,
+                    status: 'not_started',
+                    stageId: 'stage5',
+                    dependencies: [{ id: 'dep11', dependsOn: 'act12', type: 'finish_start' }],
+                    isTimerActive: false,
+                    checklist: [
+                      {
+                        id: 'check33',
+                        title: 'Cálculo de população e saídas de emergência',
+                        completed: false,
+                        createdAt: new Date().toISOString()
+                      },
+                      {
+                        id: 'check34',
+                        title: 'Projeto de sinalização de emergência',
+                        completed: false,
+                        createdAt: new Date().toISOString()
+                      },
+                      {
+                        id: 'check35',
+                        title: 'Especificação de equipamentos de combate',
+                        completed: false,
+                        createdAt: new Date().toISOString()
+                      }
+                    ]
+                  }
+                ],
+                notificationRecipients: ['carlos@mutabile.com.br'],
+                isCustom: false
+              },
+              {
+                id: 'stage6',
+                name: 'Projeto Executivo',
+                projectId: '2',
+                order: 3,
+                progress: 0,
+                status: 'not_started',
+                activities: [
+                  {
+                    id: 'act14',
+                    title: 'Projeto de fachadas e revestimentos',
+                    description: 'Detalhamento das fachadas com especificação de materiais e sistemas construtivos',
+                    responsible: 'Carlos Santos',
+                    priority: 'medium',
+                    plannedStartDate: new Date(Date.now() + 50 * 24 * 60 * 60 * 1000).toISOString(),
+                    plannedEndDate: new Date(Date.now() + 70 * 24 * 60 * 60 * 1000).toISOString(),
+                    plannedDuration: 96,
+                    actualDuration: 0,
+                    progress: 0,
+                    status: 'not_started',
+                    stageId: 'stage6',
+                    dependencies: [{ id: 'dep12', dependsOn: 'act13', type: 'finish_start' }],
+                    isTimerActive: false,
+                    checklist: [
+                      {
+                        id: 'check36',
+                        title: 'Detalhes de fixação de revestimentos',
+                        completed: false,
+                        createdAt: new Date().toISOString()
+                      },
+                      {
+                        id: 'check37',
+                        title: 'Especificação de vidros e esquadrias',
+                        completed: false,
+                        createdAt: new Date().toISOString()
+                      }
+                    ]
+                  }
+                ],
+                notificationRecipients: ['carlos@mutabile.com.br'],
+                isCustom: false
+              }
+            ],
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
           }
