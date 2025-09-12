@@ -733,7 +733,6 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Criar Primeira Etapa
-                </div>
                 </Button>
               </div>
             )}
