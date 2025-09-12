@@ -454,10 +454,16 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
         : new Date().toISOString().split('T')[0],
       plannedDuration: editingActivity?.plannedDuration || 8,
       dependencies: editingActivity?.dependencies || [],
-      checklist: editingActivity?.checklist || []
+      checklist: editingActivity?.checklist || [],
+      driveLinks: editingActivity?.driveLinks || []
     });
     
     const [newChecklistItem, setNewChecklistItem] = useState('');
+    const [newDriveLink, setNewDriveLink] = useState({
+      title: '',
+      url: '',
+      description: ''
+    });
 
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
@@ -484,6 +490,7 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
         status: editingActivity?.status || 'not_started' as const,
         dependencies: formData.dependencies,
         checklist: formData.checklist,
+        driveLinks: formData.driveLinks,
         isTimerActive: false,
         actualStartDate: editingActivity?.actualStartDate || undefined
       };
@@ -536,6 +543,30 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
         checklist: prev.checklist.map(item =>
           item.id === itemId ? { ...item, completed: !item.completed } : item
         )
+      }));
+    };
+
+    const addDriveLink = () => {
+      if (newDriveLink.title.trim() && newDriveLink.url.trim()) {
+        const newLink = {
+          id: Math.random().toString(36).substr(2, 9),
+          title: newDriveLink.title.trim(),
+          url: newDriveLink.url.trim(),
+          description: newDriveLink.description.trim() || undefined,
+          createdAt: new Date()
+        };
+        setFormData(prev => ({
+          ...prev,
+          driveLinks: [...prev.driveLinks, newLink]
+        }));
+        setNewDriveLink({ title: '', url: '', description: '' });
+      }
+    };
+
+    const removeDriveLink = (linkId: string) => {
+      setFormData(prev => ({
+        ...prev,
+        driveLinks: prev.driveLinks.filter(link => link.id !== linkId)
       }));
     };
 
@@ -737,6 +768,92 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
             {formData.checklist.length === 0 && (
               <p className="text-sm text-gray-500 italic">
                 Nenhuma sub-etapa adicionada. Use o campo acima para adicionar itens do checklist.
+              </p>
+            )}
+          </div>
+
+          {/* Drive Links Section */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Links para Modelos (Drive)
+            </label>
+            
+            {/* Add new drive link */}
+            <div className="space-y-3 mb-3 p-3 bg-gray-50 rounded-lg">
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  value={newDriveLink.title}
+                  onChange={(e) => setNewDriveLink(prev => ({ ...prev, title: e.target.value }))}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none text-sm"
+                  placeholder="Nome do modelo..."
+                />
+                <input
+                  type="url"
+                  value={newDriveLink.url}
+                  onChange={(e) => setNewDriveLink(prev => ({ ...prev, url: e.target.value }))}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none text-sm"
+                  placeholder="https://drive.google.com/..."
+                />
+              </div>
+              <input
+                type="text"
+                value={newDriveLink.description}
+                onChange={(e) => setNewDriveLink(prev => ({ ...prev, description: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none text-sm"
+                placeholder="Descrição do modelo (opcional)..."
+              />
+              <Button
+                type="button"
+                onClick={addDriveLink}
+                disabled={!newDriveLink.title.trim() || !newDriveLink.url.trim()}
+                size="sm"
+              >
+                Adicionar Link
+              </Button>
+            </div>
+            
+            {/* Drive links list */}
+            {formData.driveLinks.length > 0 && (
+              <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-lg p-3 space-y-2">
+                {formData.driveLinks.map((link) => (
+                  <div key={link.id} className="flex items-start justify-between group bg-white p-2 rounded border">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm font-medium text-gray-900 truncate">
+                          {link.title}
+                        </span>
+                        <a
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 text-xs"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Abrir
+                        </a>
+                      </div>
+                      {link.description && (
+                        <p className="text-xs text-gray-500 mt-1 truncate">
+                          {link.description}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeDriveLink(link.id)}
+                      className="opacity-0 group-hover:opacity-100 text-red-600 hover:text-red-800 text-sm transition-opacity ml-2"
+                    >
+                      Remover
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {formData.driveLinks.length === 0 && (
+              <p className="text-sm text-gray-500 italic">
+                Nenhum link adicionado. Use o formulário acima para adicionar links para modelos do Drive.
               </p>
             )}
           </div>
