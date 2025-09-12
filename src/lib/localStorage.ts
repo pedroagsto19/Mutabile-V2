@@ -863,7 +863,13 @@ class LocalStorage {
                     progress: 0,
                     status: 'not_started' as const,
                     stageId: stage.id,
-                    dependencies: [{ id: 'dep1', dependsOn: 'act1', type: 'finish_start' }],
+                    dependencies: [
+                      {
+                        id: 'dep-1',
+                        dependsOn: 'levantamento-topo',
+                        type: 'finish_start'
+                      }
+                    ],
                     isTimerActive: false,
                     checklist: [
                       {
@@ -893,7 +899,13 @@ class LocalStorage {
                     progress: 0,
                     status: 'not_started' as const,
                     stageId: stage.id,
-                    dependencies: [{ id: 'dep2', dependsOn: 'act2', type: 'finish_start' }],
+                    dependencies: [
+                      {
+                        id: 'dep-2',
+                        dependsOn: 'analise-viabilidade',
+                        type: 'finish_start'
+                      }
+                    ],
                     isTimerActive: false,
                     checklist: [
                       {
@@ -923,7 +935,13 @@ class LocalStorage {
                     progress: 0,
                     status: 'not_started' as const,
                     stageId: stage.id,
-                    dependencies: [{ id: 'dep3', dependsOn: 'act3', type: 'finish_start' }],
+                    dependencies: [
+                      {
+                        id: 'dep-3',
+                        dependsOn: 'programa-necessidades',
+                        type: 'finish_start'
+                      }
+                    ],
                     isTimerActive: false,
                     checklist: [
                       {
@@ -959,7 +977,13 @@ class LocalStorage {
                     progress: 0,
                     status: 'not_started' as const,
                     stageId: stage.id,
-                    dependencies: [{ id: 'dep4', dependsOn: 'act4', type: 'finish_start' }],
+                    dependencies: [
+                      {
+                        id: 'dep-4',
+                        dependsOn: 'estudo-volumetrico',
+                        type: 'finish_start'
+                      }
+                    ],
                     isTimerActive: false,
                     checklist: [
                       {
@@ -989,7 +1013,13 @@ class LocalStorage {
                     progress: 0,
                     status: 'not_started' as const,
                     stageId: stage.id,
-                    dependencies: [{ id: 'dep5', dependsOn: 'act5', type: 'finish_start' }],
+                    dependencies: [
+                      {
+                        id: 'dep-5',
+                        dependsOn: 'plantas-baixas',
+                        type: 'finish_start'
+                      }
+                    ],
                     isTimerActive: false,
                     checklist: [
                       {
@@ -1025,7 +1055,13 @@ class LocalStorage {
                     progress: 0,
                     status: 'not_started' as const,
                     stageId: stage.id,
-                    dependencies: [{ id: 'dep7', dependsOn: 'act6', type: 'finish_start' }],
+                    dependencies: [
+                      {
+                        id: 'dep-6',
+                        dependsOn: 'cortes-fachadas',
+                        type: 'finish_start'
+                      }
+                    ],
                     isTimerActive: false,
                     checklist: [
                       {
@@ -1055,7 +1091,13 @@ class LocalStorage {
                     progress: 0,
                     status: 'not_started' as const,
                     stageId: stage.id,
-                    dependencies: [{ id: 'dep8', dependsOn: 'act8', type: 'finish_start' }],
+                    dependencies: [
+                      {
+                        id: 'dep-7',
+                        dependsOn: 'memorial-descritivo',
+                        type: 'finish_start'
+                      }
+                    ],
                     isTimerActive: false,
                     checklist: [
                       {
@@ -1137,7 +1179,13 @@ class LocalStorage {
                     progress: 0,
                     status: 'not_started' as const,
                     stageId: stage.id,
-                    dependencies: [{ id: 'dep10', dependsOn: 'act11', type: 'finish_start' }],
+                    dependencies: [
+                      {
+                        id: 'dep-8',
+                        dependsOn: 'detalhamento-arquitetonico',
+                        type: 'finish_start'
+                      }
+                    ],
                     isTimerActive: false,
                     checklist: [
                       {
@@ -1167,7 +1215,13 @@ class LocalStorage {
                     progress: 0,
                     status: 'not_started' as const,
                     stageId: stage.id,
-                    dependencies: [{ id: 'dep11', dependsOn: 'act12', type: 'finish_start' }],
+                    dependencies: [
+                      {
+                        id: 'dep-9',
+                        dependsOn: 'compatibilizacao-projetos',
+                        type: 'finish_start'
+                      }
+                    ],
                     isTimerActive: false,
                     checklist: [
                       {
@@ -1189,7 +1243,7 @@ class LocalStorage {
                     title: 'Projeto de fachadas e revestimentos',
                     description: 'Detalhamento das fachadas com especificação de materiais e sistemas construtivos',
                     responsible: 'Carlos Santos',
-                    priority: 'medium' as const,
+                    priority: 'low' as const,
                     plannedStartDate: new Date(Date.now() + 50 * 24 * 60 * 60 * 1000).toISOString(),
                     plannedEndDate: new Date(Date.now() + 70 * 24 * 60 * 60 * 1000).toISOString(),
                     plannedDuration: 96,
@@ -1197,7 +1251,13 @@ class LocalStorage {
                     progress: 0,
                     status: 'not_started' as const,
                     stageId: stage.id,
-                    dependencies: [{ id: 'dep12', dependsOn: 'act13', type: 'finish_start' }],
+                    dependencies: [
+                      {
+                        id: 'dep-11',
+                        dependsOn: 'analise-programa-comercial',
+                        type: 'finish_start'
+                      }
+                    ],
                     isTimerActive: false,
                     checklist: [
                       {
