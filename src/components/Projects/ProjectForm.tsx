@@ -134,17 +134,53 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
     // Combine default and custom stages
     const allStages = [...formData.selectedStages, ...formData.customStages];
     
-    const stages = allStages.map((stageName, index) => ({
-      id: Math.random().toString(36).substr(2, 9),
-      name: stageName,
-      projectId: '',
-      order: index + 1,
-      progress: 0,
-      status: 'not_started' as const,
-      activities: [],
-      notificationRecipients: [],
-      isCustom: !defaultStages.some(ds => ds.name === stageName)
-    }));
+    let stages;
+    
+    if (project) {
+      // When editing, preserve existing stages and their activities
+      const existingStagesByName = new Map(
+        project.stages.map(stage => [stage.name, stage])
+      );
+      
+      stages = allStages.map((stageName, index) => {
+        const existingStage = existingStagesByName.get(stageName);
+        
+        if (existingStage) {
+          // Preserve existing stage with all its activities
+          return {
+            ...existingStage,
+            order: index + 1, // Update order in case stages were reordered
+            projectId: project.id
+          };
+        } else {
+          // Create new stage (empty)
+          return {
+            id: Math.random().toString(36).substr(2, 9),
+            name: stageName,
+            projectId: project.id,
+            order: index + 1,
+            progress: 0,
+            status: 'not_started' as const,
+            activities: [],
+            notificationRecipients: [],
+            isCustom: !defaultStages.some(ds => ds.name === stageName)
+          };
+        }
+      });
+    } else {
+      // When creating new project, create empty stages
+      stages = allStages.map((stageName, index) => ({
+        id: Math.random().toString(36).substr(2, 9),
+        name: stageName,
+        projectId: '',
+        order: index + 1,
+        progress: 0,
+        status: 'not_started' as const,
+        activities: [],
+        notificationRecipients: [],
+        isCustom: !defaultStages.some(ds => ds.name === stageName)
+      }));
+    }
 
     const projectData = {
       ...formData,

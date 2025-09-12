@@ -141,7 +141,15 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
   };
 
   const handleUpdateProject = (projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => {
-    updateProject(project.id, projectData);
+    // Preserve the project ID and timestamps when updating
+    const updatedData = {
+      ...projectData,
+      id: project.id,
+      createdAt: project.createdAt,
+      updatedAt: new Date()
+    };
+    
+    updateProject(project.id, updatedData);
     toast.success('Projeto atualizado com sucesso!');
     setShowEditProjectForm(false);
   };
