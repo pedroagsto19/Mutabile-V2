@@ -62,38 +62,39 @@ function CustomStageModal({ isOpen, onClose, onAdd }: CustomStageModalProps) {
           </div>
           
           <div className="bg-white px-6 py-4">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Nome da Etapa *
-          </label>
-          <input
-            type="text"
-            required
-            value={stageName}
-            onChange={(e) => setStageName(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
-            placeholder="Ex: Aprovação de Licenças, Detalhamento..."
-            autoFocus
-          />
-        </div>
-        
-        <div className="flex justify-end space-x-3 pt-4">
-          <Button type="button" variant="outline" onClick={handleClose}>
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={!stageName.trim()}>
-            <Plus className="h-4 w-4 mr-2" />
-            Adicionar Etapa
-          </Button>
-        </div>
-      </form>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nome da Etapa *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={stageName}
+                  onChange={(e) => setStageName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
+                  placeholder="Ex: Aprovação de Licenças, Detalhamento..."
+                  autoFocus
+                />
+              </div>
+              
+              <div className="flex justify-end space-x-3 pt-4">
+                <Button type="button" variant="outline" onClick={handleClose}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={!stageName.trim()}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar Etapa
+                </Button>
+              </div>
+            </form>
           </div>
         </div>
       </div>
     </div>
   );
 }
+
 export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormProps) {
   const { addProject } = useProject();
   const { getAllUsers } = useAuth();
@@ -128,6 +129,7 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
       });
     }
   }, [project]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -567,207 +569,208 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
   return (
     <>
       <Modal isOpen={isOpen} onClose={onClose} title={project ? 'Editar Projeto' : 'Novo Projeto'} size="lg">
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Nome do Projeto *
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.name}
-              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Cliente *
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.client}
-              onChange={(e) => setFormData(prev => ({ ...prev, client: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Local *
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.location}
-              onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Responsável *
-            </label>
-            {project && (
-              <div className="mb-3 p-3 bg-blue-50 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  <strong>Atenção:</strong> Alterar as etapas de um projeto existente pode afetar as atividades já cadastradas.
-                </p>
-              </div>
-            )}
-            <select
-              required
-              value={formData.responsible}
-              onChange={(e) => setFormData(prev => ({ ...prev, responsible: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
-            >
-              <option value="">Selecione um responsável</option>
-              {users.map(user => (
-                <option key={user.id} value={user.name}>
-                  {user.name} - {user.role}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Número de Controle
-          </label>
-          <input
-            type="text"
-            value={formData.controlNumber}
-            onChange={(e) => setFormData(prev => ({ ...prev, controlNumber: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Descrição
-          </label>
-          <textarea
-            value={formData.description}
-            onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-            rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none resize-none"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-3">
-            Etapas do Projeto
-          </label>
-          
-          {/* Add Custom Stage Section */}
-          <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-medium text-gray-900">Adicionar Nova Etapa</h4>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setShowCustomStageModal(true)}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Criar Etapa Personalizada
-              </Button>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Nome do Projeto *
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
+              />
             </div>
-            <p className="text-xs text-gray-600">
-              Você pode criar etapas personalizadas que serão salvas para uso em futuros projetos.
-              As atividades padrão para essas etapas podem ser configuradas em <strong>Configurações → Atividades Padrão</strong>.
-            </p>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Cliente *
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.client}
+                onChange={(e) => setFormData(prev => ({ ...prev, client: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
+              />
+            </div>
           </div>
-          
-          {/* Stage Selection Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            {getAllAvailableStages().map(stageName => {
-              const isSelected = formData.selectedStages.includes(stageName);
-              const isDefaultStage = defaultStages.some(ds => ds.name === stageName);
-              const stageActivities = getStageActivitiesCount(stageName);
-              
-              return (
-                <div
-                  key={stageName}
-                  className={`relative border-2 rounded-lg p-4 cursor-pointer transition-all ${
-                    isSelected 
-                      ? 'border-black bg-black text-white' 
-                      : 'border-gray-200 bg-white hover:border-gray-300'
-                  }`}
-            const isCreatedInForm = customStagesCreatedInForm.includes(stageName);
-                  onClick={() => toggleStage(stageName)}
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Local *
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.location}
+                onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Responsável *
+              </label>
+              {project && (
+                <div className="mb-3 p-3 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    <strong>Atenção:</strong> Alterar as etapas de um projeto existente pode afetar as atividades já cadastradas.
+                  </p>
+                </div>
+              )}
+              <select
+                required
+                value={formData.responsible}
+                onChange={(e) => setFormData(prev => ({ ...prev, responsible: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
+              >
+                <option value="">Selecione um responsável</option>
+                {users.map(user => (
+                  <option key={user.id} value={user.name}>
+                    {user.name} - {user.role}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Número de Controle
+            </label>
+            <input
+              type="text"
+              value={formData.controlNumber}
+              onChange={(e) => setFormData(prev => ({ ...prev, controlNumber: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Descrição
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none resize-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Etapas do Projeto
+            </label>
+            
+            {/* Add Custom Stage Section */}
+            <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-medium text-gray-900">Adicionar Nova Etapa</h4>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowCustomStageModal(true)}
                 >
-                  <div className="text-center">
-                    <h3 className={`font-medium text-sm mb-1 ${
-                      isSelected ? 'text-white' : 'text-gray-900'
-                    }`}>
-                      {stageName}
-                    </h3>
-                    <p className={`text-xs ${
-                      isSelected ? 'text-gray-200' : 'text-gray-500'
-                    }`}>
-                      {stageActivities} atividade{stageActivities !== 1 ? 's' : ''}
-                    </p>
-                    {!isDefaultStage && (
-                      <div className="flex items-center justify-between mt-2">
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          isSelected 
-                            ? 'bg-white bg-opacity-20 text-white' 
-                            : 'bg-blue-100 text-blue-800'
-                        }`}>
-                          Personalizada
-                        </span>
-                        <button
-                  {!isDefaultStage && isCreatedInForm && (
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteCustomStage(stageName);
-                          }}
-                          className={`text-xs hover:text-red-600 transition-colors ${
-                            isSelected ? 'text-red-200' : 'text-red-500'
-                          }`}
-                          title="Excluir etapa personalizada"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Criar Etapa Personalizada
+                </Button>
+              </div>
+              <p className="text-xs text-gray-600">
+                Você pode criar etapas personalizadas que serão salvas para uso em futuros projetos.
+                As atividades padrão para essas etapas podem ser configuradas em <strong>Configurações → Atividades Padrão</strong>.
+              </p>
+            </div>
+            
+            {/* Stage Selection Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+              {getAllAvailableStages().map(stageName => {
+                const isSelected = formData.selectedStages.includes(stageName);
+                const isDefaultStage = defaultStages.some(ds => ds.name === stageName);
+                const stageActivities = getStageActivitiesCount(stageName);
+                const isCreatedInForm = customStagesCreatedInForm.includes(stageName);
+                
+                return (
+                  <div
+                    key={stageName}
+                    className={`relative border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                      isSelected 
+                        ? 'border-black bg-black text-white' 
+                        : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
+                    onClick={() => toggleStage(stageName)}
+                  >
+                    <div className="text-center">
+                      <h3 className={`font-medium text-sm mb-1 ${
+                        isSelected ? 'text-white' : 'text-gray-900'
+                      }`}>
+                        {stageName}
+                      </h3>
+                      <p className={`text-xs ${
+                        isSelected ? 'text-gray-200' : 'text-gray-500'
+                      }`}>
+                        {stageActivities} atividade{stageActivities !== 1 ? 's' : ''}
+                      </p>
+                      {!isDefaultStage && (
+                        <div className="flex items-center justify-between mt-2">
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            isSelected 
+                              ? 'bg-white bg-opacity-20 text-white' 
+                              : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            Personalizada
+                          </span>
+                          {!isDefaultStage && isCreatedInForm && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteCustomStage(stageName);
+                              }}
+                              className={`text-xs hover:text-red-600 transition-colors ${
+                                isSelected ? 'text-red-200' : 'text-red-500'
+                              }`}
+                              title="Excluir etapa personalizada"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Selection indicator */}
+                    {isSelected && (
+                      <div className="absolute top-2 right-2">
+                        <div className="w-4 h-4 bg-white rounded-full flex items-center justify-center">
+                          <div className="w-2 h-2 bg-black rounded-full"></div>
+                        </div>
                       </div>
                     )}
                   </div>
-                  
-                  {/* Selection indicator */}
-                  {isSelected && (
-                    <div className="absolute top-2 right-2">
-                      <div className="w-4 h-4 bg-white rounded-full flex items-center justify-center">
-                        <div className="w-2 h-2 bg-black rounded-full"></div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          
-          <p className="text-xs text-gray-500 mb-4">
-            Selecione as etapas que farão parte deste projeto. Atividades padrão serão automaticamente adicionadas.
-          </p>
+                );
+              })}
+            </div>
+            
+            <p className="text-xs text-gray-500 mb-4">
+              Selecione as etapas que farão parte deste projeto. Atividades padrão serão automaticamente adicionadas.
+            </p>
 
-          <div className="flex justify-end space-x-3 pt-6">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button type="submit">
-              {project ? 'Atualizar Projeto' : 'Criar Projeto'}
-            </Button>
+            <div className="flex justify-end space-x-3 pt-6">
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancelar
+              </Button>
+              <Button type="submit">
+                {project ? 'Atualizar Projeto' : 'Criar Projeto'}
+              </Button>
+            </div>
           </div>
-        </div>
-      </form>
+        </form>
       </Modal>
 
       <CustomStageModal
