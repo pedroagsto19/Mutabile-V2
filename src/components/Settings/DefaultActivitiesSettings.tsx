@@ -964,61 +964,6 @@ export function DefaultActivitiesSettings() {
             </select>
           </div>
 
-          {/* Stage Cards Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {stageActivities.map(stageData => {
-              const activityCount = stageData.activities.length;
-              const isDefaultStage = defaultStages.some(ds => ds.name === stageData.stageName);
-              
-              return (
-                <div
-                  key={stageData.stageName}
-                  className={`relative p-4 rounded-lg border-2 transition-all ${
-                    selectedStage === stageData.stageName
-                      ? 'border-black bg-black text-white'
-                      : 'border-gray-200 bg-white text-gray-900 hover:border-gray-300'
-                  }`}
-                >
-                  <button
-                    onClick={() => setSelectedStage(stageData.stageName)}
-                    className="w-full text-left"
-                  >
-                    <div className="font-medium">{stageData.stageName}</div>
-                    <div className={`text-sm mt-1 ${
-                      selectedStage === stageData.stageName ? 'text-gray-300' : 'text-gray-500'
-                    }`}>
-                      {activityCount} atividade{activityCount !== 1 ? 's' : ''}
-                    </div>
-                    {!isDefaultStage && (
-                      <div className={`text-xs mt-1 ${
-                        selectedStage === stageData.stageName ? 'text-blue-300' : 'text-blue-600'
-                      }`}>
-                        Personalizada
-                      </div>
-                    )}
-                  </button>
-                  
-                  {/* Delete button for custom stages */}
-                  {!isDefaultStage && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteStage(stageData.stageName);
-                      }}
-                      className={`absolute top-2 right-2 p-1 rounded-full transition-colors ${
-                        selectedStage === stageData.stageName
-                          ? 'text-white hover:bg-white hover:bg-opacity-20'
-                          : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
-                      }`}
-                      title="Excluir etapa personalizada"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
         </CardContent>
       </Card>
 
