@@ -34,6 +34,8 @@ export function SupplierProvider({ children }: { children: React.ReactNode }) {
 
   // Load suppliers from localStorage on mount
   useEffect(() => {
+    // Initialize sample suppliers if none exist
+    SupplierStorage.initializeSampleSuppliers();
     loadSuppliers();
   }, []);
 
