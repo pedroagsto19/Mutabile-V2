@@ -237,19 +237,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return permissions[permission as keyof typeof permissions] || false;
   };
 
-  const canEditUser = (user: User): boolean => {
+  const canEditUser = (targetUser: User): boolean => {
     if (!user) return false;
-    
+
     // Admin can edit anyone
     if (user.authLevel === 'admin') return true;
-    
-    // Gestor can edit team members
+
+    // Gestor can edit team members (but not admins)
     if (user.authLevel === 'gestor') {
-      return user.authLevel !== 'admin';
+      return targetUser.authLevel !== 'admin';
     }
-    
-    // Users can only edit themselves
-    return user.id === user.id;
+
+    // Regular users can only edit their own profile
+    return user.id === targetUser.id;
   };
 
   return (

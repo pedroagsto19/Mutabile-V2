@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { useNotificationSystem } from '../context/NotificationSystemContext';
 import { useAuth } from '../context/AuthContext';
 import type { Project, Activity } from '../types';
