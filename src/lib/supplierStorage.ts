@@ -31,10 +31,8 @@ class SupplierStorage {
   private static SUPPLIERS_KEY = 'mutabile_suppliers';
 
   static initializeSampleSuppliers() {
-    const existingSuppliers = this.getSuppliers();
-    if (existingSuppliers.length > 0) {
-      return; // Já existem fornecedores, não sobrescrever
-    }
+    // Sempre reinicializar com dados realistas
+    console.log('Inicializando fornecedores realistas...');
 
     const sampleSuppliers = [
       {
