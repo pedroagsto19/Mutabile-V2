@@ -490,39 +490,25 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
   };
 
   const addCustomStage = (stageName: string) => {
-    try {
-      const saved = localStorage.getItem('mutabile_default_activities');
-      const stageActivities = saved ? JSON.parse(saved) : [];
-      
-      // Check if stage already exists
-      if (stageActivities.some((sa: any) => sa.stageName === stageName)) {
-        toast.warning('Etapa já existe', `A etapa "${stageName}" já foi criada anteriormente.`);
-        return;
-      }
-      
-      // Add new stage with empty activities
-      const newStageData = {
-        stageName: stageName,
-        activities: []
-      };
-      
-      const updatedStageActivities = [...stageActivities, newStageData];
-      localStorage.setItem('mutabile_default_activities', JSON.stringify(updatedStageActivities));
-      
-      // Automatically select the new stage
-      setFormData(prev => ({
-        ...prev,
-        selectedStages: [...prev.selectedStages, stageName]
-      }));
-      
-      // Mark as created in form for UI differentiation
-      setCustomStagesCreatedInForm(prev => [...prev, stageName]);
-      
-      toast.success(`Etapa "${stageName}" criada com sucesso!`, 'Você pode configurar suas atividades padrão em Configurações → Atividades Padrão.');
-    } catch (error) {
-      console.error('Error adding custom stage:', error);
-      toast.error('Erro ao criar etapa personalizada');
+    // Check if stage already exists in global stages or project-specific stages
+    const globalStages = getAllAvailableStages();
+    const allProjectStages = [...globalStages, ...customStagesCreatedInForm];
+    
+    if (allProjectStages.includes(stageName)) {
+      toast.warning('Etapa já existe', `A etapa "${stageName}" já foi criada.`);
+      return;
     }
+    
+    // Add to project-specific stages (NOT to global configurations)
+    setCustomStagesCreatedInForm(prev => [...prev, stageName]);
+    
+    // Automatically select the new stage
+    setFormData(prev => ({
+      ...prev,
+      selectedStages: [...prev.selectedStages, stageName]
+    }));
+    
+    toast.success(`Etapa "${stageName}" criada para este projeto!`, 'Esta etapa é específica deste projeto e não afetará outros projetos.');
   };
 
   const deleteCustomStage = async (stageName: string) => {
@@ -541,28 +527,16 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
     });
 
     if (confirmed) {
-      try {
-        const saved = localStorage.getItem('mutabile_default_activities');
-        if (saved) {
-          const stageActivities = JSON.parse(saved);
-          const updatedStageActivities = stageActivities.filter((sa: any) => sa.stageName !== stageName);
-          localStorage.setItem('mutabile_default_activities', JSON.stringify(updatedStageActivities));
-          
-          // Remove from selected stages if it was selected
-          setFormData(prev => ({
-            ...prev,
-            selectedStages: prev.selectedStages.filter(s => s !== stageName)
-          }));
-          
-          // Remove from custom stages created in form
-          setCustomStagesCreatedInForm(prev => prev.filter(s => s !== stageName));
-          
-          toast.success(`Etapa "${stageName}" excluída com sucesso!`);
-        }
-      } catch (error) {
-        console.error('Error deleting custom stage:', error);
-        toast.error('Erro ao excluir etapa personalizada');
-      }
+      // Remove from project-specific stages only
+      setCustomStagesCreatedInForm(prev => prev.filter(s => s !== stageName));
+      
+      // Remove from selected stages if it was selected
+      setFormData(prev => ({
+        ...prev,
+        selectedStages: prev.selectedStages.filter(s => s !== stageName)
+      }));
+      
+      toast.success(`Etapa "${stageName}" removida deste projeto!`);
     }
   };
 
@@ -689,16 +663,54 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
             </div>
             
             {/* Stage Selection Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+              {/* Global stages from configurations */}
               {getAllAvailableStages().map(stageName => {
                 const isSelected = formData.selectedStages.includes(stageName);
-                const isDefaultStage = defaultStages.some(ds => ds.name === stageName);
                 const stageActivities = getStageActivitiesCount(stageName);
-                const isCreatedInForm = customStagesCreatedInForm.includes(stageName);
                 
                 return (
                   <div
                     key={stageName}
+                    className={`relative border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                      isSelected 
+                        ? 'border-black bg-black text-white' 
+                        : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
+                    onClick={() => toggleStage(stageName)}
+                  >
+                    <div className="text-center">
+                      <h3 className={`font-medium text-sm mb-2 ${
+                        isSelected ? 'text-white' : 'text-gray-900'
+                      }`}>
+                        {stageName}
+                      </h3>
+                      <p className={`text-xs ${
+                        isSelected ? 'text-gray-200' : 'text-gray-500'
+                      }`}>
+                        {stageActivities} atividade{stageActivities !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                    
+                    {/* Selection indicator */}
+                    {isSelected && (
+                      <div className="absolute top-2 right-2">
+                        <div className="w-4 h-4 bg-white rounded-full flex items-center justify-center">
+                          <div className="w-2 h-2 bg-black rounded-full"></div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              
+              {/* Project-specific custom stages */}
+              {customStagesCreatedInForm.map(stageName => {
+                const isSelected = formData.selectedStages.includes(stageName);
+                
+                return (
+                  <div
+                    key={`custom-${stageName}`}
                     className={`relative border-2 rounded-lg p-4 cursor-pointer transition-all ${
                       isSelected 
                         ? 'border-black bg-black text-white' 
@@ -715,33 +727,31 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
                       <p className={`text-xs ${
                         isSelected ? 'text-gray-200' : 'text-gray-500'
                       }`}>
-                        {stageActivities} atividade{stageActivities !== 1 ? 's' : ''}
+                        0 atividades
                       </p>
-                      {!isDefaultStage && (
-                        <div className="flex items-center justify-between mt-2">
-                          <span className={`text-xs px-2 py-1 rounded-full ${
-                            isSelected 
-                              ? 'bg-white bg-opacity-20 text-white' 
-                              : 'bg-blue-100 text-blue-800'
-                          }`}>
-                            Personalizada
-                          </span>
-                          {!isDefaultStage && isCreatedInForm && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteCustomStage(stageName);
-                              }}
-                              className={`text-xs hover:text-red-600 transition-colors ${
-                                isSelected ? 'text-red-200' : 'text-red-500'
-                              }`}
-                              title="Excluir etapa personalizada"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          )}
-                        </div>
-                      )}
+                      
+                      {/* Custom stage indicators */}
+                      <div className="flex items-center justify-between mt-2">
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          isSelected 
+                            ? 'bg-white bg-opacity-20 text-white' 
+                            : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          Personalizada
+                        </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteCustomStage(stageName);
+                          }}
+                          className={`text-xs hover:text-red-600 transition-colors ${
+                            isSelected ? 'text-red-200' : 'text-red-500'
+                          }`}
+                          title="Excluir etapa personalizada"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
                     </div>
                     
                     {/* Selection indicator */}
@@ -769,7 +779,6 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
                 {project ? 'Atualizar Projeto' : 'Criar Projeto'}
               </Button>
             </div>
-          </div>
         </form>
       </Modal>
 
