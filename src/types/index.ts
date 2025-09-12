@@ -24,6 +24,10 @@ export interface Project {
       status: 'not_started' | 'in_progress' | 'completed';
       progress: number;
       actualEndDate?: Date;
+      checklist: Array<{
+        id: string;
+        completed: boolean;
+      }>;
     }>;
   }>;
 }

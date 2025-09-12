@@ -125,7 +125,7 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
   const handleCompleteProject = () => {
     confirm({
       title: 'Concluir Projeto',
-      message: 'Tem certeza que deseja marcar este projeto como concluído? Todas as atividades também serão automaticamente concluídas.',
+      message: 'Tem certeza que deseja marcar este projeto como concluído? Todas as atividades e suas sub-etapas também serão automaticamente concluídas.',
       type: 'success',
       confirmText: 'Concluir',
       cancelText: 'Cancelar'
@@ -138,7 +138,11 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
             id: activity.id,
             status: activity.status,
             progress: activity.progress,
-            actualEndDate: activity.actualEndDate
+            actualEndDate: activity.actualEndDate,
+            checklist: activity.checklist.map(item => ({
+              id: item.id,
+              completed: item.completed
+            }))
           }))
         }));
         
@@ -149,7 +153,11 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
             ...activity,
             status: 'completed' as const,
             progress: 100,
-            actualEndDate: activity.actualEndDate || new Date()
+            actualEndDate: activity.actualEndDate || new Date(),
+            checklist: activity.checklist.map(item => ({
+              ...item,
+              completed: true
+            }))
           })),
           progress: 100,
           status: 'completed' as const
@@ -170,7 +178,7 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
   const handleUncompleteProject = () => {
     confirm({
       title: 'Desconcluir Projeto',
-      message: 'Tem certeza que deseja marcar este projeto como não concluído? As atividades voltarão ao estado anterior.',
+      message: 'Tem certeza que deseja marcar este projeto como não concluído? As atividades e suas sub-etapas voltarão ao estado anterior.',
       type: 'warning',
       confirmText: 'Desconcluir',
       cancelText: 'Cancelar'
@@ -192,7 +200,14 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
                     ...activity,
                     status: savedActivityState.status,
                     progress: savedActivityState.progress,
-                    actualEndDate: savedActivityState.actualEndDate
+                    actualEndDate: savedActivityState.actualEndDate,
+                    checklist: activity.checklist.map(item => {
+                      const savedChecklistItem = savedActivityState.checklist?.find(c => c.id === item.id);
+                      return savedChecklistItem ? {
+                        ...item,
+                        completed: savedChecklistItem.completed
+                      } : item;
+                    })
                   };
                 }
                 return activity;
