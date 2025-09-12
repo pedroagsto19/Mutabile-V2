@@ -70,6 +70,12 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
 
   const [countryType, setCountryType] = useState<'brasil' | 'outros'>('brasil');
 
+  // State for autocomplete
+  const [citySearch, setCitySearch] = useState('');
+  const [countrySearch, setCountrySearch] = useState('');
+  const [showCityDropdown, setShowCityDropdown] = useState(false);
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+
   // Filter active projects only and update when projects change
   const activeProjects = React.useMemo(() => {
     console.log('All projects:', projects); // Debug log
@@ -84,6 +90,29 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
   React.useEffect(() => {
     console.log('Active projects updated:', activeProjects);
   }, [activeProjects]);
+
+  // Helper functions for autocomplete
+  const getFilteredCountries = () => {
+    if (!countrySearch) return [];
+    
+    const existingCountries = suppliers
+      .map(s => s.location.country)
+      .filter(country => country && country !== 'Brasil')
+      .filter(country => country.toLowerCase().includes(countrySearch.toLowerCase()));
+    
+    return [...new Set(existingCountries)].sort();
+  };
+
+  const getFilteredCities = () => {
+    if (!citySearch) return [];
+    
+    const existingCities = suppliers
+      .map(s => s.location.city)
+      .filter(city => city && city.toLowerCase().includes(citySearch.toLowerCase()));
+    
+    return [...new Set(existingCities)].sort();
+  };
+
   // Update form data when supplier changes
   useEffect(() => {
     if (supplier) {
@@ -364,20 +393,8 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Cidade *
               </label>
-              <AutocompleteInput
-                value={citySearch}
-                onChange={setCitySearch}
-                onSelect={(city) => {
-                  setCitySearch(city);
-                  setFormData(prev => ({ 
-                    ...prev, 
-                    location: { ...prev.location, city }
-                  }));
-                }}
-                options={getFilteredCities()}
-                placeholder="Digite a cidade..."
-                showDropdown={showCityDropdown}
-                setShowDropdown={setShowCityDropdown}
+              <input
+                type="text"
                 required
                 value={formData.location.city}
                 onChange={(e) => setFormData(prev => ({ 
@@ -441,6 +458,12 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
               <input
                 type="text"
                 required
+                value={formData.location.state}
+                onChange={(e) => setFormData(prev => ({ 
+                  ...prev, 
+                  location: { ...prev.location, state: e.target.value }
+                }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
               />
             </div>
             
@@ -448,21 +471,15 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Cidade *
               </label>
-              <AutocompleteInput
-                value={citySearch}
-                onChange={setCitySearch}
-                onSelect={(city) => {
-                  setCitySearch(city);
-                  setFormData(prev => ({ 
-                    ...prev, 
-                    location: { ...prev.location, city }
-                  }));
-                }}
-                options={getFilteredCities()}
-                placeholder="Digite a cidade..."
-                showDropdown={showCityDropdown}
-                setShowDropdown={setShowCityDropdown}
+              <input
+                type="text"
                 required
+                value={formData.location.city}
+                onChange={(e) => setFormData(prev => ({ 
+                  ...prev, 
+                  location: { ...prev.location, city: e.target.value }
+                }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
               />
             </div>
           </div>
