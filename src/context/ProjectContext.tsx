@@ -33,19 +33,19 @@ const convertLocalProject = (localProject: any): Project => ({
   createdAt: new Date(localProject.createdAt),
   updatedAt: new Date(localProject.updatedAt),
   nextDeadline: localProject.nextDeadline ? new Date(localProject.nextDeadline) : undefined,
-  stages: localProject.stages.map((stage: any) => ({
+  stages: (localProject.stages || []).map((stage: any) => ({
     ...stage,
-    activities: stage.activities.map((activity: any) => ({
+    activities: (stage.activities || []).map((activity: any) => ({
       ...activity,
       plannedStartDate: new Date(activity.plannedStartDate),
       plannedEndDate: new Date(activity.plannedEndDate),
       actualStartDate: activity.actualStartDate ? new Date(activity.actualStartDate) : undefined,
       actualEndDate: activity.actualEndDate ? new Date(activity.actualEndDate) : undefined,
       timerStartTime: activity.timerStartTime ? new Date(activity.timerStartTime) : undefined,
-      checklist: activity.checklist ? activity.checklist.map((item: any) => ({
+      checklist: (activity.checklist || []).map((item: any) => ({
         ...item,
         createdAt: new Date(item.createdAt)
-      })) : []
+      }))
     }))
   }))
 });
