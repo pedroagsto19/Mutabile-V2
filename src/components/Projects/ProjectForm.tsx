@@ -131,6 +131,153 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Garantir que as atividades padrão estejam disponíveis
+    try {
+      const saved = localStorage.getItem('mutabile_default_activities');
+      if (!saved) {
+        console.log('Inicializando atividades padrão...');
+        // Importar e executar a inicialização das atividades padrão
+        const sampleActivities = [
+          {
+            stageName: 'Anteprojeto',
+            activities: [
+              {
+                id: 'ant_001',
+                title: 'Levantamento e análise do terreno',
+                description: 'Análise topográfica, orientação solar, ventos predominantes e condições do local',
+                plannedDuration: 16,
+                priority: 'high',
+                dependencies: [],
+                checklist: [
+                  { id: 'ant_001_c1', title: 'Levantamento topográfico' },
+                  { id: 'ant_001_c2', title: 'Análise de orientação solar' },
+                  { id: 'ant_001_c3', title: 'Estudo de ventos predominantes' },
+                  { id: 'ant_001_c4', title: 'Análise do entorno e acessos' }
+                ],
+                driveLinks: []
+              },
+              {
+                id: 'ant_002',
+                title: 'Programa de necessidades',
+                description: 'Definição detalhada dos ambientes, áreas e funcionalidades do projeto',
+                plannedDuration: 12,
+                priority: 'high',
+                dependencies: [
+                  { id: 'ant_002_dep1', dependsOn: 'ant_001', type: 'finish_start' }
+                ],
+                checklist: [
+                  { id: 'ant_002_c1', title: 'Entrevista com cliente' },
+                  { id: 'ant_002_c2', title: 'Definição de ambientes' },
+                  { id: 'ant_002_c3', title: 'Cálculo de áreas necessárias' },
+                  { id: 'ant_002_c4', title: 'Aprovação do programa' }
+                ],
+                driveLinks: []
+              },
+              {
+                id: 'ant_003',
+                title: 'Estudo de viabilidade urbanística',
+                description: 'Análise de zoneamento, recuos, taxa de ocupação e restrições legais',
+                plannedDuration: 8,
+                priority: 'high',
+                dependencies: [
+                  { id: 'ant_003_dep1', dependsOn: 'ant_001', type: 'finish_start' }
+                ],
+                checklist: [
+                  { id: 'ant_003_c1', title: 'Consulta ao zoneamento' },
+                  { id: 'ant_003_c2', title: 'Verificação de recuos obrigatórios' },
+                  { id: 'ant_003_c3', title: 'Cálculo de taxa de ocupação' },
+                  { id: 'ant_003_c4', title: 'Análise de restrições ambientais' }
+                ],
+                driveLinks: []
+              }
+            ]
+          },
+          {
+            stageName: 'Projeto Legal',
+            activities: [
+              {
+                id: 'leg_001',
+                title: 'Desenvolvimento de plantas baixas técnicas',
+                description: 'Plantas baixas técnicas com cotas, especificações e detalhes para aprovação',
+                plannedDuration: 24,
+                priority: 'high',
+                dependencies: [],
+                checklist: [
+                  { id: 'leg_001_c1', title: 'Plantas baixas cotadas' },
+                  { id: 'leg_001_c2', title: 'Especificação de materiais' },
+                  { id: 'leg_001_c3', title: 'Detalhes construtivos básicos' },
+                  { id: 'leg_001_c4', title: 'Revisão técnica' }
+                ],
+                driveLinks: []
+              },
+              {
+                id: 'leg_002',
+                title: 'Cortes e fachadas',
+                description: 'Desenvolvimento de cortes longitudinais, transversais e fachadas',
+                plannedDuration: 20,
+                priority: 'high',
+                dependencies: [
+                  { id: 'leg_002_dep1', dependsOn: 'leg_001', type: 'finish_start' }
+                ],
+                checklist: [
+                  { id: 'leg_002_c1', title: 'Cortes longitudinais e transversais' },
+                  { id: 'leg_002_c2', title: 'Fachadas principais' },
+                  { id: 'leg_002_c3', title: 'Indicação de materiais' },
+                  { id: 'leg_002_c4', title: 'Cotas de nível' }
+                ],
+                driveLinks: []
+              }
+            ]
+          },
+          {
+            stageName: 'Projeto Executivo',
+            activities: [
+              {
+                id: 'exe_001',
+                title: 'Detalhamento arquitetônico',
+                description: 'Detalhamento completo de todos os elementos arquitetônicos',
+                plannedDuration: 32,
+                priority: 'high',
+                dependencies: [],
+                checklist: [
+                  { id: 'exe_001_c1', title: 'Detalhes de esquadrias' },
+                  { id: 'exe_001_c2', title: 'Detalhes de acabamentos' },
+                  { id: 'exe_001_c3', title: 'Detalhes construtivos' },
+                  { id: 'exe_001_c4', title: 'Especificações técnicas' }
+                ],
+                driveLinks: []
+              }
+            ]
+          },
+          {
+            stageName: 'Planejamento',
+            activities: [
+              {
+                id: 'pla_001',
+                title: 'Definição de escopo e cronograma',
+                description: 'Definição detalhada do escopo do projeto e cronograma de execução',
+                plannedDuration: 8,
+                priority: 'high',
+                dependencies: [],
+                checklist: [
+                  { id: 'pla_001_c1', title: 'Definição do escopo detalhado' },
+                  { id: 'pla_001_c2', title: 'Cronograma macro' },
+                  { id: 'pla_001_c3', title: 'Marcos principais' },
+                  { id: 'pla_001_c4', title: 'Aprovação com cliente' }
+                ],
+                driveLinks: []
+              }
+            ]
+          }
+        ];
+        
+        localStorage.setItem('mutabile_default_activities', JSON.stringify(sampleActivities));
+        console.log('Atividades padrão inicializadas com sucesso');
+      }
+    } catch (error) {
+      console.error('Erro ao inicializar atividades padrão:', error);
+    }
+    
     // Combine default and custom stages
     const allStages = [...formData.selectedStages, ...formData.customStages];
     
@@ -141,7 +288,9 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
         if (saved) {
           const defaultActivities = JSON.parse(saved);
           const stageData = defaultActivities.find((sa: any) => sa.stageName === stageName);
-          return stageData?.activities || [];
+          const activities = stageData?.activities || [];
+          console.log(`Carregando ${activities.length} atividades padrão para ${stageName}`);
+          return activities;
         }
       } catch (error) {
         console.error('Error loading default activities:', error);

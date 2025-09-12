@@ -19,11 +19,9 @@ function AppContent() {
   useEffect(() => {
     const initData = async () => {
       try {
-        const hasSession = await hasValidSession();
-        if (hasSession) {
-          console.log("Usuário autenticado, inicializando dados demo...");
-          await initializeDemoData();
-        }
+        // Sempre inicializar dados demo, independente da sessão
+        console.log("Inicializando dados demo...");
+        await initializeDemoData();
       } catch (error) {
         console.error("Erro ao inicializar dados demo:", error);
       }
