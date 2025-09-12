@@ -63,6 +63,15 @@ export interface Activity {
   isTimerActive: boolean;
   timerStartTime?: Date;
   checklist: ChecklistItem[];
+  driveLinks: DriveLink[];
+}
+
+export interface DriveLink {
+  id: string;
+  title: string;
+  url: string;
+  description?: string;
+  createdAt: Date;
 }
 
 export interface ChecklistItem {
