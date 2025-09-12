@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Edit, CheckCircle, Plus, Play, Pause, Square, Clock, BarChart3 } from 'lucide-react';
+import { ArrowLeft, Edit, CheckCircle, Plus, Play, Pause, Square, Clock, BarChart3, RotateCcw } from 'lucide-react';
 import { Button } from '../UI/Button';
 import { Card, CardHeader, CardContent } from '../UI/Card';
 import { ProgressBar } from '../UI/ProgressBar';
@@ -140,6 +140,23 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
     });
   };
 
+  const handleUncompleteProject = () => {
+    confirm({
+      title: 'Desconcluir Projeto',
+      message: 'Tem certeza que deseja marcar este projeto como não concluído?',
+      type: 'warning',
+      confirmText: 'Desconcluir',
+      cancelText: 'Cancelar'
+    }).then((confirmed) => {
+      if (confirmed) {
+        updateProject(projectId, { 
+          status: 'in_progress'
+          // Não alteramos o progress aqui, mantemos o progresso atual
+        });
+        toast.success('Projeto marcado como não concluído!');
+      }
+    });
+  };
   const handleUpdateProject = (projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => {
     // Preserve the project ID and timestamps when updating
     const updatedData = {
@@ -180,6 +197,24 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
     });
   };
 
+  const handleUncompleteActivity = (activity: Activity) => {
+    confirm({
+      title: 'Desconcluir Atividade',
+      message: 'Tem certeza que deseja marcar esta atividade como não concluída?',
+      type: 'warning',
+      confirmText: 'Desconcluir',
+      cancelText: 'Cancelar'
+    }).then((confirmed) => {
+      if (confirmed) {
+        updateActivity(activity.id, {
+          status: 'in_progress',
+          actualEndDate: undefined
+          // Mantemos o progress atual, não resetamos para 0
+        });
+        toast.success('Atividade marcada como não concluída!');
+      }
+    });
+  };
   const TimeEditorModal = () => {
     const [timeData, setTimeData] = useState({
       hours: editingTimeActivity ? Math.floor(editingTimeActivity.actualDuration) : 0,
@@ -688,10 +723,17 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
             </Button>
           </ProtectedRoute>
           <ProtectedRoute requiredPermission="canEditProjects">
-            <Button variant="primary" onClick={handleCompleteProject}>
-              <CheckCircle className="h-4 w-4 mr-2" />
-              Concluir Projeto
-            </Button>
+            {project.status === 'completed' ? (
+              <Button variant="outline" onClick={handleUncompleteProject}>
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Desconcluir Projeto
+              </Button>
+            ) : (
+              <Button variant="primary" onClick={handleCompleteProject}>
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Concluir Projeto
+              </Button>
+            )}
           </ProtectedRoute>
         </div>
       </div>
@@ -911,20 +953,32 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
                       
                       <div className="flex items-center space-x-2 ml-4">
                         {/* Complete Activity Button */}
-                        {activity.status !== 'completed' && (
+                        {(
                           currentUser?.authLevel === 'admin' || 
                           currentUser?.authLevel === 'gestor' || 
                           (currentUser?.authLevel === 'equipe' && activity.responsible === currentUser.name)
                         ) && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleCompleteActivity(activity)}
-                            className="text-green-600 border-green-600 hover:bg-green-50"
-                          >
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            Atividade Concluída
-                          </Button>
+                          activity.status === 'completed' ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleUncompleteActivity(activity)}
+                              className="text-orange-600 border-orange-600 hover:bg-orange-50"
+                            >
+                              <RotateCcw className="h-4 w-4 mr-1" />
+                              Desconcluir
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleCompleteActivity(activity)}
+                              className="text-green-600 border-green-600 hover:bg-green-50"
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Concluir
+                            </Button>
+                          )
                         )}
                         
                         {/* Timer Controls */}
