@@ -19,6 +19,9 @@ export async function initializeDemoData() {
     // Inicializar dados padrão no localStorage
     LocalStorage.initializeDefaultData();
     
+    // Inicializar atividades padrão
+    LocalStorage.initializeDefaultActivities();
+    
     // Adicionar atividades de exemplo
     LocalStorage.addSampleActivitiesToExistingProjects();
     
