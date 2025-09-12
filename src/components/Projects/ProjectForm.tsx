@@ -770,15 +770,16 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
             <p className="text-xs text-gray-500 mb-4">
               Selecione as etapas que farão parte deste projeto. Atividades padrão serão automaticamente adicionadas.
             </p>
+          </div>
 
-            <div className="flex justify-end space-x-3 pt-6">
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancelar
-              </Button>
-              <Button type="submit">
-                {project ? 'Atualizar Projeto' : 'Criar Projeto'}
-              </Button>
-            </div>
+          <div className="flex justify-end space-x-3 pt-6">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button type="submit">
+              {project ? 'Atualizar Projeto' : 'Criar Projeto'}
+            </Button>
+          </div>
         </form>
       </Modal>
 
