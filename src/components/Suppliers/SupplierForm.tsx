@@ -236,7 +236,7 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
         }
       }));
       setCountrySearch('Brasil');
-      setCitySearch(prev.location.city || '');
+      setCitySearch(formData.location.city || '');
     } else {
       setFormData(prev => ({
         ...prev,
@@ -247,7 +247,7 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
         }
       }));
       setCountrySearch('');
-      setCitySearch(prev.location.city || '');
+      setCitySearch(formData.location.city || '');
     }
   };
 
