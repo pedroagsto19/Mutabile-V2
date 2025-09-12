@@ -673,69 +673,36 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
             </p>
           </div>
           
-          {/* Available Stages List */}
-          <div className="space-y-3 mb-3 max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-3">
-            {getAllAvailableStages().map(stageName => {
-              const isDefaultStage = defaultStages.some(ds => ds.name === stageName);
-              const stageActivities = getStageActivitiesCount(stageName);
-              
-              return (
-                <label key={stageName} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors">
-                  <div className="flex items-center flex-1">
-                    <input
-                      type="checkbox"
-                      checked={formData.selectedStages.includes(stageName)}
-                      onChange={() => toggleStage(stageName)}
-                      className="h-4 w-4 text-black focus:ring-black border-gray-300 rounded"
-                    />
-                    <div className="ml-3 flex-1">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm font-medium text-gray-900">{stageName}</span>
-                        {!isDefaultStage && (
-                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                            Personalizada
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {stageActivities} atividade{stageActivities !== 1 ? 's' : ''} padrão configurada{stageActivities !== 1 ? 's' : ''}
-                      </p>
-                    </div>
-                  </div>
-                  {!isDefaultStage && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        deleteCustomStage(stageName);
-                      }}
-                      className="text-red-600 hover:text-red-800 hover:bg-red-50"
-                      title="Excluir etapa personalizada"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
-                </label>
-              );
-            })}
-            
-            {getAllAvailableStages().length === 0 && (
-              <div className="text-center py-8">
-                <p className="text-sm text-gray-500 mb-3">Nenhuma etapa disponível.</p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowCustomStageModal(true)}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Criar Primeira Etapa
-                </Button>
-              </div>
-            )}
+          {/* Dropdown para seleção de etapas */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Selecionar Etapas *
+            </label>
+            <select
+              multiple
+              value={formData.selectedStages}
+              onChange={(e) => {
+                const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+                setFormData(prev => ({ ...prev, selectedStages: selectedOptions }));
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none min-h-[120px]"
+              size={6}
+            >
+              {getAllAvailableStages().map(stageName => {
+                const isDefaultStage = defaultStages.some(ds => ds.name === stageName);
+                const stageActivities = getStageActivitiesCount(stageName);
+                
+                return (
+                  <option key={stageName} value={stageName}>
+                    {stageName} ({stageActivities} atividade{stageActivities !== 1 ? 's' : ''})
+                    {!isDefaultStage ? ' - Personalizada' : ''}
+                  </option>
+                );
+              })}
+            </select>
+            <p className="text-xs text-gray-500 mt-2">
+              Segure Ctrl (ou Cmd no Mac) para selecionar múltiplas etapas
+            </p>
           </div>
           
           <p className="text-xs text-gray-500">
