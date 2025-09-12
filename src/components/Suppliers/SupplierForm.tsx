@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../UI/Button';
 import { Modal } from '../UI/Modal';
+import { ChevronDown, X } from 'lucide-react';
 import { useSupplier } from '../../context/SupplierContext';
 import { useProject } from '../../context/ProjectContext';
 import type { Supplier } from '../../types/supplier';
@@ -43,7 +44,7 @@ const brazilianStates = [
 ];
 
 export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
-  const { addSupplier, updateSupplier } = useSupplier();
+  const { addSupplier, updateSupplier, suppliers } = useSupplier();
   const { projects } = useProject();
   const { toast } = useNotification();
   
@@ -109,6 +110,10 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
         evaluations: supplier.evaluations,
         linkedProjects: supplier.linkedProjects
       });
+      
+      // Set search values for autocomplete
+      setCountrySearch(supplier.location.country || '');
+      setCitySearch(supplier.location.city || '');
     } else {
       // Reset form for new supplier
       setCountryType('brasil');
@@ -132,6 +137,10 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
         evaluations: [],
         linkedProjects: []
       });
+      
+      // Reset search values
+      setCountrySearch('');
+      setCitySearch('');
     }
   }, [supplier, isOpen]);
 
@@ -182,6 +191,7 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
           state: ''
         }
       }));
+      setCountrySearch('Brasil');
     } else {
       setFormData(prev => ({
         ...prev,
@@ -191,6 +201,7 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
           state: ''
         }
       }));
+      setCountrySearch('');
     }
   };
 
@@ -213,6 +224,77 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
       </div>
     );
   };
+
+  const AutocompleteInput = ({ 
+    value, 
+    onChange, 
+    onSelect, 
+    options, 
+    placeholder, 
+    showDropdown, 
+    setShowDropdown,
+    required = false 
+  }: {
+    value: string;
+    onChange: (value: string) => void;
+    onSelect: (value: string) => void;
+    options: string[];
+    placeholder: string;
+    showDropdown: boolean;
+    setShowDropdown: (show: boolean) => void;
+    required?: boolean;
+  }) => (
+    <div className="relative">
+      <input
+        type="text"
+        required={required}
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setShowDropdown(true);
+        }}
+        onFocus={() => setShowDropdown(true)}
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
+        placeholder={placeholder}
+      />
+      
+      {showDropdown && options.length > 0 && (
+        <>
+          <div 
+            className="fixed inset-0 z-10" 
+            onClick={() => setShowDropdown(false)}
+          />
+          <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+            {options.map((option, index) => (
+              <button
+                key={index}
+                type="button"
+                onClick={() => {
+                  onSelect(option);
+                  setShowDropdown(false);
+                }}
+                className="w-full text-left px-3 py-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none text-sm"
+              >
+                {option}
+              </button>
+            ))}
+            {value && !options.includes(value) && (
+              <button
+                type="button"
+                onClick={() => {
+                  onSelect(value);
+                  setShowDropdown(false);
+                }}
+                className="w-full text-left px-3 py-2 hover:bg-blue-100 focus:bg-blue-100 focus:outline-none text-sm border-t border-gray-200 bg-blue-50"
+              >
+                <span className="text-blue-600">+ Adicionar "{value}"</span>
+              </button>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
 
   const toggleProject = (projectId: string) => {
     setFormData(prev => ({
@@ -282,8 +364,20 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Cidade *
               </label>
-              <input
-                type="text"
+              <AutocompleteInput
+                value={citySearch}
+                onChange={setCitySearch}
+                onSelect={(city) => {
+                  setCitySearch(city);
+                  setFormData(prev => ({ 
+                    ...prev, 
+                    location: { ...prev.location, city }
+                  }));
+                }}
+                options={getFilteredCities()}
+                placeholder="Digite a cidade..."
+                showDropdown={showCityDropdown}
+                setShowDropdown={setShowCityDropdown}
                 required
                 value={formData.location.city}
                 onChange={(e) => setFormData(prev => ({ 
@@ -322,15 +416,21 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 País *
               </label>
-              <input
-                type="text"
+              <AutocompleteInput
+                value={countrySearch}
+                onChange={setCountrySearch}
+                onSelect={(country) => {
+                  setCountrySearch(country);
+                  setFormData(prev => ({ 
+                    ...prev, 
+                    location: { ...prev.location, country }
+                  }));
+                }}
+                options={getFilteredCountries()}
+                placeholder="Digite o país..."
+                showDropdown={showCountryDropdown}
+                setShowDropdown={setShowCountryDropdown}
                 required
-                value={formData.location.country}
-                onChange={(e) => setFormData(prev => ({ 
-                  ...prev, 
-                  location: { ...prev.location, country: e.target.value }
-                }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
               />
             </div>
             
@@ -341,12 +441,6 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
               <input
                 type="text"
                 required
-                value={formData.location.state}
-                onChange={(e) => setFormData(prev => ({ 
-                  ...prev, 
-                  location: { ...prev.location, state: e.target.value }
-                }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
               />
             </div>
             
@@ -354,15 +448,21 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Cidade *
               </label>
-              <input
-                type="text"
+              <AutocompleteInput
+                value={citySearch}
+                onChange={setCitySearch}
+                onSelect={(city) => {
+                  setCitySearch(city);
+                  setFormData(prev => ({ 
+                    ...prev, 
+                    location: { ...prev.location, city }
+                  }));
+                }}
+                options={getFilteredCities()}
+                placeholder="Digite a cidade..."
+                showDropdown={showCityDropdown}
+                setShowDropdown={setShowCityDropdown}
                 required
-                value={formData.location.city}
-                onChange={(e) => setFormData(prev => ({ 
-                  ...prev, 
-                  location: { ...prev.location, city: e.target.value }
-                }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
               />
             </div>
           </div>
