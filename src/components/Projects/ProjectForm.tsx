@@ -704,28 +704,3 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
               Segure Ctrl (ou Cmd no Mac) para selecionar múltiplas etapas
             </p>
           </div>
-          
-          <p className="text-xs text-gray-500">
-            Selecione as etapas que farão parte deste projeto. As atividades padrão serão criadas automaticamente.
-          </p>
-        </div>
-
-        <div className="flex justify-end space-x-3 pt-6">
-          <Button type="button" variant="outline" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button type="submit">
-            {project ? 'Salvar Alterações' : 'Criar Projeto'}
-          </Button>
-        </div>
-      </form>
-    </Modal>
-      
-      <CustomStageModal
-        isOpen={showCustomStageModal}
-        onClose={() => setShowCustomStageModal(false)}
-        onAdd={addCustomStage}
-      />
-    </>
-  );
-}
