@@ -1,6 +1,7 @@
 // Re-export auth types
 export type { User } from './auth';
 export type { Supplier, SupplierFilters } from './supplier';
+export type { Client, Proposal, CommercialActivity, ClientFilters, FunnelStats } from './client';
 
 export interface Project {
   id: string;

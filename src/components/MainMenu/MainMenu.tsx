@@ -52,12 +52,12 @@ export function MainMenu({ onModuleSelect, currentUser }: MainMenuProps) {
       available: true
     },
     {
-      id: 'vendas',
-      name: 'Cadastro de Vendas',
-      description: 'Registro e controle de vendas',
+      id: 'clientes',
+      name: 'Cadastro de Clientes',
+      description: 'Gestão de clientes e funil de vendas',
       icon: ShoppingCart,
       color: 'bg-purple-500',
-      available: false
+      available: true
     },
     {
       id: 'precificacao',

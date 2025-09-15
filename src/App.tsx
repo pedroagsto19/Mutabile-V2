@@ -10,6 +10,7 @@ import { NotificationSystemProvider } from "./context/NotificationSystemContext"
 // Ajuste estes caminhos conforme seus arquivos
 import { WorksApp } from "./components/Works/WorksApp";
 import { SupplierApp } from "./components/Suppliers/SupplierApp";
+import { ClientApp } from "./components/Clients/ClientApp";
 import { NotificationProvider } from "./context/NotificationContext";
 import { ProjectProvider } from "./context/ProjectContext";
 
@@ -38,6 +39,8 @@ function AppContent() {
         return <WorksApp onBackToMenu={handleBackToMenu} />;
       case "fornecedores":
         return <SupplierApp onBackToMenu={handleBackToMenu} />;
+      case "clientes":
+        return <ClientApp onBackToMenu={handleBackToMenu} />;
       default:
         return (
           <MainMenu
