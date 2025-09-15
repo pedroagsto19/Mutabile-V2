@@ -116,6 +116,27 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     return 0;
   };
 
+  // Alternative calculation based on completed tasks count
+  const calculateStageProgressByTaskCount = (stage: Stage) => {
+    if (stage.activities.length === 0) return 0;
+    
+    const completedActivities = stage.activities.filter(activity => 
+      activity.status === 'completed'
+    ).length;
+    
+    return Math.round((completedActivities / stage.activities.length) * 100);
+  };
+
+  // Current calculation based on average progress of activities
+  const calculateStageProgressByAverage = (stage: Stage) => {
+    if (stage.activities.length === 0) return 0;
+    
+    const totalProgress = stage.activities.reduce((sum, activity) => {
+      return sum + calculateActivityProgress(activity);
+    }, 0);
+    
+    return Math.round(totalProgress / stage.activities.length);
+  };
   const addProject = (projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (!hasPermission('canCreateProjects')) {
       throw new Error('Sem permissão para criar projetos');
@@ -172,12 +193,22 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     // Calculate project progress based on activities
     let calculatedProgress = updates.progress;
     if (updates.stages) {
+      // Option 1: Calculate based on average progress of all activities (current method)
+      // const allActivities = updates.stages.flatMap(stage => stage.activities);
+      // if (allActivities.length > 0) {
+      //   const totalProgress = allActivities.reduce((sum, activity) => {
+      //     return sum + calculateActivityProgress(activity);
+      //   }, 0);
+      //   calculatedProgress = Math.round(totalProgress / allActivities.length);
+      // }
+      
+      // Option 2: Calculate based on completed tasks count
       const allActivities = updates.stages.flatMap(stage => stage.activities);
       if (allActivities.length > 0) {
-        const totalProgress = allActivities.reduce((sum, activity) => {
-          return sum + calculateActivityProgress(activity);
-        }, 0);
-        calculatedProgress = Math.round(totalProgress / allActivities.length);
+        const completedActivities = allActivities.filter(activity => 
+          activity.status === 'completed'
+        ).length;
+        calculatedProgress = Math.round((completedActivities / allActivities.length) * 100);
       }
     }
     
@@ -416,6 +447,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       activeTimer,
       getElapsedTime,
       calculateActivityProgress,
+      calculateStageProgressByTaskCount,
+      calculateStageProgressByAverage,
       canUserEditActivity
     }}>
       {children}
