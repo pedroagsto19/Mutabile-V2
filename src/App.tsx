@@ -13,6 +13,7 @@ import { SupplierApp } from "./components/Suppliers/SupplierApp";
 import { ClientApp } from "./components/Clients/ClientApp";
 import { NotificationProvider } from "./context/NotificationContext";
 import { ProjectProvider } from "./context/ProjectContext";
+import { ClientProvider } from "./context/ClientContext";
 
 function AppContent() {
   const [currentModule, setCurrentModule] = React.useState<string | null>(null);
@@ -63,9 +64,11 @@ export default function App() {
     <AuthProvider>
       <NotificationSystemProvider>
         <NotificationProvider>
-          <ProjectProvider>
-            <AppContent />
-          </ProjectProvider>
+          <ClientProvider>
+            <ProjectProvider>
+              <AppContent />
+            </ProjectProvider>
+          </ClientProvider>
         </NotificationProvider>
       </NotificationSystemProvider>
     </AuthProvider>

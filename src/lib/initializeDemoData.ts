@@ -1,5 +1,6 @@
 import { supabase, hasValidSession } from './supabase';
 import LocalStorage from './localStorage';
+import ClientStorage from './clientStorage';
 
 export async function initializeDemoData() {
   try {
@@ -58,6 +59,12 @@ export async function initializeDemoData() {
     
     // Adicionar atividades de exemplo
     LocalStorage.addSampleActivitiesToExistingProjects();
+    
+    // Inicializar dados de clientes
+    const existingClients = ClientStorage.getClients();
+    if (existingClients.length === 0) {
+      ClientStorage.initializeSampleClients();
+    }
     
     console.log('Dados demo criados com sucesso');
     

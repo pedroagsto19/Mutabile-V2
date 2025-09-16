@@ -6,6 +6,7 @@ import { ProjectDetail } from "../Projects/ProjectDetail";
 import { ProjectForm } from "../Projects/ProjectForm";
 import { SupplierApp } from "../Suppliers/SupplierApp";
 import { ProtectedRoute } from "../Auth/ProtectedRoute";
+import { ClientProvider } from "../../context/ClientContext";
 
 type View =
   | "dashboard"
@@ -81,23 +82,25 @@ export function WorksApp({ onBackToMenu }: WorksAppProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50" style={{ fontFamily: "Heebo, sans-serif" }}>
-      <WorksHeader
-        currentView={currentView}
-        onViewChange={setCurrentView}
-        onBackToMenu={onBackToMenu}
-      />
-
-      <main className="max-w-7xl mx-auto px-6 py-8">{renderContent()}</main>
-
-      {/* Gate de criação por permissão específica */}
-      <ProtectedRoute requiredPermission="canCreateProjects">
-        <ProjectForm
-          isOpen={showProjectForm}
-          onClose={() => setShowProjectForm(false)}
-          onSubmit={handleProjectCreated}
+    <ClientProvider>
+      <div className="min-h-screen bg-gray-50" style={{ fontFamily: "Heebo, sans-serif" }}>
+        <WorksHeader
+          currentView={currentView}
+          onViewChange={setCurrentView}
+          onBackToMenu={onBackToMenu}
         />
-      </ProtectedRoute>
-    </div>
+
+        <main className="max-w-7xl mx-auto px-6 py-8">{renderContent()}</main>
+
+        {/* Gate de criação por permissão específica */}
+        <ProtectedRoute requiredPermission="canCreateProjects">
+          <ProjectForm
+            isOpen={showProjectForm}
+            onClose={() => setShowProjectForm(false)}
+            onSubmit={handleProjectCreated}
+          />
+        </ProtectedRoute>
+      </div>
+    </ClientProvider>
   );
 }

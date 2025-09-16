@@ -5,6 +5,7 @@ import { Modal } from '../UI/Modal';
 import { useProject } from '../../context/ProjectContext';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
+import { useClient } from '../../context/ClientContext';
 import { useConfirm } from '../../hooks/useConfirm';
 import type { Project } from '../../types';
 import { defaultStages } from '../../data/mockData';
@@ -98,6 +99,7 @@ function CustomStageModal({ isOpen, onClose, onAdd }: CustomStageModalProps) {
 export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormProps) {
   const { addProject } = useProject();
   const { getAllUsers } = useAuth();
+  const { clients } = useClient();
   const { toast, confirm } = useNotification();
   const users = getAllUsers();
   const [showCustomStageModal, setShowCustomStageModal] = useState(false);
@@ -129,6 +131,9 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
       });
     }
   }, [project]);
+
+  // Get clients that have completed the sales funnel (status: 'closed')
+  const availableClients = clients.filter(client => client.funnelStage === 'closed');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -562,13 +567,30 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Cliente *
               </label>
-              <input
-                type="text"
+              <select
                 required
                 value={formData.client}
                 onChange={(e) => setFormData(prev => ({ ...prev, client: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
-              />
+              >
+                <option value="">Selecione um cliente</option>
+                {availableClients.map(client => (
+                  <option key={client.id} value={client.name}>
+                    {client.name} - {client.documentType.toUpperCase()}: {client.document}
+                  </option>
+                ))}
+              </select>
+              {availableClients.length === 0 && (
+                <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800">
+                    <strong>Nenhum cliente disponível!</strong>
+                  </p>
+                  <p className="text-xs text-yellow-700 mt-1">
+                    Para criar um projeto, você precisa ter clientes com status "Fechado" no funil de vendas.
+                    Vá para <strong>Cadastro de Clientes</strong> para cadastrar e gerenciar o funil de vendas.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -776,7 +798,7 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button type="submit">
+            <Button type="submit" disabled={availableClients.length === 0}>
               {project ? 'Atualizar Projeto' : 'Criar Projeto'}
             </Button>
           </div>
