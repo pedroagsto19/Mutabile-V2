@@ -339,54 +339,6 @@ export function DashboardOverview({ onProjectSelect }: DashboardOverviewProps) {
 
       {/* Projects Gantt Overview */}
       <ProjectsGanttOverview />
-
-      {/* Progress Overview */}
-      <Card>
-        <CardHeader>
-          <h2 className="text-lg font-semibold text-gray-900">Visão Geral de Progresso</h2>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {projects.map((project) => (
-              <div key={project.id} className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2 min-w-0 flex-1">
-                  <User className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <p 
-                      className="font-medium text-gray-900 truncate hover:text-blue-600 cursor-pointer transition-colors"
-                      onClick={() => onProjectSelect?.(project.id)}
-                    >
-                      {project.name}
-                    </p>
-                    <p className="text-sm text-gray-500 truncate">{project.client}</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-4">
-                  <div className="w-32">
-                    <ProgressBar value={project.progress} />
-                  </div>
-                  <span className="text-sm font-medium text-gray-900 w-12 text-right">
-                    {project.progress}%
-                  </span>
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    project.status === 'completed' 
-                      ? 'bg-green-100 text-green-800'
-                      : project.status === 'in_progress'
-                      ? 'bg-blue-100 text-blue-800'
-                      : project.status === 'on_hold'
-                      ? 'bg-yellow-100 text-yellow-800'
-                      : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {project.status === 'completed' ? 'Concluído' :
-                     project.status === 'in_progress' ? 'Em Andamento' :
-                     project.status === 'on_hold' ? 'Pausado' : 'Planejamento'}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
