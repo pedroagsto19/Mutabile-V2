@@ -101,17 +101,17 @@ export function ClientList({ onClientSelect }: ClientListProps) {
   const handleDeleteClient = (clientId: string) => {
     confirm({
       title: 'Excluir Cliente',
-      message: 'Tem certeza que deseja excluir este cliente? Esta ação também removerá todas as propostas e atividades relacionadas.',
+      message: 'Tem certeza que deseja excluir este cliente? Esta ação também removerá todas as propostas e atividades relacionadas e não pode ser desfeita.',
       type: 'danger',
-      confirmText: 'Excluir',
+      confirmText: 'Excluir Cliente',
       cancelText: 'Cancelar'
     }).then((confirmed) => {
       if (confirmed) {
         try {
           deleteClient(clientId);
           toast.success('Cliente excluído com sucesso!');
-        } catch (error) {
-          toast.error('Erro ao excluir cliente', 'Tente novamente mais tarde.');
+        } catch (error: any) {
+          toast.error('Erro ao excluir cliente', error.message || 'Tente novamente mais tarde.');
         }
       }
     });

@@ -66,10 +66,14 @@ export function ClientForm({ isOpen, onClose, client }: ClientFormProps) {
   // Update form data when client changes
   useEffect(() => {
     if (client) {
+      // Auto-detect document type for existing client
+      const cleanDoc = client.document.replace(/\D/g, '');
+      const detectedType = cleanDoc.length === 14 ? 'cnpj' : 'cpf';
+      
       setFormData({
         name: client.name,
         document: client.document,
-        documentType: client.documentType,
+        documentType: detectedType,
         email: client.email,
         phone: client.phone,
         address: {
@@ -109,9 +113,9 @@ export function ClientForm({ isOpen, onClose, client }: ClientFormProps) {
     const cleanDoc = document.replace(/\D/g, '');
     
     if (type === 'cpf') {
-      return cleanDoc.length === 11;
+      return cleanDoc.length === 11 && /^\d{11}$/.test(cleanDoc);
     } else {
-      return cleanDoc.length === 14;
+      return cleanDoc.length === 14 && /^\d{14}$/.test(cleanDoc);
     }
   };
 
@@ -119,10 +123,15 @@ export function ClientForm({ isOpen, onClose, client }: ClientFormProps) {
     const cleanDoc = document.replace(/\D/g, '');
     
     if (type === 'cpf') {
-      return cleanDoc.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+      if (cleanDoc.length === 11) {
+        return cleanDoc.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+      }
     } else {
-      return cleanDoc.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+      if (cleanDoc.length === 14) {
+        return cleanDoc.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+      }
     }
+    return document; // Return as-is if not complete
   };
 
   const formatPhone = (phone: string): string => {
@@ -145,16 +154,27 @@ export function ClientForm({ isOpen, onClose, client }: ClientFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Auto-detect document type based on clean length
+    const cleanDoc = formData.document.replace(/\D/g, '');
+    let finalDocumentType: 'cpf' | 'cnpj' = 'cpf';
+    
+    if (cleanDoc.length === 14) {
+      finalDocumentType = 'cnpj';
+    } else if (cleanDoc.length === 11) {
+      finalDocumentType = 'cpf';
+    }
+    
     // Validate document
-    if (!validateDocument(formData.document, formData.documentType)) {
-      toast.error('Documento inválido', `${formData.documentType.toUpperCase()} deve ter o formato correto`);
+    if (!validateDocument(formData.document, finalDocumentType)) {
+      toast.error('Documento inválido', `${finalDocumentType.toUpperCase()} deve ter o formato correto (${finalDocumentType === 'cpf' ? '11 dígitos' : '14 dígitos'})`);
       return;
     }
 
     try {
       const clientData = {
         ...formData,
-        document: formatDocument(formData.document, formData.documentType),
+        documentType: finalDocumentType,
+        document: formatDocument(formData.document, finalDocumentType),
         phone: formatPhone(formData.phone),
         address: {
           ...formData.address,
@@ -200,36 +220,48 @@ export function ClientForm({ isOpen, onClose, client }: ClientFormProps) {
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tipo de Documento *
+              Tipo Detectado
             </label>
-            <select
-              value={formData.documentType}
-              onChange={(e) => setFormData(prev => ({ 
-                ...prev, 
-                documentType: e.target.value as 'cpf' | 'cnpj',
-                document: '' // Clear document when type changes
-              }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
-            >
-              <option value="cpf">CPF (Pessoa Física)</option>
-              <option value="cnpj">CNPJ (Pessoa Jurídica)</option>
-            </select>
+            <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+              {formData.documentType === 'cpf' ? 'CPF (Pessoa Física)' : 'CNPJ (Pessoa Jurídica)'}
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Tipo detectado automaticamente baseado no número de dígitos
+            </p>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {formData.documentType === 'cpf' ? 'CPF' : 'CNPJ'} *
+              CPF/CNPJ *
             </label>
             <input
               type="text"
               required
               value={formData.document}
-              onChange={(e) => setFormData(prev => ({ ...prev, document: e.target.value }))}
+              onChange={(e) => {
+                const value = e.target.value;
+                const cleanValue = value.replace(/\D/g, '');
+                
+                // Auto-detect document type based on length
+                let detectedType: 'cpf' | 'cnpj' = 'cpf';
+                if (cleanValue.length > 11) {
+                  detectedType = 'cnpj';
+                }
+                
+                setFormData(prev => ({ 
+                  ...prev, 
+                  document: value,
+                  documentType: detectedType
+                }));
+              }}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
-              placeholder={formData.documentType === 'cpf' ? '000.000.000-00' : '00.000.000/0000-00'}
+              placeholder="000.000.000-00 ou 00.000.000/0000-00"
             />
+            <p className="text-xs text-gray-500 mt-1">
+              Digite CPF (11 dígitos) ou CNPJ (14 dígitos). O tipo será detectado automaticamente.
+            </p>
           </div>
           
           <div>

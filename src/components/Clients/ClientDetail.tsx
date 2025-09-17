@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Edit, MapPin, Mail, Phone, Plus, Calendar, Clock, DollarSign, FileText } from 'lucide-react';
+import { ArrowLeft, Edit, MapPin, Mail, Phone, Plus, Calendar, Clock, DollarSign, FileText, Trash2 } from 'lucide-react';
 import { Button } from '../UI/Button';
 import { Card, CardHeader, CardContent } from '../UI/Card';
 import { ClientForm } from './ClientForm';
@@ -8,6 +8,7 @@ import { CommercialActivityForm } from './CommercialActivityForm';
 import { FunnelStageSelector } from './FunnelStageSelector';
 import { useClient } from '../../context/ClientContext';
 import { useAuth } from '../../context/AuthContext';
+import { useNotification } from '../../context/NotificationContext';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -21,9 +22,12 @@ export function ClientDetail({ clientId, onBack }: ClientDetailProps) {
     clients, 
     getClientProposals, 
     getClientActivities, 
-    canEditClient 
+    canEditClient,
+    canDeleteClient,
+    deleteClient
   } = useClient();
   const { getAllUsers } = useAuth();
+  const { toast, confirm } = useNotification();
   const users = getAllUsers();
   const [showEditForm, setShowEditForm] = useState(false);
   const [showProposalForm, setShowProposalForm] = useState(false);
@@ -115,6 +119,26 @@ export function ClientDetail({ clientId, onBack }: ClientDetailProps) {
     return user ? user.name : 'Usuário não encontrado';
   };
 
+  const handleDeleteClient = async (clientId: string) => {
+    const confirmed = await confirm({
+      title: 'Excluir Cliente',
+      message: 'Tem certeza que deseja excluir este cliente? Esta ação também removerá todas as propostas e atividades relacionadas e não pode ser desfeita.',
+      type: 'danger',
+      confirmText: 'Excluir Cliente',
+      cancelText: 'Cancelar'
+    });
+
+    if (confirmed) {
+      try {
+        deleteClient(clientId);
+        toast.success('Cliente excluído com sucesso!');
+        onBack(); // Volta para a lista após excluir
+      } catch (error: any) {
+        toast.error('Erro ao excluir cliente', error.message || 'Tente novamente mais tarde.');
+      }
+    }
+  };
+
   const totalProposalValue = proposals
     .filter(p => p.status === 'active' || p.status === 'accepted')
     .reduce((sum, p) => sum + p.value, 0);
@@ -165,6 +189,15 @@ export function ClientDetail({ clientId, onBack }: ClientDetailProps) {
             <Button onClick={() => setShowEditForm(true)}>
               <Edit className="h-4 w-4 mr-2" />
               Editar Cliente
+            </Button>
+          )}
+          {canDeleteClient() && (
+            <Button 
+              variant="danger" 
+              onClick={() => handleDeleteClient(client.id)}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Excluir Cliente
             </Button>
           )}
           <Button onClick={() => setShowProposalForm(true)}>
