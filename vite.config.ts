@@ -7,6 +7,7 @@ export default defineConfig({
   plugins: [react()],
   build: {
     rollupOptions: {
+      input: 'index.html',
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
