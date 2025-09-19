@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { LoginForm } from './LoginForm';
 import { useAuth } from '../../context/AuthContext';
 
@@ -8,9 +8,22 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requiredPermission }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, error } = useAuth();
+  const [showFallback, setShowFallback] = useState(false);
 
-  if (isLoading) {
+  // Show fallback after 8 seconds if still loading
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (isLoading) {
+        setShowFallback(true);
+      }
+    }, 8000);
+
+    return () => clearTimeout(timer);
+  }, [isLoading]);
+
+  // Loading state
+  if (isLoading && !showFallback) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
@@ -21,16 +34,34 @@ export function ProtectedRoute({ children, requiredPermission }: ProtectedRouteP
     );
   }
 
+  // Loading fallback with retry option
+  if (isLoading && showFallback) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
+          <p className="text-gray-600 mb-4">A verificação está demorando mais que o esperado...</p>
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <p className="text-sm text-yellow-800 mb-3">
+              Isso pode indicar problemas de conectividade com o Supabase.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+            >
+              Tentar Novamente
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login form if not authenticated
   if (!isAuthenticated) {
-    return <LoginForm onLoginSuccess={() => {}} />;
+    return <LoginForm onLoginSuccess={() => window.location.reload()} />;
   }
 
-  // If a specific permission is required but we don't have permission system,
-  // just show the children (for now)
-  if (requiredPermission) {
-    // In a real app, you'd check permissions here
-    // For now, just allow access
-  }
-
+  // Show children if authenticated
   return <>{children}</>;
 }

@@ -3,7 +3,6 @@ import React, { useEffect } from "react";
 import { AuthProvider } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/Auth/ProtectedRoute";
 import { MainMenu } from "./components/MainMenu/MainMenu";
-import { initializeDemoData } from "./lib/initializeDemoData";
 import { NotificationSystemProvider } from "./context/NotificationSystemContext";
 
 // Ajuste estes caminhos conforme seus arquivos
@@ -16,19 +15,6 @@ import { ClientProvider } from "./context/ClientContext";
 
 function AppContent() {
   const [currentModule, setCurrentModule] = React.useState<string | null>(null);
-
-  useEffect(() => {
-    const initData = async () => {
-      try {
-        // Sempre inicializar dados demo, independente da sessão
-        console.log("Inicializando dados demo...");
-        await initializeDemoData();
-      } catch (error) {
-        console.error("Erro ao inicializar dados demo:", error);
-      }
-    };
-    initData();
-  }, []);
 
   const handleModuleSelect = (module: string) => setCurrentModule(module);
   const handleBackToMenu = () => setCurrentModule(null);
