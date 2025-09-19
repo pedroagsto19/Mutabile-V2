@@ -133,86 +133,88 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    let mounted = true;
+
     // Check initial session
-    checkSession();
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
+        
+        if (error) {
+          console.error('Erro ao verificar sessão:', error);
+          setError(explainSupabaseError(error));
+          setIsAuthenticated(false);
+          setUser(null);
+        } else if (session?.user) {
+          const userProfile = await fetchUserProfile(session.user);
+          if (mounted && userProfile) {
+            setUser(userProfile);
+            setIsAuthenticated(true);
+            setError(null);
+          } else if (mounted) {
+            setError('Perfil do usuário não encontrado');
+            setUser(null);
+            setIsAuthenticated(false);
+          }
+        } else if (mounted) {
+          setUser(null);
+          setIsAuthenticated(false);
+        }
+      } catch (e: any) {
+        if (mounted) {
+          console.error('Erro ao verificar sessão:', e);
+          setError(explainSupabaseError(e));
+          setIsAuthenticated(false);
+          setUser(null);
+        }
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    initializeAuth();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!mounted) return;
+        
         console.log('Auth event:', event, session?.user?.email);
 
         if (session?.user) {
           const userProfile = await fetchUserProfile(session.user);
-          if (userProfile) {
+          if (mounted && userProfile) {
             setUser(userProfile);
             setIsAuthenticated(true);
             setError(null);
-            refreshUsers();
-          } else {
+          } else if (mounted) {
             setError('Perfil do usuário não encontrado');
             setUser(null);
             setIsAuthenticated(false);
-            setAllUsers([]);
           }
-        } else {
+        } else if (mounted) {
           setUser(null);
           setIsAuthenticated(false);
-          setAllUsers([]);
         }
-
-        setIsLoading(false);
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
     if (isAuthenticated) {
       refreshUsers();
-    } else {
-      setAllUsers([]);
     }
   }, [isAuthenticated]);
 
-  const checkSession = async () => {
-    try {
-      if (!supabase) {
-        setIsLoading(false);
-        return;
-      }
-
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.error('Erro ao verificar sessão:', error);
-        setError(explainSupabaseError(error));
-        setIsAuthenticated(false);
-        setUser(null);
-      } else if (session?.user) {
-        const userProfile = await fetchUserProfile(session.user);
-        if (userProfile) {
-          setUser(userProfile);
-          setIsAuthenticated(true);
-          setError(null);
-        } else {
-          setError('Perfil do usuário não encontrado');
-          setUser(null);
-          setIsAuthenticated(false);
-        }
-      } else {
-        setUser(null);
-        setIsAuthenticated(false);
-      }
-    } catch (e: any) {
-      console.error('Erro ao verificar sessão:', e);
-      setError(explainSupabaseError(e));
-      setIsAuthenticated(false);
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const refreshUsers = async () => {
     try {
@@ -220,6 +222,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setAllUsers(users);
     } catch (fetchError) {
       console.error('Erro ao buscar usuários:', fetchError);
+      setAllUsers([]);
     }
   };
 
