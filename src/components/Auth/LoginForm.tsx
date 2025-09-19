@@ -130,6 +130,7 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
             <img src="/png.png" alt="Mutabile Logo" className="h-12 w-auto" />
             <div>
               <p><strong>Admin:</strong> admin@mutabile.com.br / admin123</p>
+              <h1 className="text-2xl font-bold text-gray-900">
                 Mutabile
               </h1>
               <p className="text-sm text-gray-600">Gestão de Projetos</p>
