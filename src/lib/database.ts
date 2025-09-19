@@ -402,20 +402,20 @@ export const supplierOperations = {
         price: supplier.price_rating,
         recommendation: supplier.recommendation_rating
       },
-      evaluations: (supplier.supplier_evaluations || []).map((eval: any) => ({
-        id: eval.id,
-        supplierId: eval.supplier_id,
-        projectId: eval.project_id,
-        projectName: eval.project_name,
-        evaluationDate: new Date(eval.evaluation_date),
+      evaluations: (supplier.supplier_evaluations || []).map((evaluation: any) => ({
+        id: evaluation.id,
+        supplierId: evaluation.supplier_id,
+        projectId: evaluation.project_id,
+        projectName: evaluation.project_name,
+        evaluationDate: new Date(evaluation.evaluation_date),
         ratings: {
-          quality: eval.quality_rating,
-          price: eval.price_rating,
-          recommendation: eval.recommendation_rating
+          quality: evaluation.quality_rating,
+          price: evaluation.price_rating,
+          recommendation: evaluation.recommendation_rating
         },
-        notes: eval.notes,
-        evaluatedBy: eval.evaluated_by,
-        createdAt: new Date(eval.created_at)
+        notes: evaluation.notes,
+        evaluatedBy: evaluation.evaluated_by,
+        createdAt: new Date(evaluation.created_at)
       })),
       linkedProjects: supplier.linked_projects || [],
       createdAt: new Date(supplier.created_at),
