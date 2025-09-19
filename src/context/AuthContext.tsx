@@ -46,8 +46,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const ensureUserProfile = async (authUser: any) => {
     if (!authUser?.id || !authUser?.email) {
+      console.log('ensureUserProfile: authUser inválido', { id: authUser?.id, email: authUser?.email });
       return null;
     }
+
+    console.log('ensureUserProfile: verificando perfil para', authUser.email);
 
     const existingById = await supabase
       .from<DbUserRecord>('users')
@@ -57,12 +60,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (existingById.error) {
       console.error('Erro ao verificar perfil por ID:', existingById.error);
-      throw existingById.error;
+      // Não falhar aqui, tentar por email
     }
 
     if (existingById.data) {
+      console.log('Perfil encontrado por ID:', existingById.data.email);
       return existingById.data;
     }
+
+    console.log('Perfil não encontrado por ID, verificando por email...');
 
     const existingByEmail = await supabase
       .from<DbUserRecord>('users')
@@ -72,8 +78,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (existingByEmail.error) {
       console.error('Erro ao verificar perfil por e-mail:', existingByEmail.error);
-      throw existingByEmail.error;
+      // Não falhar aqui, criar novo perfil
     }
+
+    if (existingByEmail.data) {
+      console.log('Perfil encontrado por email, atualizando ID:', existingByEmail.data.email);
+      // Atualizar o ID do perfil existente para corresponder ao auth user
+      const { data: updatedProfile, error: updateError } = await supabase
+        .from<DbUserRecord>('users')
+        .update({ id: authUser.id })
+        .eq('email', authUser.email)
+        .select()
+        .single();
+      
+      if (updateError) {
+        console.error('Erro ao atualizar ID do perfil:', updateError);
+      } else {
+        return updatedProfile;
+      }
+    }
+
+    console.log('Criando novo perfil para:', authUser.email);
 
     const fallbackName = authUser.user_metadata?.full_name
       || authUser.user_metadata?.name
@@ -87,38 +112,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       auth_level: string;
     } = {
       id: authUser.id,
-      name: existingByEmail.data?.name || fallbackName,
+      name: fallbackName,
       email: authUser.email,
-      role: existingByEmail.data?.role || authUser.user_metadata?.role || 'Administrador',
-      auth_level: normalizeAuthLevel(existingByEmail.data?.auth_level || authUser.user_metadata?.auth_level),
-      team_id: existingByEmail.data?.team_id ?? authUser.user_metadata?.team_id ?? null,
-      manager_id: existingByEmail.data?.manager_id ?? authUser.user_metadata?.manager_id ?? null,
-      created_by: existingByEmail.data?.created_by ?? null
+      role: authUser.user_metadata?.role || 'Usuário',
+      auth_level: normalizeAuthLevel(authUser.user_metadata?.auth_level || 'leitor'),
+      team_id: authUser.user_metadata?.team_id ?? null,
+      manager_id: authUser.user_metadata?.manager_id ?? null,
+      created_by: null
     };
 
     const upsertedProfile = await supabase
       .from<DbUserRecord>('users')
-      .upsert(profilePayload, { onConflict: 'email' })
+      .insert(profilePayload)
       .select()
       .single();
 
     if (upsertedProfile.error) {
       console.error('Erro ao sincronizar perfil do usuário:', upsertedProfile.error);
-      throw upsertedProfile.error;
+      return null;
     }
 
+    console.log('Perfil criado com sucesso:', upsertedProfile.data.email);
     return upsertedProfile.data;
   };
 
   const fetchUserProfile = async (authUser: any): Promise<User | null> => {
     try {
+      console.log('fetchUserProfile: buscando perfil para', authUser.email);
       const profile = await ensureUserProfile(authUser);
 
       if (!profile) {
-        console.error('Não foi possível sincronizar o perfil do usuário.');
+        console.error('Não foi possível sincronizar o perfil do usuário:', authUser.email);
         return null;
       }
 
+      console.log('fetchUserProfile: perfil encontrado/criado:', profile.email);
       return mapUserRecord(profile);
     } catch (e) {
       console.error('Erro ao buscar perfil do usuário:', e);

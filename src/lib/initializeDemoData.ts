@@ -12,33 +12,21 @@ export async function initializeDemoData() {
       return;
     }
     
-    // Verificar se já existem projetos no banco (indicando que dados demo já foram criados)
-    const existingProjects = await projectOperations.getAll();
+    console.log('Dados demo já foram inseridos via migração SQL');
+    console.log('Verificando se dados existem...');
     
-    if (existingProjects.length > 0) {
-      console.log('Dados demo já existem no banco de dados');
-      return;
+    try {
+      const projects = await projectOperations.getAll();
+      const clients = await clientOperations.getAll();
+      console.log(`Encontrados ${projects.length} projetos e ${clients.length} clientes`);
+    } catch (error) {
+      console.error('Erro ao verificar dados:', error);
     }
-    
-    console.log('Inicializando dados demo no Supabase...');
-    
-    // Criar clientes demo
-    await createDemoClients();
-    
-    // Criar fornecedores demo
-    await createDemoSuppliers();
-    
-    // Criar projetos demo
-    await createDemoProjects();
-    
-    // Criar atividades padrão
-    await createDefaultActivities();
-    
-    console.log('Dados demo criados com sucesso');
     
   } catch (e: any) {
     console.error('initializeDemoData error:', e);
-    throw new Error(`Falha ao inicializar dados: ${e?.message || 'erro desconhecido'}`);
+    // Não falhar aqui, apenas logar o erro
+    console.log('Dados demo podem já estar inicializados ou haverá erro de permissão');
   }
 }
 
