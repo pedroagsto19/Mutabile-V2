@@ -129,14 +129,11 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
           <div className="flex items-center justify-center space-x-3 mb-6">
             <img src="/png.png" alt="Mutabile Logo" className="h-12 w-auto" />
             <div>
-              <p><strong>Admin:</strong> admin@mutabile.com.br / admin123</p>
+              <h1 className="text-2xl font-bold text-gray-900">
                 Mutabile
               </h1>
               <p className="text-sm text-gray-600">Gestão de Projetos</p>
             </div>
-            <p className="mt-2 text-xs text-gray-500">
-              Faça login primeiro, depois os dados demo serão inicializados automaticamente.
-            </p>
           </div>
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
             Acesso ao Sistema
@@ -237,22 +234,30 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
         {/* Example Logins */}
         <Card>
           <CardHeader>
-            <h3 className="text-sm font-semibold text-gray-900">Logins de Exemplo</h3>
+            <h3 className="text-sm font-semibold text-gray-900">Acesso Inicial</h3>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
+            <div className="space-y-3">
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800 mb-2">
+                  <strong>Primeiro Acesso:</strong>
+                </p>
+                <p className="text-xs text-blue-700">
+                  Use o login de administrador para configurar o sistema e criar seus próprios usuários, clientes, fornecedores e projetos.
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={async () => {
                   if (!canLogin) return;
-                  setEmail('marina@mutabile.com.br');
+                  setEmail('admin@mutabile.com.br');
                   setPassword('admin123');
                   setError('');
                   setIsLoading(true);
                   
                   try {
                     const { data, error: authError } = await supabase.auth.signInWithPassword({
-                      email: 'marina@mutabile.com.br',
+                      email: 'admin@mutabile.com.br',
                       password: 'admin123'
                     });
 
@@ -273,128 +278,14 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
                     setIsLoading(false);
                   }
                 }}
-                className="w-full text-left p-2 text-xs bg-red-50 hover:bg-red-100 rounded border transition-colors"
+                className="w-full text-left p-3 text-sm bg-red-50 hover:bg-red-100 rounded border transition-colors font-medium"
                 disabled={!canLogin}
               >
-                <strong>Admin:</strong> marina@mutabile.com.br / admin123
-              </button>
-              
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!canLogin) return;
-                  setEmail('ana@mutabile.com.br');
-                  setPassword('gestor123');
-                  setError('');
-                  setIsLoading(true);
-                  
-                  try {
-                    const { data, error: authError } = await supabase.auth.signInWithPassword({
-                      email: 'ana@mutabile.com.br',
-                      password: 'gestor123'
-                    });
-
-                    if (authError) {
-                      setError(explainSupabaseError(authError));
-                      return;
-                    }
-                    if (data.session) {
-                      console.log('Login Gestor realizado com sucesso');
-                      onLoginSuccess();
-                    } else {
-                      setError('Falha no login: sessão não criada');
-                    }
-                  } catch (e: any) {
-                    console.error('Erro no login Gestor:', e);
-                    setError(explainSupabaseError(e));
-                  } finally {
-                    setIsLoading(false);
-                  }
-                }}
-                className="w-full text-left p-2 text-xs bg-blue-50 hover:bg-blue-100 rounded border transition-colors"
-                disabled={!canLogin}
-              >
-                <strong>Gestor:</strong> ana@mutabile.com.br / gestor123
-              </button>
-              
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!canLogin) return;
-                  setEmail('carlos@mutabile.com.br');
-                  setPassword('equipe123');
-                  setError('');
-                  setIsLoading(true);
-                  
-                  try {
-                    const { data, error: authError } = await supabase.auth.signInWithPassword({
-                      email: 'carlos@mutabile.com.br',
-                      password: 'equipe123'
-                    });
-
-                    if (authError) {
-                      setError(explainSupabaseError(authError));
-                      return;
-                    }
-                    if (data.session) {
-                      console.log('Login Equipe realizado com sucesso');
-                      onLoginSuccess();
-                    } else {
-                      setError('Falha no login: sessão não criada');
-                    }
-                  } catch (e: any) {
-                    console.error('Erro no login Equipe:', e);
-                    setError(explainSupabaseError(e));
-                  } finally {
-                    setIsLoading(false);
-                  }
-                }}
-                className="w-full text-left p-2 text-xs bg-green-50 hover:bg-green-100 rounded border transition-colors"
-                disabled={!canLogin}
-              >
-                <strong>Equipe:</strong> carlos@mutabile.com.br / equipe123
-              </button>
-              
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!canLogin) return;
-                  setEmail('joao@mutabile.com.br');
-                  setPassword('leitor123');
-                  setError('');
-                  setIsLoading(true);
-                  
-                  try {
-                    const { data, error: authError } = await supabase.auth.signInWithPassword({
-                      email: 'joao@mutabile.com.br',
-                      password: 'leitor123'
-                    });
-
-                    if (authError) {
-                      setError(explainSupabaseError(authError));
-                      return;
-                    }
-                    if (data.session) {
-                      console.log('Login Leitor realizado com sucesso');
-                      onLoginSuccess();
-                    } else {
-                      setError('Falha no login: sessão não criada');
-                    }
-                  } catch (e: any) {
-                    console.error('Erro no login Leitor:', e);
-                    setError(explainSupabaseError(e));
-                  } finally {
-                    setIsLoading(false);
-                  }
-                }}
-                className="w-full text-left p-2 text-xs bg-gray-50 hover:bg-gray-100 rounded border transition-colors"
-                disabled={!canLogin}
-              >
-                <strong>Leitor:</strong> joao@mutabile.com.br / leitor123
+                <strong>Usuário Inicial:</strong> admin@mutabile.com.br / admin123
               </button>
             </div>
             <p className="text-xs text-gray-500 mt-3">
-              💡 Clique em qualquer login para entrar automaticamente
+              💡 Use este login inicial para acessar o sistema e criar seus próprios usuários, clientes e projetos
             </p>
           </CardContent>
         </Card>
@@ -414,7 +305,7 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
               <p>• Adicionar domínio *.webcontainer-api.io</p>
               
               <p><strong>3. Email Auth:</strong></p>
-              <p>• Desabilitar "Enable email signups"</p>
+              <p>• Configurar conforme necessário</p>
             </div>
           </CardContent>
         </Card>

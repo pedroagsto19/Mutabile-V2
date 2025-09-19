@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase, hasValidSession, explainSupabaseError } from '../lib/supabase';
-import { userOperations } from '../lib/database';
+import { supabase, explainSupabaseError } from '../lib/supabase';
+import { userOperations, type DbUserRecord } from '../lib/database';
 import type { User } from '../types/auth';
 
 interface AuthContextType {
@@ -24,33 +24,140 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
 
-  const fetchUserProfile = async (authUser: any): Promise<User | null> => {
+  const normalizeAuthLevel = (value: any): User['authLevel'] => {
+    const allowed: User['authLevel'][] = ['admin', 'gestor', 'equipe', 'leitor'];
+    return allowed.includes(value) ? value : 'admin';
+  };
+
+  const mapUserRecord = (record: DbUserRecord): User => ({
+    id: record.id,
+    name: record.name,
+    email: record.email,
+    role: record.role,
+    authLevel: normalizeAuthLevel(record.auth_level),
+    teamId: record.team_id ?? undefined,
+    managerId: record.manager_id ?? undefined,
+    createdBy: record.created_by ?? undefined,
+    createdAt: new Date(record.created_at),
+    updatedAt: new Date(record.updated_at)
+  });
+
+  const ensureUserProfile = async (authUser: any) => {
+    if (!authUser?.id || !authUser?.email) {
+      console.warn('ensureUserProfile: authUser inválido', { id: authUser?.id, email: authUser?.email });
+      return null;
+    }
+
+    console.log('Verificando perfil para:', authUser.email);
+
     try {
-      const { data: user, error } = await supabase
-        .from('users')
+      // Primeiro, tentar buscar por ID (mais eficiente)
+      const { data: existingById, error: idError } = await supabase
+      .from<DbUserRecord>('users')
+      .select('*')
+      .eq('id', authUser.id)
+      .maybeSingle();
+
+      if (!idError && existingById) {
+        console.log('Perfil encontrado por ID:', existingById.email);
+        return existingById;
+      }
+      
+      // Se não encontrou por ID, tentar por email
+      console.log('Perfil não encontrado por ID, tentando por email...');
+      const { data: existingByEmail, error: emailError } = await supabase
+        .from<DbUserRecord>('users')
         .select('*')
         .eq('email', authUser.email)
         .single();
+
+      if (!emailError && existingByEmail) {
+        console.log('Perfil encontrado por email:', existingByEmail.email);
+        
+        // Se o ID for diferente, atualizar para corresponder ao auth user
+        if (existingByEmail.id !== authUser.id) {
+          console.log('Atualizando ID do perfil para corresponder ao auth user...');
+          const { data: updatedProfile, error: updateError } = await supabase
+            .from<DbUserRecord>('users')
+            .update({ id: authUser.id })
+            .eq('email', authUser.email)
+            .select()
+            .single();
+          
+          if (updateError) {
+            console.error('Erro ao atualizar ID do perfil:', updateError);
+            return existingByEmail; // Retorna o perfil original mesmo com erro de update
+          } else {
+            console.log('ID do perfil atualizado com sucesso');
+            return updatedProfile;
+          }
+        }
+        
+        return existingByEmail;
+      }
       
-      if (error || !user) {
-        console.error('Usuário não encontrado no localStorage');
+      // Se não encontrou nem por ID nem por email, criar novo perfil
+      console.log('Criando novo perfil para:', authUser.email);
+      
+      // Apenas criar perfil se for o admin - outros usuários devem ser criados via interface
+      if (authUser.email !== 'admin@mutabile.com.br') {
+        console.log('Usuário não é admin - deve ser criado via interface do sistema');
         return null;
       }
 
-      // Convert date strings to Date objects
-      return {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        authLevel: user.auth_level,
-        teamId: user.team_id,
-        managerId: user.manager_id,
-        createdBy: user.created_by,
-        createdAt: new Date(user.created_at),
-        updatedAt: new Date(user.updated_at)
+      const fallbackName = 'Administrador';
+
+      const profilePayload: Partial<DbUserRecord> & {
+        id: string;
+        name: string;
+        email: string;
+        role: string;
+        auth_level: string;
+      } = {
+        id: authUser.id,
+        name: fallbackName,
+        email: authUser.email,
+        role: 'Administrador do Sistema',
+        auth_level: 'admin',
+        team_id: null,
+        manager_id: null,
+        created_by: null
       };
+
+      const { data: newProfile, error: insertError } = await supabase
+        .from<DbUserRecord>('users')
+        .insert(profilePayload)
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('Erro ao criar perfil do usuário:', insertError);
+        return null;
+      }
+
+      console.log('Perfil criado com sucesso:', newProfile.email);
+      return newProfile;
+      
+    } catch (error) {
+      console.error('Erro geral ao sincronizar perfil:', error);
+      return null;
+    }
+  };
+
+  const fetchUserProfile = async (authUser: any): Promise<User | null> => {
+    try {
+      console.log('Buscando perfil para:', authUser.email);
+      const profile = await ensureUserProfile(authUser);
+
+      if (!profile) {
+        console.error('Não foi possível sincronizar o perfil do usuário:', authUser.email);
+        return null;
+      }
+
+      console.log('Perfil sincronizado:', profile.email);
+      return mapUserRecord(profile);
     } catch (e) {
       console.error('Erro ao buscar perfil do usuário:', e);
       return null;
@@ -64,73 +171,100 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    let mounted = true;
+
     // Check initial session
-    checkSession();
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
+        
+        if (error) {
+          console.error('Erro ao verificar sessão:', error);
+          setError(explainSupabaseError(error));
+          setIsAuthenticated(false);
+          setUser(null);
+        } else if (session?.user) {
+          const userProfile = await fetchUserProfile(session.user);
+          if (mounted && userProfile) {
+            setUser(userProfile);
+            setIsAuthenticated(true);
+            setError(null);
+          } else if (mounted) {
+            console.log('Perfil do usuário não encontrado - será criado no próximo login');
+            setUser(null);
+            setIsAuthenticated(false);
+          }
+        } else if (mounted) {
+          setUser(null);
+          setIsAuthenticated(false);
+        }
+      } catch (e: any) {
+        if (mounted) {
+          console.error('Erro ao verificar sessão:', e);
+          setError(explainSupabaseError(e));
+          setIsAuthenticated(false);
+          setUser(null);
+        }
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    initializeAuth();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth event:', event, session?.user?.email);
+        if (!mounted) return;
         
+        console.log('Auth event:', event, session?.user?.email);
+
         if (session?.user) {
           const userProfile = await fetchUserProfile(session.user);
-          if (userProfile) {
+          if (mounted && userProfile) {
             setUser(userProfile);
             setIsAuthenticated(true);
             setError(null);
-          } else {
-            setError('Perfil do usuário não encontrado');
+            console.log('Usuário autenticado:', userProfile.email);
+          } else if (mounted) {
+            console.error('Perfil do usuário não pôde ser sincronizado');
+            setError('Erro ao sincronizar perfil do usuário');
             setUser(null);
             setIsAuthenticated(false);
           }
-        } else {
+        } else if (mounted) {
+          console.log('Usuário deslogado');
           setUser(null);
           setIsAuthenticated(false);
+          setError(null);
         }
-        
-        setIsLoading(false);
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
-  const checkSession = async () => {
-    try {
-      if (!supabase) {
-        setIsLoading(false);
-        return;
-      }
+  useEffect(() => {
+    if (isAuthenticated) {
+      refreshUsers();
+    }
+  }, [isAuthenticated]);
 
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.error('Erro ao verificar sessão:', error);
-        setError(explainSupabaseError(error));
-        setIsAuthenticated(false);
-        setUser(null);
-      } else if (session?.user) {
-        const userProfile = await fetchUserProfile(session.user);
-        if (userProfile) {
-          setUser(userProfile);
-          setIsAuthenticated(true);
-          setError(null);
-        } else {
-          setError('Perfil do usuário não encontrado');
-          setUser(null);
-          setIsAuthenticated(false);
-        }
-      } else {
-        setUser(null);
-        setIsAuthenticated(false);
-      }
-    } catch (e: any) {
-      console.error('Erro ao verificar sessão:', e);
-      setError(explainSupabaseError(e));
-      setIsAuthenticated(false);
-      setUser(null);
-    } finally {
-      setIsLoading(false);
+  const refreshUsers = async () => {
+    try {
+      const users = await userOperations.getAll();
+      setAllUsers(users);
+      console.log('Lista de usuários atualizada:', users.length, 'usuários');
+    } catch (fetchError) {
+      console.error('Erro ao buscar usuários:', fetchError);
+      setAllUsers([]);
     }
   };
 
@@ -160,19 +294,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Placeholder functions for compatibility
-  const getAllUsers = (): User[] => {
-    const [users, setUsers] = useState<User[]>([]);
-    
-    React.useEffect(() => {
-      userOperations.getAll().then(setUsers).catch(console.error);
-    }, []);
-    
-    return users;
-  };
+  const getAllUsers = (): User[] => allUsers;
 
   const register = async (userData: any): Promise<void> => {
     try {
+      console.log('Registrando novo usuário:', userData.email);
+      
       // Create user in Supabase Auth first
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: userData.email,
@@ -180,12 +307,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (authError) {
+        console.error('Erro no registro auth:', authError);
         throw new Error(explainSupabaseError(authError));
       }
 
       if (authData?.user) {
-        // Create user profile in database
+        console.log('Usuário criado no auth, criando perfil...');
+        // Create or update user profile in database with the auth user ID
         await userOperations.create({
+          id: authData.user.id,
           name: userData.name,
           email: userData.email,
           role: userData.role,
@@ -194,24 +324,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           managerId: userData.managerId || null,
           createdBy: user?.id || null
         });
+        await refreshUsers();
+        console.log('Perfil de usuário criado com sucesso');
       }
     } catch (e: any) {
+      console.error('Erro no registro:', e);
       throw new Error(explainSupabaseError(e));
     }
   };
 
   const updateUser = async (id: string, updates: any): Promise<void> => {
     try {
+      console.log('Atualizando usuário:', id);
       await userOperations.update(id, updates);
+      await refreshUsers();
+      console.log('Usuário atualizado com sucesso');
     } catch (e: any) {
+      console.error('Erro ao atualizar usuário:', e);
       throw new Error(`Erro ao atualizar usuário: ${e.message}`);
     }
   };
 
   const deleteUser = async (id: string): Promise<void> => {
     try {
+      console.log('Deletando usuário:', id);
       await userOperations.delete(id);
+      await refreshUsers();
+      console.log('Usuário deletado com sucesso');
     } catch (e: any) {
+      console.error('Erro ao deletar usuário:', e);
       throw new Error(`Erro ao deletar usuário: ${e.message}`);
     }
   };
