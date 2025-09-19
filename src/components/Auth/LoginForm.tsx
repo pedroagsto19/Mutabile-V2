@@ -34,6 +34,11 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
   const checkSystemHealth = async () => {
     setSystemStatus(prev => ({ ...prev, checking: true }));
     
+    // Add timeout to prevent hanging
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Timeout')), 10000)
+    );
+    
     // Verificar variáveis de ambiente
     const envIssues = assertEnv();
     if (envIssues.length > 0) {
@@ -47,15 +52,24 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
     }
 
     // Verificar conectividade
-    const health = await healthCheck();
-    setSystemStatus({
-      envOk: true,
-      healthOk: health.ok,
-      message: health.ok 
-        ? 'Sistema pronto para login' 
-        : `Não foi possível alcançar o Supabase: ${health.reason}`,
-      checking: false
-    });
+    try {
+      const health = await Promise.race([healthCheck(), timeoutPromise]);
+      setSystemStatus({
+        envOk: true,
+        healthOk: health.ok,
+        message: health.ok 
+          ? 'Sistema pronto para login' 
+          : `Não foi possível alcançar o Supabase: ${health.reason}`,
+        checking: false
+      });
+    } catch (error) {
+      setSystemStatus({
+        envOk: true,
+        healthOk: false,
+        message: 'Timeout na verificação do Supabase - tente fazer login mesmo assim',
+        checking: false
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -213,7 +227,7 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={isLoading || !canLogin}
+                disabled={isLoading}
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center">
@@ -249,7 +263,6 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
               <button
                 type="button"
                 onClick={async () => {
-                  if (!canLogin) return;
                   setEmail('admin@mutabile.com.br');
                   setPassword('admin123');
                   setError('');
@@ -279,7 +292,7 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
                   }
                 }}
                 className="w-full text-left p-3 text-sm bg-red-50 hover:bg-red-100 rounded border transition-colors font-medium"
-                disabled={!canLogin}
+                disabled={isLoading}
               >
                 <strong>Usuário Inicial:</strong> admin@mutabile.com.br / admin123
               </button>

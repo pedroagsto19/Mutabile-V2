@@ -25,6 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [authCheckComplete, setAuthCheckComplete] = useState(false);
 
   const allowedAuthLevels: User['authLevel'][] = ['admin', 'gestor', 'equipe', 'leitor'];
 
@@ -223,13 +224,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Check initial session
     const initializeAuth = async () => {
       try {
+        setAuthCheckComplete(false);
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (!mounted) return;
         
         if (error) {
           console.error('Erro ao verificar sessão:', error);
-          setError(explainSupabaseError(error));
+          // Don't set error for common auth issues to avoid infinite loops
+          if (!error.message?.includes('Failed to fetch') && !error.message?.includes('401')) {
+            setError(explainSupabaseError(error));
+          }
           setIsAuthenticated(false);
           setUser(null);
         } else if (session?.user) {
@@ -250,13 +255,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (e: any) {
         if (mounted) {
           console.error('Erro ao verificar sessão:', e);
-          setError(explainSupabaseError(e));
+          // Don't set error for network issues to avoid infinite loops
+          if (!e.message?.includes('Failed to fetch') && !e.message?.includes('401')) {
+            setError(explainSupabaseError(e));
+          }
           setIsAuthenticated(false);
           setUser(null);
         }
       } finally {
         if (mounted) {
           setIsLoading(false);
+          setAuthCheckComplete(true);
         }
       }
     };
@@ -270,6 +279,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         console.log('Auth event:', event, session?.user?.email);
 
+        // Prevent infinite loops by checking if we're already processing
+        if (event === 'TOKEN_REFRESHED' && isLoading) {
+          return;
+        }
+
         if (session?.user) {
           const userProfile = await fetchUserProfile(session.user);
           if (mounted && userProfile) {
@@ -279,7 +293,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             console.log('Usuário autenticado:', userProfile.email);
           } else if (mounted) {
             console.error('Perfil do usuário não pôde ser sincronizado');
-            setError('Erro ao sincronizar perfil do usuário');
+            // Don't set error to avoid infinite loops
+            console.warn('Perfil não sincronizado - continuando sem erro');
             setUser(null);
             setIsAuthenticated(false);
           }

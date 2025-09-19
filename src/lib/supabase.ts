@@ -48,7 +48,7 @@ export const supabase = ensureClient();
 export async function healthCheck(): Promise<{ ok: boolean; reason?: string; status?: number }> {
   try {
     const ctrl = new AbortController();
-    const timeout = setTimeout(() => ctrl.abort(), 4000);
+    const timeout = setTimeout(() => ctrl.abort(), 8000); // Increased timeout
 
     const res = await fetch(`${url!}/auth/v1/health`, {
       method: 'GET',
@@ -63,7 +63,10 @@ export async function healthCheck(): Promise<{ ok: boolean; reason?: string; sta
     return { ok: res.ok, reason: res.ok ? undefined : res.statusText, status: res.status };
   } catch (e: any) {
     if (e?.name === 'AbortError') {
-      return { ok: false, reason: 'Timeout (4s) - verifique CORS/URL' };
+      return { ok: false, reason: 'Timeout (8s) - verifique CORS/URL' };
+    }
+    if (e?.message?.includes('Failed to fetch')) {
+      return { ok: false, reason: 'Falha de rede - verifique conectividade' };
     }
     return { ok: false, reason: e?.message || 'Failed to fetch' };
   }
@@ -98,7 +101,13 @@ export function explainSupabaseError(e: any): string {
  */
 export async function hasValidSession(): Promise<boolean> {
   try {
-    const { data } = await supabase.auth.getSession();
+    // Add timeout to prevent hanging
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Session check timeout')), 5000)
+    );
+    
+    const sessionPromise = supabase.auth.getSession();
+    const { data } = await Promise.race([sessionPromise, timeoutPromise]);
     return Boolean(data?.session);
   } catch (e) {
     console.error('Erro ao verificar sessão:', e);
