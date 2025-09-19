@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { Supplier, SupplierFilters, SupplierEvaluation } from '../types/supplier';
 import { useAuth } from './AuthContext';
-import SupplierStorage from '../lib/supplierStorage';
+import { supplierOperations } from '../lib/database';
 
 interface SupplierContextType {
   suppliers: Supplier[];
@@ -34,31 +34,26 @@ export function SupplierProvider({ children }: { children: React.ReactNode }) {
 
   // Load suppliers from localStorage on mount
   useEffect(() => {
-    // Initialize sample suppliers if none exist
-    SupplierStorage.initializeSampleSuppliers();
     loadSuppliers();
   }, []);
 
   const loadSuppliers = () => {
-    const localSuppliers = SupplierStorage.getSuppliers();
-    setSuppliers(localSuppliers.map(convertLocalSupplier));
+    supplierOperations.getAll()
+      .then(setSuppliers)
+      .catch(console.error);
   };
 
   const addSupplier = (supplierData: Omit<Supplier, 'id' | 'createdAt' | 'updatedAt' | 'createdBy'>) => {
     if (!currentUser) return;
     
-    const localSupplierData = {
-      ...supplierData,
-      evaluations: [],
-      createdBy: currentUser.id,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    
-    const newLocalSupplier = SupplierStorage.createSupplier(localSupplierData);
-    const newSupplier = convertLocalSupplier(newLocalSupplier);
-    
-    setSuppliers(prev => [...prev, newSupplier]);
+    supplierOperations.create(supplierData)
+      .then(newSupplier => {
+        setSuppliers(prev => [...prev, newSupplier]);
+      })
+      .catch(error => {
+        console.error('Error creating supplier:', error);
+        throw error;
+      });
   };
 
   const updateSupplier = (id: string, updates: Partial<Supplier>) => {
@@ -66,13 +61,14 @@ export function SupplierProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Sem permissão para editar fornecedores');
     }
     
-    const updateData = {
-      ...updates,
-      updatedAt: new Date().toISOString()
-    };
-    
-    SupplierStorage.updateSupplier(id, updateData);
-    loadSuppliers();
+    supplierOperations.update(id, updates)
+      .then(() => {
+        loadSuppliers();
+      })
+      .catch(error => {
+        console.error('Error updating supplier:', error);
+        throw error;
+      });
   };
 
   const deleteSupplier = (id: string) => {
@@ -80,45 +76,27 @@ export function SupplierProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Sem permissão para excluir fornecedores');
     }
     
-    SupplierStorage.deleteSupplier(id);
-    setSuppliers(prev => prev.filter(s => s.id !== id));
+    supplierOperations.delete(id)
+      .then(() => {
+        setSuppliers(prev => prev.filter(s => s.id !== id));
+      })
+      .catch(error => {
+        console.error('Error deleting supplier:', error);
+        throw error;
+      });
   };
 
   const addEvaluation = (supplierId: string, evaluationData: Omit<SupplierEvaluation, 'id' | 'supplierId' | 'createdAt'>) => {
     if (!currentUser) return;
     
-    const supplier = suppliers.find(s => s.id === supplierId);
-    if (!supplier) return;
-    
-    const newEvaluation: SupplierEvaluation = {
-      id: Date.now().toString(),
-      supplierId,
-      ...evaluationData,
-      evaluatedBy: currentUser.id,
-      createdAt: new Date()
-    };
-    
-    const updatedEvaluations = [...supplier.evaluations, newEvaluation];
-    
-    // Calculate new average ratings
-    const avgRatings = {
-      quality: Math.round(updatedEvaluations.reduce((sum, evaluation) => sum + evaluation.ratings.quality, 0) / updatedEvaluations.length),
-      price: Math.round(updatedEvaluations.reduce((sum, evaluation) => sum + evaluation.ratings.price, 0) / updatedEvaluations.length),
-      recommendation: Math.round(updatedEvaluations.reduce((sum, evaluation) => sum + evaluation.ratings.recommendation, 0) / updatedEvaluations.length)
-    };
-    
-    const updateData = {
-      evaluations: updatedEvaluations.map(evaluation => ({
-        ...evaluation,
-        evaluationDate: evaluation.evaluationDate.toISOString(),
-        createdAt: evaluation.createdAt.toISOString()
-      })),
-      ratings: avgRatings,
-      updatedAt: new Date().toISOString()
-    };
-    
-    SupplierStorage.updateSupplier(supplierId, updateData);
-    loadSuppliers();
+    supplierOperations.addEvaluation(supplierId, evaluationData)
+      .then(() => {
+        loadSuppliers();
+      })
+      .catch(error => {
+        console.error('Error adding evaluation:', error);
+        throw error;
+      });
   };
 
   const getSuppliersByRanking = (): Supplier[] => {

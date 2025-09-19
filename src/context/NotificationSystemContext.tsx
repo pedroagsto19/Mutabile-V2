@@ -1,11 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
+import { notificationOperations } from '../lib/database';
 import type { Notification, NotificationPreferences, NotificationContextType } from '../types/notification';
 
 const NotificationSystemContext = createContext<NotificationContextType | undefined>(undefined);
-
-const STORAGE_KEY = 'mutabile_notifications';
-const PREFERENCES_KEY = 'mutabile_notification_preferences';
 
 export function NotificationSystemProvider({ children }: { children: React.ReactNode }) {
   const { user: currentUser } = useAuth();
@@ -30,68 +28,27 @@ export function NotificationSystemProvider({ children }: { children: React.React
   const loadNotifications = () => {
     if (!currentUser) return;
     
-    try {
-      const saved = localStorage.getItem(`${STORAGE_KEY}_${currentUser.id}`);
-      if (saved) {
-        const parsedNotifications = JSON.parse(saved).map((n: any) => ({
-          ...n,
-          createdAt: new Date(n.createdAt),
-          readAt: n.readAt ? new Date(n.readAt) : undefined
-        }));
-        setNotifications(parsedNotifications);
-      }
-    } catch (error) {
-      console.error('Error loading notifications:', error);
-    }
-  };
-
-  const saveNotifications = (notifs: Notification[]) => {
-    if (!currentUser) return;
-    
-    try {
-      const serialized = notifs.map(n => ({
-        ...n,
-        createdAt: n.createdAt.toISOString(),
-        readAt: n.readAt?.toISOString()
-      }));
-      localStorage.setItem(`${STORAGE_KEY}_${currentUser.id}`, JSON.stringify(serialized));
-    } catch (error) {
-      console.error('Error saving notifications:', error);
-    }
+    notificationOperations.getByUserId(currentUser.id)
+      .then(setNotifications)
+      .catch(console.error);
   };
 
   const loadPreferences = () => {
     if (!currentUser) return;
     
     try {
-      const saved = localStorage.getItem(`${PREFERENCES_KEY}_${currentUser.id}`);
-      if (saved) {
-        setPreferences(JSON.parse(saved));
-      } else {
-        // Set default preferences for new user
-        const defaultPrefs: NotificationPreferences = {
-          userId: currentUser.id,
-          projectCreated: true,
-          projectAssigned: true,
-          activityAssigned: true,
-          emailNotifications: false,
-          soundEnabled: true
-        };
-        setPreferences(defaultPrefs);
-        localStorage.setItem(`${PREFERENCES_KEY}_${currentUser.id}`, JSON.stringify(defaultPrefs));
-      }
+      // Load from Supabase or set defaults
+      const defaultPrefs: NotificationPreferences = {
+        userId: currentUser.id,
+        projectCreated: true,
+        projectAssigned: true,
+        activityAssigned: true,
+        emailNotifications: false,
+        soundEnabled: true
+      };
+      setPreferences(defaultPrefs);
     } catch (error) {
       console.error('Error loading preferences:', error);
-    }
-  };
-
-  const savePreferences = (prefs: NotificationPreferences) => {
-    if (!currentUser) return;
-    
-    try {
-      localStorage.setItem(`${PREFERENCES_KEY}_${currentUser.id}`, JSON.stringify(prefs));
-    } catch (error) {
-      console.error('Error saving preferences:', error);
     }
   };
 
@@ -111,59 +68,54 @@ export function NotificationSystemProvider({ children }: { children: React.React
     if (!currentUser) return;
     
     // Check user preferences
-    const prefKey = notificationData.type.replace('_', '') as keyof NotificationPreferences;
+    const prefKey = notificationData.type.replace('_', '').replace('created', 'Created').replace('assigned', 'Assigned') as keyof NotificationPreferences;
     if (preferences[prefKey] === false) return;
     
     // Check for duplicates
     if (isDuplicate(notificationData)) return;
     
-    const newNotification: Notification = {
-      ...notificationData,
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-      createdAt: new Date(),
-      isRead: false
-    };
-    
-    const updatedNotifications = [newNotification, ...notifications];
-    setNotifications(updatedNotifications);
-    saveNotifications(updatedNotifications);
-    
-    // Play sound if enabled
-    if (preferences.soundEnabled) {
-      playNotificationSound();
-    }
+    notificationOperations.create(notificationData)
+      .then(() => {
+        loadNotifications();
+        
+        // Play sound if enabled
+        if (preferences.soundEnabled) {
+          playNotificationSound();
+        }
+      })
+      .catch(console.error);
   };
 
   const markAsRead = (notificationId: string) => {
-    const updatedNotifications = notifications.map(n => 
-      n.id === notificationId 
-        ? { ...n, isRead: true, readAt: new Date() }
-        : n
-    );
-    setNotifications(updatedNotifications);
-    saveNotifications(updatedNotifications);
+    notificationOperations.markAsRead(notificationId)
+      .then(() => {
+        loadNotifications();
+      })
+      .catch(console.error);
   };
 
   const markAllAsRead = () => {
-    const updatedNotifications = notifications.map(n => ({
-      ...n,
-      isRead: true,
-      readAt: new Date()
-    }));
-    setNotifications(updatedNotifications);
-    saveNotifications(updatedNotifications);
+    if (!currentUser) return;
+    
+    notificationOperations.markAllAsRead(currentUser.id)
+      .then(() => {
+        loadNotifications();
+      })
+      .catch(console.error);
   };
 
   const deleteNotification = (notificationId: string) => {
-    const updatedNotifications = notifications.filter(n => n.id !== notificationId);
-    setNotifications(updatedNotifications);
-    saveNotifications(updatedNotifications);
+    notificationOperations.delete(notificationId)
+      .then(() => {
+        loadNotifications();
+      })
+      .catch(console.error);
   };
 
   const updatePreferences = (newPreferences: Partial<NotificationPreferences>) => {
     const updatedPreferences = { ...preferences, ...newPreferences };
     setPreferences(updatedPreferences);
-    savePreferences(updatedPreferences);
+    // TODO: Save to Supabase
   };
 
   const getNotificationsByImportance = () => {

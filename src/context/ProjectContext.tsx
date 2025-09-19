@@ -3,7 +3,7 @@ import type { Project, Stage, Activity } from '../types';
 import { useTimer } from '../hooks/useTimer';
 import { useAuth } from './AuthContext';
 import { useNotificationTriggers } from '../hooks/useNotificationTriggers';
-import LocalStorage from '../lib/localStorage';
+import { projectOperations, activityOperations } from '../lib/database';
 
 interface ProjectContextType {
   projects: Project[];
@@ -68,8 +68,9 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const loadProjects = () => {
-    const localProjects = LocalStorage.getProjects();
-    setProjects(localProjects.map(convertLocalProject));
+    projectOperations.getAll()
+      .then(setProjects)
+      .catch(console.error);
   };
 
   // Filter projects based on user permissions
@@ -77,12 +78,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     if (!currentUser) return [];
     
     // Admin and Gestor can see all projects
-    if (currentUser.auth_level === 'admin' || currentUser.auth_level === 'gestor') {
+    if (currentUser.authLevel === 'admin' || currentUser.authLevel === 'gestor') {
       return projects;
     }
     
     // Equipe can only see projects where they have activities
-    if (currentUser.auth_level === 'equipe') {
+    if (currentUser.authLevel === 'equipe') {
       return projects.filter(project => 
         project.stages.some(stage => 
           stage.activities.some(activity => 
@@ -142,41 +143,21 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Sem permissão para criar projetos');
     }
     
-    const localProjectData = {
-      ...projectData,
-      nextDeadline: projectData.nextDeadline?.toISOString(),
-      stages: projectData.stages.map(stage => ({
-        ...stage,
-        activities: stage.activities.map(activity => ({
-          ...activity,
-          plannedStartDate: activity.plannedStartDate.toISOString(),
-          plannedEndDate: activity.plannedEndDate.toISOString(),
-          actualStartDate: activity.actualStartDate?.toISOString(),
-          actualEndDate: activity.actualEndDate?.toISOString(),
-          timerStartTime: activity.timerStartTime?.toISOString(),
-          checklist: activity.checklist ? activity.checklist.map(item => ({
-            ...item,
-            createdAt: item.createdAt.toISOString()
-          })) : [],
-          driveLinks: (activity.driveLinks || []).map(link => ({
-            ...link,
-            createdAt: link.createdAt.toISOString()
-          }))
-        }))
-      }))
-    };
-    
-    const newLocalProject = LocalStorage.createProject(localProjectData);
-    const newProject = convertLocalProject(newLocalProject);
-    
-    setProjects(prev => [...prev, newProject]);
-    
-    // Trigger notifications
-    if (currentUser) {
-      triggerProjectCreatedNotification(newProject, currentUser.id);
-    }
-    
-    return newProject;
+    projectOperations.create(projectData)
+      .then(newProject => {
+        setProjects(prev => [...prev, newProject]);
+        
+        // Trigger notifications
+        if (currentUser) {
+          triggerProjectCreatedNotification(newProject, currentUser.id);
+        }
+        
+        return newProject;
+      })
+      .catch(error => {
+        console.error('Error creating project:', error);
+        throw error;
+      });
   };
 
   const updateProject = (
@@ -188,79 +169,37 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Sem permissão para editar projetos');
     }
     
-    const existingProject = projects.find(p => p.id === id);
-    
-    // Calculate project progress based on activities
-    let calculatedProgress = updates.progress;
-    if (updates.stages) {
-      // Option 1: Calculate based on average progress of all activities (current method)
-      // const allActivities = updates.stages.flatMap(stage => stage.activities);
-      // if (allActivities.length > 0) {
-      //   const totalProgress = allActivities.reduce((sum, activity) => {
-      //     return sum + calculateActivityProgress(activity);
-      //   }, 0);
-      //   calculatedProgress = Math.round(totalProgress / allActivities.length);
-      // }
-      
-      // Option 2: Calculate based on completed tasks count
-      const allActivities = updates.stages.flatMap(stage => stage.activities);
-      if (allActivities.length > 0) {
-        const completedActivities = allActivities.filter(activity => 
-          activity.status === 'completed'
-        ).length;
-        calculatedProgress = Math.round((completedActivities / allActivities.length) * 100);
+    projectOperations.update(id, updates)
+      .then(() => {
+        loadProjects();
+        
+        // Check for project responsible change
+        const existingProject = projects.find(p => p.id === id);
+        if (existingProject && updates.responsible && 
+            existingProject.responsible !== updates.responsible && currentUser) {
+          triggerProjectAssignedNotification(
+            { ...existingProject, ...updates } as Project,
+            updates.responsible,
+            currentUser.id
+          );
+        }
+        
+        if (currentProject?.id === id) {
+          const updatedProject = projects.find(p => p.id === id);
+          if (updatedProject) {
+            setCurrentProject({ 
+              ...updatedProject, 
+              ...updates,
+              updatedAt: new Date() 
+            });
+          }
+        }
+      })
+      .catch(error => {
+        console.error('Error updating project:', error);
+        throw error;
       }
-    }
-    
-    const updateData = {
-      ...updates,
-      progress: calculatedProgress !== undefined ? calculatedProgress : updates.progress,
-      nextDeadline: updates.nextDeadline?.toISOString(),
-      stages: updates.stages?.map(stage => ({
-        ...stage,
-        activities: stage.activities.map(activity => ({
-          ...activity,
-          plannedStartDate: activity.plannedStartDate.toISOString(),
-          plannedEndDate: activity.plannedEndDate.toISOString(),
-          actualStartDate: activity.actualStartDate?.toISOString(),
-          actualEndDate: activity.actualEndDate?.toISOString(),
-          timerStartTime: activity.timerStartTime?.toISOString(),
-          checklist: activity.checklist ? activity.checklist.map(item => ({
-            ...item,
-            createdAt: item.createdAt.toISOString()
-          })) : [],
-          driveLinks: (activity.driveLinks || []).map(link => ({
-            ...link,
-            createdAt: link.createdAt.toISOString()
-          }))
-        }))
-      }))
-    };
-    
-    LocalStorage.updateProject(id, updateData);
-    loadProjects();
-    
-    // Check for project responsible change
-    if (existingProject && updates.responsible && 
-        existingProject.responsible !== updates.responsible && currentUser) {
-      triggerProjectAssignedNotification(
-        { ...existingProject, ...updates } as Project,
-        updates.responsible,
-        currentUser.id
-      );
-    }
-    
-    if (currentProject?.id === id) {
-      const updatedProject = projects.find(p => p.id === id);
-      if (updatedProject) {
-        setCurrentProject({ 
-          ...updatedProject, 
-          ...updates, 
-          progress: calculatedProgress !== undefined ? calculatedProgress : updates.progress,
-          updatedAt: new Date() 
-        });
-      }
-    }
+    );
   };
 
   const deleteProject = (id: string) => {
@@ -268,12 +207,18 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Sem permissão para excluir projetos');
     }
     
-    LocalStorage.deleteProject(id);
-    setProjects(prev => prev.filter(p => p.id !== id));
-    
-    if (currentProject?.id === id) {
-      setCurrentProject(null);
-    }
+    projectOperations.delete(id)
+      .then(() => {
+        setProjects(prev => prev.filter(p => p.id !== id));
+        
+        if (currentProject?.id === id) {
+          setCurrentProject(null);
+        }
+      })
+      .catch(error => {
+        console.error('Error deleting project:', error);
+        throw error;
+      });
   };
 
   const addStage = (projectId: string, stageData: Omit<Stage, 'id' | 'projectId'>) => {
@@ -373,39 +318,24 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Sem permissão para editar esta atividade');
     }
     
-    // Timer operations are available for all users regardless of permission level
-    
-    const updatedProject = {
-      ...project,
-      stages: project.stages.map(s => ({
-        ...s,
-        activities: s.activities.map(a => 
-          a.id === activityId ? { ...a, ...updates } : a
-        )
-      })),
-      updatedAt: new Date()
-    };
-    
-    // Recalculate project progress based on all activities
-    const allActivities = updatedProject.stages.flatMap(stage => stage.activities);
-    if (allActivities.length > 0) {
-      const totalProgress = allActivities.reduce((sum, act) => {
-        return sum + calculateActivityProgress(act);
-      }, 0);
-      updatedProject.progress = Math.round(totalProgress / allActivities.length);
-    }
-    
-    // Check for responsible change
-    if (updates.responsible && activity.responsible !== updates.responsible && currentUser) {
-      triggerActivityAssignedNotification(
-        { ...activity, ...updates } as Activity,
-        updatedProject,
-        updates.responsible,
-        currentUser.id
-      );
-    }
-    
-    updateProject(project.id, updatedProject, isTimerUpdate || canUserEditActivity(activity));
+    activityOperations.update(activityId, updates)
+      .then(() => {
+        loadProjects();
+        
+        // Check for responsible change
+        if (updates.responsible && activity.responsible !== updates.responsible && currentUser) {
+          triggerActivityAssignedNotification(
+            { ...activity, ...updates } as Activity,
+            project,
+            updates.responsible,
+            currentUser.id
+          );
+        }
+      })
+      .catch(error => {
+        console.error('Error updating activity:', error);
+        throw error;
+      });
   };
 
   const startActivityTimer = (activityId: string) => {

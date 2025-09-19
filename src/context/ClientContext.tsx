@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { Client, Proposal, CommercialActivity, ClientFilters, FunnelStats } from '../types/client';
 import { useAuth } from './AuthContext';
-import ClientStorage from '../lib/clientStorage';
+import { clientOperations, proposalOperations, commercialActivityOperations } from '../lib/database';
 
 interface ClientContextType {
   clients: Client[];
@@ -52,38 +52,43 @@ export function ClientProvider({ children }: { children: React.ReactNode }) {
 
   // Load data from localStorage on mount
   useEffect(() => {
-    // Initialize sample data if none exist
-    const existingClients = ClientStorage.getClients();
-    if (existingClients.length === 0) {
-      ClientStorage.initializeSampleClients();
-    }
-    
     loadData();
   }, []);
 
   const loadData = () => {
-    const localClients = ClientStorage.getClients();
-    const localProposals = ClientStorage.getProposals();
-    const localActivities = ClientStorage.getCommercialActivities();
+    // Load clients
+    clientOperations.getAll()
+      .then(setClients)
+      .catch(console.error);
     
-    setClients(localClients.map(convertLocalClient));
-    setProposals(localProposals.map(convertLocalProposal));
-    setCommercialActivities(localActivities.map(convertLocalActivity));
+    // Load all proposals
+    Promise.all(clients.map(client => proposalOperations.getByClientId(client.id)))
+      .then(proposalArrays => {
+        const allProposals = proposalArrays.flat();
+        setProposals(allProposals);
+      })
+      .catch(console.error);
+    
+    // Load all commercial activities
+    Promise.all(clients.map(client => commercialActivityOperations.getByClientId(client.id)))
+      .then(activityArrays => {
+        const allActivities = activityArrays.flat();
+        setCommercialActivities(allActivities);
+      })
+      .catch(console.error);
   };
 
   const addClient = (clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'createdBy' | 'totalTimeSpent'>) => {
     if (!currentUser) return;
     
-    const localClientData = {
-      ...clientData,
-      totalTimeSpent: 0,
-      createdBy: currentUser.id
-    };
-    
-    const newLocalClient = ClientStorage.createClient(localClientData);
-    const newClient = convertLocalClient(newLocalClient);
-    
-    setClients(prev => [...prev, newClient]);
+    clientOperations.create(clientData)
+      .then(newClient => {
+        setClients(prev => [...prev, newClient]);
+      })
+      .catch(error => {
+        console.error('Error creating client:', error);
+        throw error;
+      });
   };
 
   const updateClient = (id: string, updates: Partial<Client>) => {
@@ -91,13 +96,14 @@ export function ClientProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Sem permissão para editar clientes');
     }
     
-    const updateData = {
-      ...updates,
-      updatedAt: new Date().toISOString()
-    };
-    
-    ClientStorage.updateClient(id, updateData);
-    loadData();
+    clientOperations.update(id, updates)
+      .then(() => {
+        loadData();
+      })
+      .catch(error => {
+        console.error('Error updating client:', error);
+        throw error;
+      });
   };
 
   const deleteClient = (id: string) => {
@@ -105,73 +111,87 @@ export function ClientProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Sem permissão para excluir clientes');
     }
     
-    ClientStorage.deleteClient(id);
-    setClients(prev => prev.filter(c => c.id !== id));
-    setProposals(prev => prev.filter(p => p.clientId !== id));
-    setCommercialActivities(prev => prev.filter(a => a.clientId !== id));
+    clientOperations.delete(id)
+      .then(() => {
+        setClients(prev => prev.filter(c => c.id !== id));
+        setProposals(prev => prev.filter(p => p.clientId !== id));
+        setCommercialActivities(prev => prev.filter(a => a.clientId !== id));
+      })
+      .catch(error => {
+        console.error('Error deleting client:', error);
+        throw error;
+      });
   };
 
   const addProposal = (proposalData: Omit<Proposal, 'id' | 'createdAt' | 'updatedAt' | 'createdBy'>) => {
     if (!currentUser) return;
     
-    const localProposalData = {
-      ...proposalData,
-      createdBy: currentUser.id
-    };
-    
-    const newLocalProposal = ClientStorage.createProposal(localProposalData);
-    const newProposal = convertLocalProposal(newLocalProposal);
-    
-    setProposals(prev => [...prev, newProposal]);
+    proposalOperations.create(proposalData)
+      .then(newProposal => {
+        setProposals(prev => [...prev, newProposal]);
+      })
+      .catch(error => {
+        console.error('Error creating proposal:', error);
+        throw error;
+      });
   };
 
   const updateProposal = (id: string, updates: Partial<Proposal>) => {
-    const updateData = {
-      ...updates,
-      updatedAt: new Date().toISOString()
-    };
-    
-    ClientStorage.updateProposal(id, updateData);
-    loadData();
+    proposalOperations.update(id, updates)
+      .then(() => {
+        loadData();
+      })
+      .catch(error => {
+        console.error('Error updating proposal:', error);
+        throw error;
+      });
   };
 
   const deleteProposal = (id: string) => {
-    ClientStorage.deleteProposal(id);
-    setProposals(prev => prev.filter(p => p.id !== id));
+    proposalOperations.delete(id)
+      .then(() => {
+        setProposals(prev => prev.filter(p => p.id !== id));
+      })
+      .catch(error => {
+        console.error('Error deleting proposal:', error);
+        throw error;
+      });
   };
 
   const addCommercialActivity = (activityData: Omit<CommercialActivity, 'id' | 'createdAt' | 'createdBy'>) => {
     if (!currentUser) return;
     
-    const localActivityData = {
-      ...activityData,
-      date: activityData.date.toISOString(),
-      createdBy: currentUser.id
-    };
-    
-    const newLocalActivity = ClientStorage.createCommercialActivity(localActivityData);
-    const newActivity = convertLocalActivity(newLocalActivity);
-    
-    setCommercialActivities(prev => [...prev, newActivity]);
-    
-    // Update client's total time spent
-    const updatedClients = ClientStorage.getClients();
-    setClients(updatedClients.map(convertLocalClient));
+    commercialActivityOperations.create(activityData)
+      .then(newActivity => {
+        setCommercialActivities(prev => [...prev, newActivity]);
+        loadData(); // Reload to get updated client total time
+      })
+      .catch(error => {
+        console.error('Error creating commercial activity:', error);
+        throw error;
+      });
   };
 
   const updateCommercialActivity = (id: string, updates: Partial<CommercialActivity>) => {
-    const updateData = {
-      ...updates,
-      date: updates.date?.toISOString()
-    };
-    
-    ClientStorage.updateCommercialActivity(id, updateData);
-    loadData();
+    commercialActivityOperations.update(id, updates)
+      .then(() => {
+        loadData();
+      })
+      .catch(error => {
+        console.error('Error updating commercial activity:', error);
+        throw error;
+      });
   };
 
   const deleteCommercialActivity = (id: string) => {
-    ClientStorage.deleteCommercialActivity(id);
-    loadData();
+    commercialActivityOperations.delete(id)
+      .then(() => {
+        loadData();
+      })
+      .catch(error => {
+        console.error('Error deleting commercial activity:', error);
+        throw error;
+      });
   };
 
   const getClientProposals = (clientId: string): Proposal[] => {

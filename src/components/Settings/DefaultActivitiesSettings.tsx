@@ -6,6 +6,7 @@ import { Modal } from '../UI/Modal';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { defaultStages } from '../../data/mockData';
+import { defaultActivityOperations } from '../../lib/database';
 
 interface DefaultActivity {
   id: string;
@@ -35,8 +36,6 @@ interface StageDefaultActivities {
   activities: DefaultActivity[];
 }
 
-const STORAGE_KEY = 'mutabile_default_activities';
-
 export function DefaultActivitiesSettings() {
   const { getAllUsers } = useAuth();
   const { toast, confirm } = useNotification();
@@ -55,28 +54,12 @@ export function DefaultActivitiesSettings() {
   }, []);
 
   const loadDefaultActivities = () => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        setStageActivities(JSON.parse(saved));
-      } else {
-        // Initialize with default stages and sample activities
-        initializeDefaultActivities();
-        const initialData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-        if (initialData.length === 0) {
-          const emptyData = defaultStages.map(stage => ({
-            stageName: stage.name,
-            activities: []
-          }));
-          setStageActivities(emptyData);
-        } else {
-          setStageActivities(initialData);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading default activities:', error);
-      toast.error('Erro ao carregar atividades padrão');
-    }
+    defaultActivityOperations.getAll()
+      .then(setStageActivities)
+      .catch(error => {
+        console.error('Error loading default activities:', error);
+        toast.error('Erro ao carregar atividades padrão');
+      });
   };
 
   const initializeDefaultActivities = () => {
@@ -395,14 +378,8 @@ export function DefaultActivitiesSettings() {
   };
 
   const saveDefaultActivities = (data: StageDefaultActivities[]) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      setStageActivities(data);
-      toast.success('Atividades padrão salvas com sucesso!');
-    } catch (error) {
-      console.error('Error saving default activities:', error);
-      toast.error('Erro ao salvar atividades padrão');
-    }
+    setStageActivities(data);
+    toast.success('Atividades padrão salvas com sucesso!');
   };
 
   const getCurrentStageActivities = () => {
@@ -410,33 +387,27 @@ export function DefaultActivitiesSettings() {
   };
 
   const addActivity = (activityData: Omit<DefaultActivity, 'id'>) => {
-    const newActivity: DefaultActivity = {
-      ...activityData,
-      id: Date.now().toString()
-    };
-
-    const updatedStageActivities = stageActivities.map(sa => 
-      sa.stageName === selectedStage 
-        ? { ...sa, activities: [...sa.activities, newActivity] }
-        : sa
-    );
-
-    saveDefaultActivities(updatedStageActivities);
+    defaultActivityOperations.create(selectedStage, activityData)
+      .then(() => {
+        loadDefaultActivities();
+        toast.success('Atividade padrão criada com sucesso!');
+      })
+      .catch(error => {
+        console.error('Error creating default activity:', error);
+        toast.error('Erro ao criar atividade padrão');
+      });
   };
 
   const updateActivity = (activityId: string, updates: Partial<DefaultActivity>) => {
-    const updatedStageActivities = stageActivities.map(sa => 
-      sa.stageName === selectedStage 
-        ? {
-            ...sa, 
-            activities: sa.activities.map(activity => 
-              activity.id === activityId ? { ...activity, ...updates } : activity
-            )
-          }
-        : sa
-    );
-
-    saveDefaultActivities(updatedStageActivities);
+    defaultActivityOperations.update(activityId, updates)
+      .then(() => {
+        loadDefaultActivities();
+        toast.success('Atividade padrão atualizada com sucesso!');
+      })
+      .catch(error => {
+        console.error('Error updating default activity:', error);
+        toast.error('Erro ao atualizar atividade padrão');
+      });
   };
 
   const deleteActivity = async (activityId: string) => {
@@ -449,13 +420,15 @@ export function DefaultActivitiesSettings() {
     });
 
     if (confirmed) {
-      const updatedStageActivities = stageActivities.map(sa => 
-        sa.stageName === selectedStage 
-          ? { ...sa, activities: sa.activities.filter(activity => activity.id !== activityId) }
-          : sa
-      );
-
-      saveDefaultActivities(updatedStageActivities);
+      defaultActivityOperations.delete(activityId)
+        .then(() => {
+          loadDefaultActivities();
+          toast.success('Atividade padrão excluída com sucesso!');
+        })
+        .catch(error => {
+          console.error('Error deleting default activity:', error);
+          toast.error('Erro ao excluir atividade padrão');
+        });
     }
   };
 

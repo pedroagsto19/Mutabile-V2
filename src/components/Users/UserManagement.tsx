@@ -9,21 +9,36 @@ import { useNotification } from '../../context/NotificationContext';
 
 export function UserManagement() {
   const { 
-    getAllUsers, 
+    user: currentUser,
     register, 
     updateUser, 
     deleteUser, 
     hasPermission, 
-    canEditUser,
-    user: currentUser 
+    canEditUser
   } = useAuth();
+  const { userOperations } = require('../../lib/database');
   const { toast, confirm } = useNotification();
   
-  const [users, setUsers] = useState(getAllUsers());
+  const [users, setUsers] = useState<User[]>([]);
   const [showUserForm, setShowUserForm] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterLevel, setFilterLevel] = useState('');
+
+  // Load users on mount
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  const loadUsers = async () => {
+    try {
+      const allUsers = await userOperations.getAll();
+      setUsers(allUsers);
+    } catch (error) {
+      console.error('Error loading users:', error);
+      toast.error('Erro ao carregar usuários');
+    }
+  };
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -60,7 +75,7 @@ export function UserManagement() {
     if (confirmed) {
       try {
         await deleteUser(userId);
-        setUsers(getAllUsers());
+        await loadUsers();
         toast.success('Usuário excluído com sucesso!');
       } catch (error) {
         toast.error('Erro ao excluir usuário', 'Tente novamente mais tarde.');
@@ -120,7 +135,7 @@ export function UserManagement() {
           await register(formData);
           toast.success('Usuário criado com sucesso!');
         }
-        setUsers(getAllUsers());
+        await loadUsers();
         setShowUserForm(false);
         setEditingUser(null);
       } catch (error) {

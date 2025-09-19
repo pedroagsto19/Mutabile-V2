@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, hasValidSession, explainSupabaseError } from '../lib/supabase';
-import LocalStorage from '../lib/localStorage';
+import { userOperations } from '../lib/database';
 import type { User } from '../types/auth';
 
 interface AuthContextType {
@@ -27,19 +27,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUserProfile = async (authUser: any): Promise<User | null> => {
     try {
-      const users = LocalStorage.getUsers();
-      const user = users.find(u => u.email === authUser.email);
+      const { data: user, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', authUser.email)
+        .single();
       
-      if (!user) {
+      if (error || !user) {
         console.error('Usuário não encontrado no localStorage');
         return null;
       }
 
       // Convert date strings to Date objects
       return {
-        ...user,
-        createdAt: new Date(user.createdAt),
-        updatedAt: new Date(user.updatedAt)
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        authLevel: user.auth_level,
+        teamId: user.team_id,
+        managerId: user.manager_id,
+        createdBy: user.created_by,
+        createdAt: new Date(user.created_at),
+        updatedAt: new Date(user.updated_at)
       };
     } catch (e) {
       console.error('Erro ao buscar perfil do usuário:', e);
@@ -152,12 +162,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Placeholder functions for compatibility
   const getAllUsers = (): User[] => {
-    const users = LocalStorage.getUsers();
-    return users.map(user => ({
-      ...user,
-      createdAt: new Date(user.createdAt),
-      updatedAt: new Date(user.updatedAt)
-    }));
+    const [users, setUsers] = useState<User[]>([]);
+    
+    React.useEffect(() => {
+      userOperations.getAll().then(setUsers).catch(console.error);
+    }, []);
+    
+    return users;
   };
 
   const register = async (userData: any): Promise<void> => {
@@ -173,21 +184,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (authData?.user) {
-        // Create user profile in localStorage
-        const newUser = {
-          id: authData.user.id,
+        // Create user profile in database
+        await userOperations.create({
           name: userData.name,
           email: userData.email,
           role: userData.role,
           authLevel: userData.authLevel,
           teamId: userData.teamId || null,
           managerId: userData.managerId || null,
-          createdBy: user?.id || null,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-
-        LocalStorage.createUser(newUser);
+          createdBy: user?.id || null
+        });
       }
     } catch (e: any) {
       throw new Error(explainSupabaseError(e));
@@ -196,11 +202,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updateUser = async (id: string, updates: any): Promise<void> => {
     try {
-      const updatedUser = {
-        ...updates,
-        updatedAt: new Date()
-      };
-      LocalStorage.updateUser(id, updatedUser);
+      await userOperations.update(id, updates);
     } catch (e: any) {
       throw new Error(`Erro ao atualizar usuário: ${e.message}`);
     }
@@ -208,7 +210,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const deleteUser = async (id: string): Promise<void> => {
     try {
-      LocalStorage.deleteUser(id);
+      await userOperations.delete(id);
     } catch (e: any) {
       throw new Error(`Erro ao deletar usuário: ${e.message}`);
     }
