@@ -129,15 +129,11 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
           <div className="flex items-center justify-center space-x-3 mb-6">
             <img src="/png.png" alt="Mutabile Logo" className="h-12 w-auto" />
             <div>
-              <p><strong>Admin:</strong> admin@mutabile.com.br / admin123</p>
               <h1 className="text-2xl font-bold text-gray-900">
                 Mutabile
               </h1>
               <p className="text-sm text-gray-600">Gestão de Projetos</p>
             </div>
-            <p className="mt-2 text-xs text-gray-500">
-              Faça login primeiro, depois os dados demo serão inicializados automaticamente.
-            </p>
           </div>
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
             Acesso ao Sistema
@@ -238,16 +234,16 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
         {/* Example Logins */}
         <Card>
           <CardHeader>
-            <h3 className="text-sm font-semibold text-gray-900">Login do Administrador</h3>
+            <h3 className="text-sm font-semibold text-gray-900">Acesso Inicial</h3>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm text-blue-800 mb-2">
-                  <strong>Usuário Administrador:</strong>
+                  <strong>Primeiro Acesso:</strong>
                 </p>
                 <p className="text-xs text-blue-700">
-                  Use este login para acessar o sistema e criar seus próprios usuários, clientes, fornecedores e projetos.
+                  Use o login de administrador para configurar o sistema e criar seus próprios usuários, clientes, fornecedores e projetos.
                 </p>
               </div>
               <button
@@ -285,11 +281,11 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
                 className="w-full text-left p-3 text-sm bg-red-50 hover:bg-red-100 rounded border transition-colors font-medium"
                 disabled={!canLogin}
               >
-                <strong>Administrador:</strong> admin@mutabile.com.br / admin123
+                <strong>Login Admin:</strong> admin@mutabile.com.br / admin123
               </button>
             </div>
             <p className="text-xs text-gray-500 mt-3">
-              💡 Clique no botão acima para fazer login automaticamente como administrador
+              💡 Clique no botão acima para fazer login como administrador e começar a configurar o sistema
             </p>
           </CardContent>
         </Card>
@@ -309,7 +305,7 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
               <p>• Adicionar domínio *.webcontainer-api.io</p>
               
               <p><strong>3. Email Auth:</strong></p>
-              <p>• Desabilitar "Enable email signups"</p>
+              <p>• Configurar conforme necessário</p>
             </div>
           </CardContent>
         </Card>

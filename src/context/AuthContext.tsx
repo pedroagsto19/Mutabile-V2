@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return null;
     }
 
-    console.log('🔍 Verificando perfil para:', authUser.email);
+    console.log('Verificando perfil para:', authUser.email);
 
     try {
       // Primeiro, tentar buscar por ID (mais eficiente)
@@ -61,12 +61,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .maybeSingle();
 
       if (!idError && existingById) {
-        console.log('✅ Perfil encontrado por ID:', existingById.email);
+        console.log('Perfil encontrado por ID:', existingById.email);
         return existingById;
       }
       
       // Se não encontrou por ID, tentar por email
-      console.log('🔍 Perfil não encontrado por ID, tentando por email...');
+      console.log('Perfil não encontrado por ID, tentando por email...');
       const { data: existingByEmail, error: emailError } = await supabase
         .from<DbUserRecord>('users')
         .select('*')
@@ -74,11 +74,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (!emailError && existingByEmail) {
-        console.log('✅ Perfil encontrado por email:', existingByEmail.email);
+        console.log('Perfil encontrado por email:', existingByEmail.email);
         
         // Se o ID for diferente, atualizar para corresponder ao auth user
         if (existingByEmail.id !== authUser.id) {
-          console.log('🔄 Atualizando ID do perfil para corresponder ao auth user...');
+          console.log('Atualizando ID do perfil para corresponder ao auth user...');
           const { data: updatedProfile, error: updateError } = await supabase
             .from<DbUserRecord>('users')
             .update({ id: authUser.id })
@@ -87,10 +87,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .single();
           
           if (updateError) {
-            console.error('❌ Erro ao atualizar ID do perfil:', updateError);
+            console.error('Erro ao atualizar ID do perfil:', updateError);
             return existingByEmail; // Retorna o perfil original mesmo com erro de update
           } else {
-            console.log('✅ ID do perfil atualizado com sucesso');
+            console.log('ID do perfil atualizado com sucesso');
             return updatedProfile;
           }
         }
@@ -99,7 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       // Se não encontrou nem por ID nem por email, criar novo perfil
-      console.log('➕ Criando novo perfil para:', authUser.email);
+      console.log('Criando novo perfil para:', authUser.email);
       
       const fallbackName = authUser.user_metadata?.full_name
         || authUser.user_metadata?.name
@@ -129,33 +129,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (insertError) {
-        console.error('❌ Erro ao criar perfil do usuário:', insertError);
+        console.error('Erro ao criar perfil do usuário:', insertError);
         return null;
       }
 
-      console.log('✅ Perfil criado com sucesso:', newProfile.email);
+      console.log('Perfil criado com sucesso:', newProfile.email);
       return newProfile;
       
     } catch (error) {
-      console.error('❌ Erro geral ao sincronizar perfil:', error);
+      console.error('Erro geral ao sincronizar perfil:', error);
       return null;
     }
   };
 
   const fetchUserProfile = async (authUser: any): Promise<User | null> => {
     try {
-      console.log('👤 Buscando perfil para:', authUser.email);
+      console.log('Buscando perfil para:', authUser.email);
       const profile = await ensureUserProfile(authUser);
 
       if (!profile) {
-        console.error('❌ Não foi possível sincronizar o perfil do usuário:', authUser.email);
+        console.error('Não foi possível sincronizar o perfil do usuário:', authUser.email);
         return null;
       }
 
-      console.log('✅ Perfil sincronizado:', profile.email);
+      console.log('Perfil sincronizado:', profile.email);
       return mapUserRecord(profile);
     } catch (e) {
-      console.error('❌ Erro ao buscar perfil do usuário:', e);
+      console.error('Erro ao buscar perfil do usuário:', e);
       return null;
     }
   };
@@ -188,7 +188,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setIsAuthenticated(true);
             setError(null);
           } else if (mounted) {
-            setError('Perfil do usuário não encontrado');
+            console.log('Perfil do usuário não encontrado - será criado no próximo login');
             setUser(null);
             setIsAuthenticated(false);
           }
@@ -217,7 +217,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       async (event, session) => {
         if (!mounted) return;
         
-        console.log('🔐 Auth event:', event, session?.user?.email);
+        console.log('Auth event:', event, session?.user?.email);
 
         if (session?.user) {
           const userProfile = await fetchUserProfile(session.user);
@@ -225,15 +225,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(userProfile);
             setIsAuthenticated(true);
             setError(null);
-            console.log('✅ Usuário autenticado:', userProfile.email);
+            console.log('Usuário autenticado:', userProfile.email);
           } else if (mounted) {
-            console.error('❌ Perfil do usuário não pôde ser sincronizado');
+            console.error('Perfil do usuário não pôde ser sincronizado');
             setError('Erro ao sincronizar perfil do usuário');
             setUser(null);
             setIsAuthenticated(false);
           }
         } else if (mounted) {
-          console.log('🚪 Usuário deslogado');
+          console.log('Usuário deslogado');
           setUser(null);
           setIsAuthenticated(false);
           setError(null);
@@ -257,9 +257,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const users = await userOperations.getAll();
       setAllUsers(users);
-      console.log('👥 Lista de usuários atualizada:', users.length, 'usuários');
+      console.log('Lista de usuários atualizada:', users.length, 'usuários');
     } catch (fetchError) {
-      console.error('❌ Erro ao buscar usuários:', fetchError);
+      console.error('Erro ao buscar usuários:', fetchError);
       setAllUsers([]);
     }
   };
@@ -280,10 +280,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(null);
         setIsAuthenticated(false);
         setError(null);
-        console.log('✅ Logout realizado com sucesso');
+        console.log('Logout realizado com sucesso');
       }
     } catch (e: any) {
-      console.error('❌ Erro no logout:', e);
+      console.error('Erro no logout:', e);
       setError(explainSupabaseError(e));
     } finally {
       setIsLoading(false);
@@ -294,7 +294,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = async (userData: any): Promise<void> => {
     try {
-      console.log('📝 Registrando novo usuário:', userData.email);
+      console.log('Registrando novo usuário:', userData.email);
       
       // Create user in Supabase Auth first
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -303,12 +303,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (authError) {
-        console.error('❌ Erro no registro auth:', authError);
+        console.error('Erro no registro auth:', authError);
         throw new Error(explainSupabaseError(authError));
       }
 
       if (authData?.user) {
-        console.log('✅ Usuário criado no auth, criando perfil...');
+        console.log('Usuário criado no auth, criando perfil...');
         // Create or update user profile in database with the auth user ID
         await userOperations.create({
           id: authData.user.id,
@@ -321,34 +321,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           createdBy: user?.id || null
         });
         await refreshUsers();
-        console.log('✅ Perfil de usuário criado com sucesso');
+        console.log('Perfil de usuário criado com sucesso');
       }
     } catch (e: any) {
-      console.error('❌ Erro no registro:', e);
+      console.error('Erro no registro:', e);
       throw new Error(explainSupabaseError(e));
     }
   };
 
   const updateUser = async (id: string, updates: any): Promise<void> => {
     try {
-      console.log('📝 Atualizando usuário:', id);
+      console.log('Atualizando usuário:', id);
       await userOperations.update(id, updates);
       await refreshUsers();
-      console.log('✅ Usuário atualizado com sucesso');
+      console.log('Usuário atualizado com sucesso');
     } catch (e: any) {
-      console.error('❌ Erro ao atualizar usuário:', e);
+      console.error('Erro ao atualizar usuário:', e);
       throw new Error(`Erro ao atualizar usuário: ${e.message}`);
     }
   };
 
   const deleteUser = async (id: string): Promise<void> => {
     try {
-      console.log('🗑️ Deletando usuário:', id);
+      console.log('Deletando usuário:', id);
       await userOperations.delete(id);
       await refreshUsers();
-      console.log('✅ Usuário deletado com sucesso');
+      console.log('Usuário deletado com sucesso');
     } catch (e: any) {
-      console.error('❌ Erro ao deletar usuário:', e);
+      console.error('Erro ao deletar usuário:', e);
       throw new Error(`Erro ao deletar usuário: ${e.message}`);
     }
   };
