@@ -4,7 +4,6 @@ import { AuthProvider } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/Auth/ProtectedRoute";
 import { MainMenu } from "./components/MainMenu/MainMenu";
 import { initializeDemoData } from "./lib/initializeDemoData";
-import { hasValidSession } from "./lib/supabase";
 import { NotificationSystemProvider } from "./context/NotificationSystemContext";
 
 // Ajuste estes caminhos conforme seus arquivos

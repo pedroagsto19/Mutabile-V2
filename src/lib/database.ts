@@ -5,52 +5,92 @@ import type { Supplier, SupplierEvaluation } from '../types/supplier';
 import type { Client, Proposal, CommercialActivity } from '../types/client';
 import type { Notification, NotificationPreferences } from '../types/notification';
 
+export type DbUserRecord = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  auth_level: string;
+  team_id: string | null;
+  manager_id: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+const normalizeAuthLevel = (value: string | null | undefined): User['authLevel'] => {
+  const allowed: User['authLevel'][] = ['admin', 'gestor', 'equipe', 'leitor'];
+  return allowed.includes(value as User['authLevel']) ? value as User['authLevel'] : 'admin';
+};
+
 // Helper function to get current user ID
 const getCurrentUserId = async (): Promise<string | null> => {
   const { data: { session } } = await supabase.auth.getSession();
   return session?.user?.id || null;
 };
 
+const mapUserRecord = (record: DbUserRecord): User => ({
+  id: record.id,
+  name: record.name,
+  email: record.email,
+  role: record.role,
+  authLevel: normalizeAuthLevel(record.auth_level),
+  teamId: record.team_id ?? undefined,
+  managerId: record.manager_id ?? undefined,
+  createdBy: record.created_by ?? undefined,
+  createdAt: new Date(record.created_at),
+  updatedAt: new Date(record.updated_at)
+});
+
 // User operations
 export const userOperations = {
   async getAll(): Promise<User[]> {
     const { data, error } = await supabase
-      .from('users')
+      .from<DbUserRecord>('users')
       .select('*')
       .order('created_at', { ascending: false });
-    
+
     if (error) throw error;
-    return data || [];
+    return (data || []).map(mapUserRecord);
   },
 
-  async create(userData: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): Promise<User> {
+  async create(userData: {
+    id?: string;
+    name: string;
+    email: string;
+    role: string;
+    authLevel: User['authLevel'];
+    teamId?: string | null;
+    managerId?: string | null;
+    createdBy?: string | null;
+  }): Promise<User> {
+    const payload: Partial<DbUserRecord> & {
+      name: string;
+      email: string;
+      role: string;
+      auth_level: string;
+    } = {
+      name: userData.name,
+      email: userData.email,
+      role: userData.role,
+      auth_level: userData.authLevel,
+      team_id: userData.teamId ?? null,
+      manager_id: userData.managerId ?? null,
+      created_by: userData.createdBy ?? null
+    };
+
+    if (userData.id) {
+      payload.id = userData.id;
+    }
+
     const { data, error } = await supabase
-      .from('users')
-      .insert([{
-        name: userData.name,
-        email: userData.email,
-        role: userData.role,
-        auth_level: userData.authLevel,
-        team_id: userData.teamId,
-        manager_id: userData.managerId,
-        created_by: await getCurrentUserId()
-      }])
+      .from<DbUserRecord>('users')
+      .upsert(payload, { onConflict: 'id' })
       .select()
       .single();
-    
+
     if (error) throw error;
-    return {
-      id: data.id,
-      name: data.name,
-      email: data.email,
-      role: data.role,
-      authLevel: data.auth_level,
-      teamId: data.team_id,
-      managerId: data.manager_id,
-      createdBy: data.created_by,
-      createdAt: new Date(data.created_at),
-      updatedAt: new Date(data.updated_at)
-    };
+    return mapUserRecord(data);
   },
 
   async update(id: string, updates: Partial<User>): Promise<void> {

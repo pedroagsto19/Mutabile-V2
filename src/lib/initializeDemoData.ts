@@ -1,4 +1,4 @@
-import { supabase, hasValidSession } from './supabase';
+import { supabase } from './supabase';
 import { projectOperations, clientOperations, supplierOperations, defaultActivityOperations } from './database';
 
 export async function initializeDemoData() {
