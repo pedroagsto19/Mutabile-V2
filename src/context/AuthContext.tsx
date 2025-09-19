@@ -101,9 +101,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Se não encontrou nem por ID nem por email, criar novo perfil
       console.log('Criando novo perfil para:', authUser.email);
       
-      const fallbackName = authUser.user_metadata?.full_name
-        || authUser.user_metadata?.name
-        || (authUser.email?.split('@')[0] || 'Usuário Mutabile');
+      // Apenas criar perfil se for o admin - outros usuários devem ser criados via interface
+      if (authUser.email !== 'admin@mutabile.com.br') {
+        console.log('Usuário não é admin - deve ser criado via interface do sistema');
+        return null;
+      }
+
+      const fallbackName = 'Administrador';
 
       const profilePayload: Partial<DbUserRecord> & {
         id: string;
@@ -115,10 +119,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         id: authUser.id,
         name: fallbackName,
         email: authUser.email,
-        role: authUser.user_metadata?.role || 'Usuário',
-        auth_level: normalizeAuthLevel(authUser.user_metadata?.auth_level || 'leitor'),
-        team_id: authUser.user_metadata?.team_id ?? null,
-        manager_id: authUser.user_metadata?.manager_id ?? null,
+        role: 'Administrador do Sistema',
+        auth_level: 'admin',
+        team_id: null,
+        manager_id: null,
         created_by: null
       };
 

@@ -281,11 +281,11 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
                 className="w-full text-left p-3 text-sm bg-red-50 hover:bg-red-100 rounded border transition-colors font-medium"
                 disabled={!canLogin}
               >
-                <strong>Login Admin:</strong> admin@mutabile.com.br / admin123
+                <strong>Usuário Inicial:</strong> admin@mutabile.com.br / admin123
               </button>
             </div>
             <p className="text-xs text-gray-500 mt-3">
-              💡 Clique no botão acima para fazer login como administrador e começar a configurar o sistema
+              💡 Use este login inicial para acessar o sistema e criar seus próprios usuários, clientes e projetos
             </p>
           </CardContent>
         </Card>
