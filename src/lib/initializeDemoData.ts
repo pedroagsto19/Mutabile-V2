@@ -1,22 +1,26 @@
 import { supabase, hasValidSession } from './supabase';
-import { userOperations, projectOperations, clientOperations, supplierOperations, defaultActivityOperations } from './database';
+import { projectOperations, clientOperations, supplierOperations, defaultActivityOperations } from './database';
 
 export async function initializeDemoData() {
   try {
     console.log('Inicializando dados demo...');
     
-    // Verificar se já existem usuários no banco
-    const existingUsers = await userOperations.getAll();
+    // Verificar se já existem projetos no banco (indicando que dados demo já foram criados)
+    const existingProjects = await projectOperations.getAll();
     
-    if (existingUsers.length > 0) {
+    if (existingProjects.length > 0) {
       console.log('Dados demo já existem no banco de dados');
       return;
     }
     
     console.log('Inicializando dados demo no Supabase...');
     
-    // Criar usuários demo
-    await createDemoUsers();
+    // Verificar se há um usuário autenticado
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      console.log('Nenhum usuário autenticado. Criando usuário demo...');
+      await createDemoUser();
+    }
     
     // Criar clientes demo
     await createDemoClients();
@@ -38,72 +42,39 @@ export async function initializeDemoData() {
   }
 }
 
-async function createDemoUsers() {
-  const demoUsers = [
-    {
-      name: 'Marina Costa',
-      email: 'marina@mutabile.com.br',
-      role: 'Administradora',
-      authLevel: 'admin' as const,
+async function createDemoUser() {
+  try {
+    // Criar usuário demo principal
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: 'admin@mutabile.com.br',
       password: 'admin123'
-    },
-    {
-      name: 'Ana Silva',
-      email: 'ana@mutabile.com.br',
-      role: 'Gerente de Projetos',
-      authLevel: 'gestor' as const,
-      password: 'gestor123'
-    },
-    {
-      name: 'Carlos Santos',
-      email: 'carlos@mutabile.com.br',
-      role: 'Arquiteto',
-      authLevel: 'equipe' as const,
-      password: 'equipe123'
-    },
-    {
-      name: 'João Oliveira',
-      email: 'joao@mutabile.com.br',
-      role: 'Consultor',
-      authLevel: 'leitor' as const,
-      password: 'leitor123'
+    });
+
+    if (authError) {
+      console.error('Erro ao criar usuário demo:', authError);
+      return;
     }
-  ];
 
-  for (const userData of demoUsers) {
-    try {
-      // Create auth user
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: userData.email,
-        password: userData.password,
-        email_confirm: true
-      });
-
-      if (authError) {
-        console.error(`Erro ao criar usuário auth ${userData.email}:`, authError);
-        continue;
-      }
-
-      // Create user profile
+    if (authData.user) {
+      // Criar perfil do usuário
       const { error: profileError } = await supabase
         .from('users')
         .insert([{
           id: authData.user.id,
-          name: userData.name,
-          email: userData.email,
-          role: userData.role,
-          auth_level: userData.authLevel,
-          password_hash: userData.password // In production, this should be properly hashed
+          name: 'Administrador Demo',
+          email: 'admin@mutabile.com.br',
+          role: 'Administrador',
+          auth_level: 'admin'
         }]);
 
       if (profileError) {
-        console.error(`Erro ao criar perfil ${userData.email}:`, profileError);
+        console.error('Erro ao criar perfil do usuário:', profileError);
       } else {
-        console.log(`Usuário ${userData.email} criado com sucesso`);
+        console.log('Usuário demo criado com sucesso');
       }
-    } catch (error) {
-      console.error(`Erro geral ao criar usuário ${userData.email}:`, error);
     }
+  } catch (error) {
+    console.error('Erro geral ao criar usuário demo:', error);
   }
 }
 

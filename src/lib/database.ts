@@ -31,7 +31,6 @@ export const userOperations = {
         email: userData.email,
         role: userData.role,
         auth_level: userData.authLevel,
-        password_hash: userData.password, // This should be hashed in a real app
         team_id: userData.teamId,
         manager_id: userData.managerId,
         created_by: await getCurrentUserId()
@@ -62,7 +61,6 @@ export const userOperations = {
     if (updates.authLevel) updateData.auth_level = updates.authLevel;
     if (updates.teamId) updateData.team_id = updates.teamId;
     if (updates.managerId) updateData.manager_id = updates.managerId;
-    if (updates.password) updateData.password_hash = updates.password;
 
     const { error } = await supabase
       .from('users')
@@ -93,7 +91,7 @@ export const projectOperations = {
           *,
           activities (
             *,
-            activity_dependencies (
+            activity_dependencies!activity_dependencies_activity_id_fkey (
               id,
               depends_on_activity_id,
               dependency_type
