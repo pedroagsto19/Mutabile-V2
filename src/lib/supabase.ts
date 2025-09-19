@@ -1,5 +1,5 @@
 // src/lib/supabase.ts
-import { createClient, type SupabaseClient } from './supabaseClient';
+import { createClient } from './supabaseClient';
 
 const url = import.meta.env.VITE_SUPABASE_URL?.trim();
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
@@ -28,12 +28,19 @@ export function assertEnv(): string[] {
 // Falha rápido para evitar 400 "No API key found in request"
 const problems = assertEnv();
 if (problems.length) {
-  // Mostra claramente no console e interrompe a app em dev
-  // (melhor do que seguir com placeholder e ter 400/401 silenciosos)
   throw new Error(`Config Supabase inválida: ${problems.join(' | ')}`);
 }
 
-export const supabase: SupabaseClient = createClient(url!, key!);
+let clientInstance: any;
+
+function ensureClient() {
+  if (!clientInstance) {
+    clientInstance = createClient(url!, key!);
+  }
+  return clientInstance;
+}
+
+export const supabase = ensureClient();
 
 /**
  * Health check simples do endpoint de Auth do Supabase.
