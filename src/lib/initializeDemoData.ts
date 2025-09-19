@@ -5,6 +5,13 @@ export async function initializeDemoData() {
   try {
     console.log('Inicializando dados demo...');
     
+    // Verificar se há um usuário autenticado
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      console.log('Nenhum usuário autenticado. Faça login para inicializar os dados demo.');
+      return;
+    }
+    
     // Verificar se já existem projetos no banco (indicando que dados demo já foram criados)
     const existingProjects = await projectOperations.getAll();
     
@@ -14,13 +21,6 @@ export async function initializeDemoData() {
     }
     
     console.log('Inicializando dados demo no Supabase...');
-    
-    // Verificar se há um usuário autenticado
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      console.log('Nenhum usuário autenticado. Criando usuário demo...');
-      await createDemoUser();
-    }
     
     // Criar clientes demo
     await createDemoClients();
@@ -39,42 +39,6 @@ export async function initializeDemoData() {
   } catch (e: any) {
     console.error('initializeDemoData error:', e);
     throw new Error(`Falha ao inicializar dados: ${e?.message || 'erro desconhecido'}`);
-  }
-}
-
-async function createDemoUser() {
-  try {
-    // Criar usuário demo principal
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: 'admin@mutabile.com.br',
-      password: 'admin123'
-    });
-
-    if (authError) {
-      console.error('Erro ao criar usuário demo:', authError);
-      return;
-    }
-
-    if (authData.user) {
-      // Criar perfil do usuário
-      const { error: profileError } = await supabase
-        .from('users')
-        .insert([{
-          id: authData.user.id,
-          name: 'Administrador Demo',
-          email: 'admin@mutabile.com.br',
-          role: 'Administrador',
-          auth_level: 'admin'
-        }]);
-
-      if (profileError) {
-        console.error('Erro ao criar perfil do usuário:', profileError);
-      } else {
-        console.log('Usuário demo criado com sucesso');
-      }
-    }
-  } catch (error) {
-    console.error('Erro geral ao criar usuário demo:', error);
   }
 }
 

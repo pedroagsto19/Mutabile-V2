@@ -129,11 +129,14 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
           <div className="flex items-center justify-center space-x-3 mb-6">
             <img src="/png.png" alt="Mutabile Logo" className="h-12 w-auto" />
             <div>
-              <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+              <p><strong>Admin:</strong> admin@mutabile.com.br / admin123</p>
                 Mutabile
               </h1>
               <p className="text-sm text-gray-600">Gestão de Projetos</p>
             </div>
+            <p className="mt-2 text-xs text-gray-500">
+              Faça login primeiro, depois os dados demo serão inicializados automaticamente.
+            </p>
           </div>
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
             Acesso ao Sistema
