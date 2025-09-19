@@ -26,9 +26,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [allUsers, setAllUsers] = useState<User[]>([]);
 
+  const allowedAuthLevels: User['authLevel'][] = ['admin', 'gestor', 'equipe', 'leitor'];
+
   const normalizeAuthLevel = (value: any): User['authLevel'] => {
-    const allowed: User['authLevel'][] = ['admin', 'gestor', 'equipe', 'leitor'];
-    return allowed.includes(value) ? value : 'admin';
+    return allowedAuthLevels.includes(value) ? value : 'admin';
+  };
+
+  const ensureValidDate = (value?: string | null): Date => {
+    if (!value) return new Date();
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+  };
+
+  const buildFallbackUser = (authUser: any): User | null => {
+    if (!authUser?.id || !authUser?.email) {
+      console.warn('buildFallbackUser: dados insuficientes para criar usuário fallback');
+      return null;
+    }
+
+    const metadata = authUser.user_metadata || {};
+    const nameFromEmail = typeof authUser.email === 'string'
+      ? authUser.email.split('@')[0]
+      : 'Usuário';
+
+    const rawAuthLevel = metadata.authLevel || metadata.auth_level;
+    const fallbackAuthLevel: User['authLevel'] = allowedAuthLevels.includes(rawAuthLevel as User['authLevel'])
+      ? (rawAuthLevel as User['authLevel'])
+      : 'leitor';
+
+    return {
+      id: authUser.id,
+      name: metadata.name || metadata.full_name || nameFromEmail || 'Usuário',
+      email: authUser.email,
+      role: metadata.role || 'Usuário',
+      authLevel: fallbackAuthLevel,
+      createdAt: ensureValidDate(authUser.created_at),
+      updatedAt: ensureValidDate(authUser.updated_at),
+      createdBy: metadata.createdBy || metadata.created_by || undefined,
+      teamId: metadata.teamId || metadata.team_id || undefined,
+      managerId: metadata.managerId || metadata.manager_id || undefined,
+    };
   };
 
   const mapUserRecord = (record: DbUserRecord): User => ({
@@ -152,15 +189,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const profile = await ensureUserProfile(authUser);
 
       if (!profile) {
-        console.error('Não foi possível sincronizar o perfil do usuário:', authUser.email);
-        return null;
+        console.warn('Perfil do usuário não encontrado na base. Usando dados da sessão para continuar.');
+        const fallbackUser = buildFallbackUser(authUser);
+        if (!fallbackUser) {
+          setError(prev => prev ?? 'Não foi possível sincronizar o perfil do usuário.');
+        } else {
+          setError(prev => prev ?? 'Perfil do usuário não encontrado na base. Usando dados limitados da sessão.');
+        }
+        return fallbackUser;
       }
 
       console.log('Perfil sincronizado:', profile.email);
       return mapUserRecord(profile);
     } catch (e) {
       console.error('Erro ao buscar perfil do usuário:', e);
-      return null;
+      const fallbackUser = buildFallbackUser(authUser);
+      if (fallbackUser) {
+        setError('Erro ao buscar perfil do usuário. Exibindo dados básicos da sessão.');
+      }
+      return fallbackUser;
     }
   };
 
