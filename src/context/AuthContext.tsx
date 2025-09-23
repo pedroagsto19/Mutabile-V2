@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { userOperations } from '../lib/database';
 import type { User } from '../types/auth';
 
 interface AuthContextType {
@@ -131,21 +132,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('Carregando usuários do Authentication...');
       
-      // Buscar usuários do Authentication
-      const { data: { users: authUsers }, error } = await supabase.auth.admin.listUsers();
+      // Primeiro sincronizar usuários do Authentication para a tabela users
+      await userOperations.syncFromAuth();
       
-      if (error) {
-        console.error('Erro ao buscar usuários:', error);
-        throw error;
-      }
+      // Buscar usuários da tabela users (usando RLS)
+      const users = await userOperations.getAll();
       
-      const mappedUsers = (authUsers || []).map(mapAuthUserToUser);
-      setAllUsers(mappedUsers);
+      setAllUsers(users);
       
-      console.log(`${mappedUsers.length} usuários carregados do Authentication`);
+      console.log(`${users.length} usuários carregados da tabela users`);
     } catch (error: any) {
       console.error('Erro ao sincronizar usuários:', error);
-      throw new Error('Erro ao carregar usuários do Authentication');
+      throw new Error('Erro ao carregar usuários da tabela users');
     }
   };
 
@@ -160,6 +158,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Criar usuário no Authentication
   const createAuthUser = async (userData: any): Promise<void> => {
+    // AVISO: Esta operação requer acesso admin e falhará no frontend com a chave anon
+    // Deve ser executada em um backend com a chave service_role do Supabase
     try {
       console.log('Criando usuário no Authentication:', userData.email);
       
@@ -198,9 +198,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('Atualizando metadata do usuário:', userId, metadata);
       
-      const { error: authError } = await supabase.auth.admin.updateUserById(userId, {
-        user_metadata: metadata
-      });
+      let authError;
+      
+      if (userId === user?.id) {
+        // Atualizar usuário atual (permitido com chave anon)
+        const { error } = await supabase.auth.updateUser({
+          data: metadata
+        });
+        authError = error;
+      } else {
+        // AVISO: Atualizar outros usuários requer acesso admin e falhará no frontend
+        // Deve ser executada em um backend com a chave service_role do Supabase
+        const { error } = await supabase.auth.admin.updateUserById(userId, {
+          user_metadata: metadata
+        });
+        authError = error;
+      }
 
       if (authError) {
         console.error('Erro ao atualizar metadata no Authentication:', authError);
@@ -232,6 +245,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Deletar usuário do Authentication
   const deleteAuthUser = async (userId: string): Promise<void> => {
+    // AVISO: Esta operação requer acesso admin e falhará no frontend com a chave anon
+    // Deve ser executada em um backend com a chave service_role do Supabase
     try {
       console.log('Deletando usuário do Authentication:', userId);
       
