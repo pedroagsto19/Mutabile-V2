@@ -119,6 +119,9 @@ export function MainMenu({ onModuleSelect, currentUser }: MainMenuProps) {
                 <UserIcon className="w-5 h-5 text-gray-500" />
                 <div className="text-right">
                   <p className="text-sm font-medium text-gray-900">
+                    {currentUser.name}
+                  </p>
+                  <p className="text-xs text-gray-500">
                     {currentUser.email}
                   </p>
                   <p className="text-xs text-gray-500">
