@@ -141,7 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (syncError) {
         console.error('Erro na sincronização:', syncError);
-        throw syncError;
+        console.log('Continuando para buscar usuários da tabela...');
       }
       
       // 2. Buscar usuários sincronizados da tabela users
@@ -152,33 +152,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log(`${users.length} usuários sincronizados com sucesso`);
     } catch (error: any) {
       console.error('Erro ao sincronizar usuários:', error);
-      
-      // Fallback: buscar diretamente do Authentication se a sincronização falhar
-      try {
-        console.log('Tentando buscar diretamente do Authentication...');
-        const { data: authUsers, error: authError } = await supabase.rpc('get_auth_users');
-        
-        if (authError) throw authError;
-        
-        const mappedUsers: User[] = (authUsers || []).map((authUser: any) => ({
-          id: authUser.id,
-          name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'Usuário',
-          email: authUser.email,
-          role: authUser.user_metadata?.role || 'Usuário do Sistema',
-          authLevel: authUser.user_metadata?.auth_level || 'equipe',
-          teamId: authUser.user_metadata?.team_id,
-          managerId: authUser.user_metadata?.manager_id,
-          createdBy: authUser.user_metadata?.created_by,
-          createdAt: new Date(authUser.created_at),
-          updatedAt: new Date(authUser.updated_at || authUser.created_at)
-        }));
-        
-        setAllUsers(mappedUsers);
-        console.log(`${mappedUsers.length} usuários carregados diretamente do Authentication`);
-      } catch (fallbackError) {
-        console.error('Erro no fallback:', fallbackError);
-        throw new Error('Não foi possível carregar usuários do Authentication');
-      }
+      throw new Error('Erro ao carregar usuários da tabela users');
     }
   };
 
