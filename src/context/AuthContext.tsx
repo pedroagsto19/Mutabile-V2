@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import type { User } from '../types/auth';
-import { userOperations } from '../lib/database';
 
 interface AuthContextType {
   user: User | null;
@@ -32,20 +31,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const mapAuthUserToUser = (authUser: any): User => {
     const metadata = authUser.user_metadata || {};
     
-    // Determinar authLevel baseado no metadata ou email
-    let authLevel: User['authLevel'] = 'equipe';
-    if (metadata.auth_level) {
-      authLevel = metadata.auth_level;
-    } else {
-      // Fallback baseado no email para usuários existentes
-      if (authUser.email?.includes('admin')) {
-        authLevel = 'admin';
-      } else if (authUser.email?.includes('joao')) {
-        authLevel = 'gestor';
-      } else {
-        authLevel = 'equipe';
-      }
-    }
+    // Usar authLevel do metadata ou buscar na tabela users
+    const authLevel: User['authLevel'] = metadata.auth_level || 'equipe';
     
     return {
       id: authUser.id,
@@ -78,10 +65,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (session?.user) {
           const userProfile = mapAuthUserToUser(session.user);
-          setUser(userProfile);
+          
+          // Buscar dados completos do usuário na tabela users
+          try {
+            const { data: userData, error: userError } = await supabase
+              .from('users')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+            
+            if (userData && !userError) {
+              // Usar dados da tabela users se disponível
+              const completeUserProfile: User = {
+                id: userData.id,
+                name: userData.name,
+                email: userData.email,
+                role: userData.role,
+                authLevel: userData.auth_level,
+                teamId: userData.team_id,
+                managerId: userData.manager_id,
+                createdBy: userData.created_by,
+                createdAt: new Date(userData.created_at),
+                updatedAt: new Date(userData.updated_at)
+              };
+              setUser(completeUserProfile);
+            } else {
+              // Fallback para dados do Authentication
+              setUser(userProfile);
+            }
+          } catch (error) {
+            console.error('Erro ao buscar dados do usuário na tabela:', error);
+            setUser(userProfile);
+          }
+          
           setIsAuthenticated(true);
           setError(null);
-          console.log('Usuário autenticado:', userProfile.email);
+          console.log('Usuário autenticado:', session.user.email);
         } else {
           setUser(null);
           setIsAuthenticated(false);
@@ -111,8 +130,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('Auth event:', event);
 
         if (session?.user) {
-          const userProfile = mapAuthUserToUser(session.user);
-          setUser(userProfile);
+          // Buscar dados completos do usuário na tabela users
+          try {
+            const { data: userData, error: userError } = await supabase
+              .from('users')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+            
+            if (userData && !userError) {
+              // Usar dados da tabela users
+              const completeUserProfile: User = {
+                id: userData.id,
+                name: userData.name,
+                email: userData.email,
+                role: userData.role,
+                authLevel: userData.auth_level,
+                teamId: userData.team_id,
+                managerId: userData.manager_id,
+                createdBy: userData.created_by,
+                createdAt: new Date(userData.created_at),
+                updatedAt: new Date(userData.updated_at)
+              };
+              setUser(completeUserProfile);
+            } else {
+              // Fallback para dados do Authentication
+              const userProfile = mapAuthUserToUser(session.user);
+              setUser(userProfile);
+            }
+          } catch (error) {
+            console.error('Erro ao buscar dados do usuário na tabela:', error);
+            const userProfile = mapAuthUserToUser(session.user);
+            setUser(userProfile);
+          }
+          
           setIsAuthenticated(true);
           setError(null);
         } else {
