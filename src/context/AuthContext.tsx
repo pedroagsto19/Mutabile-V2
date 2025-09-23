@@ -9,9 +9,10 @@ interface AuthContextType {
   logout: () => Promise<void>;
   error: string | null;
   getAllUsers: () => User[];
-  register: (userData: any) => Promise<void>;
-  updateUser: (id: string, updates: any) => Promise<void>;
-  deleteUser: (id: string) => Promise<void>;
+  loadAllUsers: () => Promise<void>;
+  updateUserMetadata: (userId: string, metadata: any) => Promise<void>;
+  deleteAuthUser: (userId: string) => Promise<void>;
+  createAuthUser: (userData: any) => Promise<void>;
   hasPermission: (permission: string) => boolean;
   canEditUser: (user: User) => boolean;
 }
@@ -29,15 +30,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const mapAuthUserToUser = (authUser: any): User => {
     const metadata = authUser.user_metadata || {};
     
-    // Determinar authLevel baseado no email ou metadata
-    let authLevel: User['authLevel'] = 'admin';
+    // Determinar authLevel baseado no metadata ou email
+    let authLevel: User['authLevel'] = 'equipe';
     if (metadata.auth_level) {
       authLevel = metadata.auth_level;
     } else {
-      // Fallback baseado no email
+      // Fallback baseado no email para usuários existentes
       if (authUser.email?.includes('admin')) {
         authLevel = 'admin';
-      } else if (authUser.email?.includes('gestor')) {
+      } else if (authUser.email?.includes('joao')) {
         authLevel = 'gestor';
       } else {
         authLevel = 'equipe';
@@ -128,58 +129,60 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Carregar usuários do Supabase Auth (apenas para admins)
+  // Carregar todos os usuários do Supabase Authentication
+  const loadAllUsers = async () => {
+    try {
+      // Buscar usuários da tabela users que sincroniza com Authentication
+      const { data: usersData, error } = await supabase
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Erro ao carregar usuários:', error);
+        // Fallback para usuários mock se não conseguir carregar
+        const mockUsers: User[] = [
+          {
+            id: '1',
+            name: 'Administrador',
+            email: 'admin@mutabile.com.br',
+            role: 'Administrador do Sistema',
+            authLevel: 'admin',
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+        ];
+        setAllUsers(mockUsers);
+        return;
+      }
+
+      // Mapear dados da tabela users para o tipo User
+      const mappedUsers: User[] = (usersData || []).map(userData => ({
+        id: userData.admin_user_id || userData.id,
+        name: userData.name,
+        email: userData.email,
+        role: userData.role,
+        authLevel: userData.auth_level,
+        teamId: userData.team_id,
+        managerId: userData.manager_id,
+        createdBy: userData.created_by,
+        createdAt: new Date(userData.created_at),
+        updatedAt: new Date(userData.updated_at)
+      }));
+
+      setAllUsers(mappedUsers);
+    } catch (error) {
+      console.error('Erro ao carregar usuários:', error);
+      setAllUsers([]);
+    }
+  };
+
+  // Carregar usuários quando autenticado
   useEffect(() => {
     if (isAuthenticated && user?.authLevel === 'admin') {
       loadAllUsers();
     }
   }, [isAuthenticated, user]);
-
-  const loadAllUsers = async () => {
-    try {
-      // Para listar usuários, precisaríamos usar a Admin API do Supabase
-      // Por enquanto, vamos usar apenas o usuário atual e alguns usuários mock baseados nos emails que vimos
-      const mockUsers: User[] = [
-        {
-          id: '1',
-          name: 'Administrador',
-          email: 'admin@mutabile.com.br',
-          role: 'Administrador do Sistema',
-          authLevel: 'admin',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        },
-        {
-          id: '2',
-          name: 'João Oliveira',
-          email: 'joao@mutabile.com.br',
-          role: 'Gestor de Projetos',
-          authLevel: 'gestor',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        },
-        {
-          id: '3',
-          name: 'Carlos Santos',
-          email: 'carlos@mutabile.com.br',
-          role: 'Arquiteto',
-          authLevel: 'equipe',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
-      ];
-
-      // Incluir o usuário atual se não estiver na lista
-      if (user && !mockUsers.find(u => u.email === user.email)) {
-        mockUsers.push(user);
-      }
-
-      setAllUsers(mockUsers);
-    } catch (error) {
-      console.error('Erro ao carregar usuários:', error);
-      setAllUsers([user].filter(Boolean) as User[]);
-    }
-  };
 
   const logout = async () => {
     try {
@@ -203,56 +206,89 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const getAllUsers = (): User[] => allUsers;
 
-  const register = async (userData: any): Promise<void> => {
+  // Criar usuário no Authentication e sincronizar com tabela users
+  const createAuthUser = async (userData: any): Promise<void> => {
     try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      // 1. Criar usuário no Supabase Authentication
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email: userData.email,
         password: userData.password,
-        options: {
-          data: {
+        user_metadata: {
+          name: userData.name,
+          role: userData.role,
+          auth_level: userData.authLevel,
+          team_id: userData.teamId || null,
+          manager_id: userData.managerId || null,
+          created_by: user?.id || null
+        },
+        email_confirm: true // Confirmar email automaticamente
+      });
+
+      if (authError) throw authError;
+
+      // 2. Sincronizar com tabela users
+      if (authData?.user) {
+        const { error: dbError } = await supabase
+          .from('users')
+          .insert([{
+            admin_user_id: authData.user.id,
             name: userData.name,
+            email: userData.email,
             role: userData.role,
             auth_level: userData.authLevel,
             team_id: userData.teamId || null,
             manager_id: userData.managerId || null,
             created_by: user?.id || null
-          }
+          }]);
+
+        if (dbError) {
+          console.error('Erro ao sincronizar com tabela users:', dbError);
+          // Não falhar se a sincronização der erro, o usuário foi criado no Authentication
         }
-      });
-
-      if (authError) throw authError;
-
-      if (authData?.user) {
-        await loadAllUsers();
       }
+
+      await loadAllUsers();
     } catch (e: any) {
       throw new Error(e.message || 'Erro ao criar usuário');
     }
   };
 
-  const updateUser = async (id: string, updates: any): Promise<void> => {
+  // Atualizar metadata do usuário no Authentication e sincronizar com tabela users
+  const updateUserMetadata = async (userId: string, metadata: any): Promise<void> => {
     try {
-      // Se for o usuário atual, atualizar via updateUser
-      if (id === user?.id) {
-        const updateData: any = {};
-        
-        if (updates.name || updates.role || updates.authLevel) {
-          updateData.data = {
-            name: updates.name,
-            role: updates.role,
-            auth_level: updates.authLevel
-          };
-        }
+      // 1. Atualizar no Supabase Authentication
+      const { error: authError } = await supabase.auth.admin.updateUserById(userId, {
+        user_metadata: metadata
+      });
 
-        if (updates.password) {
-          updateData.password = updates.password;
-        }
+      if (authError) throw authError;
 
-        const { error } = await supabase.auth.updateUser(updateData);
-        if (error) throw error;
+      // 2. Sincronizar com tabela users
+      const { error: dbError } = await supabase
+        .from('users')
+        .update({
+          name: metadata.name,
+          role: metadata.role,
+          auth_level: metadata.auth_level,
+          team_id: metadata.team_id || null,
+          manager_id: metadata.manager_id || null
+        })
+        .eq('admin_user_id', userId);
 
-        // Atualizar estado local
-        setUser(prev => prev ? { ...prev, ...updates } : null);
+      if (dbError) {
+        console.error('Erro ao sincronizar com tabela users:', dbError);
+      }
+
+      // 3. Se for o usuário atual, atualizar estado local
+      if (userId === user?.id) {
+        setUser(prev => prev ? { 
+          ...prev, 
+          name: metadata.name,
+          role: metadata.role,
+          authLevel: metadata.auth_level,
+          teamId: metadata.team_id,
+          managerId: metadata.manager_id
+        } : null);
       }
 
       await loadAllUsers();
@@ -261,11 +297,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const deleteUser = async (id: string): Promise<void> => {
+  // Deletar usuário do Authentication e tabela users
+  const deleteAuthUser = async (userId: string): Promise<void> => {
     try {
-      // Para deletar usuários, seria necessário usar a Admin API do Supabase
-      // Por enquanto, apenas removemos da lista local
-      setAllUsers(prev => prev.filter(u => u.id !== id));
+      // 1. Deletar da tabela users primeiro
+      const { error: dbError } = await supabase
+        .from('users')
+        .delete()
+        .eq('admin_user_id', userId);
+
+      if (dbError) {
+        console.error('Erro ao deletar da tabela users:', dbError);
+      }
+
+      // 2. Deletar do Supabase Authentication
+      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+
+      if (authError) throw authError;
+
+      await loadAllUsers();
     } catch (e: any) {
       throw new Error(e.message || 'Erro ao deletar usuário');
     }
@@ -310,9 +360,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logout,
       error,
       getAllUsers,
-      register,
-      updateUser,
-      deleteUser,
+      loadAllUsers,
+      updateUserMetadata,
+      deleteAuthUser,
+      createAuthUser,
       hasPermission,
       canEditUser
     }}>

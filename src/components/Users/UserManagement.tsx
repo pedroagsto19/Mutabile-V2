@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Shield, User as UserIcon, Search, Filter } from 'lucide-react';
+import { Plus, Edit, Trash2, Shield, User as UserIcon, Search, Filter, RefreshCw } from 'lucide-react';
 import { Button } from '../UI/Button';
 import { Card, CardHeader, CardContent } from '../UI/Card';
 import { Modal } from '../UI/Modal';
@@ -10,12 +10,13 @@ import { useNotification } from '../../context/NotificationContext';
 export function UserManagement() {
   const { 
     user: currentUser,
-    register, 
-    updateUser, 
-    deleteUser, 
+    createAuthUser,
+    updateUserMetadata,
+    deleteAuthUser,
     hasPermission, 
     canEditUser,
-    getAllUsers
+    getAllUsers,
+    loadAllUsers
   } = useAuth();
   const { toast, confirm } = useNotification();
   
@@ -24,16 +25,30 @@ export function UserManagement() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterLevel, setFilterLevel] = useState('');
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
 
   // Load users on mount
   useEffect(() => {
-    setUsers(getAllUsers());
+    refreshUsers();
   }, []);
 
   // Update users when auth context changes
   useEffect(() => {
     setUsers(getAllUsers());
   }, [getAllUsers]);
+
+  const refreshUsers = async () => {
+    setIsLoadingUsers(true);
+    try {
+      await loadAllUsers();
+      setUsers(getAllUsers());
+    } catch (error) {
+      console.error('Erro ao carregar usuários:', error);
+      toast.error('Erro ao carregar usuários', 'Tente novamente mais tarde.');
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -61,7 +76,7 @@ export function UserManagement() {
     
     const confirmed = await confirm({
       title: 'Excluir Usuário',
-      message: 'Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.',
+      message: 'Tem certeza que deseja excluir este usuário? Esta ação removerá o usuário do Supabase Authentication e não pode ser desfeita.',
       type: 'danger',
       confirmText: 'Excluir',
       cancelText: 'Cancelar'
@@ -69,11 +84,11 @@ export function UserManagement() {
     
     if (confirmed) {
       try {
-        await deleteUser(userId);
-        setUsers(getAllUsers());
+        await deleteAuthUser(userId);
+        await refreshUsers();
         toast.success('Usuário excluído com sucesso!');
-      } catch (error) {
-        toast.error('Erro ao excluir usuário', 'Tente novamente mais tarde.');
+      } catch (error: any) {
+        toast.error('Erro ao excluir usuário', error.message || 'Tente novamente mais tarde.');
       }
     }
   };
@@ -114,27 +129,34 @@ export function UserManagement() {
       
       try {
         if (editingUser) {
-          const updateData = { ...formData };
-          // Only include password if it was provided
-          if (!updateData.password) {
-            delete updateData.password;
-          }
-          await updateUser(editingUser.id, updateData);
+          // Atualizar usuário existente
+          const updateData = {
+            name: formData.name,
+            role: formData.role,
+            auth_level: formData.authLevel,
+            team_id: formData.teamId || null,
+            manager_id: formData.managerId || null
+          };
+
+          await updateUserMetadata(editingUser.id, updateData);
           toast.success('Usuário atualizado com sucesso!');
         } else {
+          // Criar novo usuário
           if (!formData.password) {
             toast.error('Erro de validação', 'Senha é obrigatória para novos usuários');
             return;
           }
-          await register(formData);
-          toast.success('Usuário criado com sucesso!');
+          
+          await createAuthUser(formData);
+          toast.success('Usuário criado com sucesso no Supabase Authentication!');
         }
-        setUsers(getAllUsers());
+        
+        await refreshUsers();
         setShowUserForm(false);
         setEditingUser(null);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error saving user:', error);
-        toast.error('Erro ao salvar usuário', 'Tente novamente mais tarde.');
+        toast.error('Erro ao salvar usuário', error.message || 'Tente novamente mais tarde.');
       }
     };
 
@@ -145,6 +167,7 @@ export function UserManagement() {
     const availableManagers = users.filter(user => 
       user.authLevel === 'gestor' || user.authLevel === 'admin'
     );
+
     return (
       <Modal 
         isOpen={showUserForm} 
@@ -180,6 +203,11 @@ export function UserManagement() {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
               disabled={!!editingUser} // Email não pode ser alterado após criação
             />
+            {editingUser && (
+              <p className="text-xs text-gray-500 mt-1">
+                O e-mail não pode ser alterado após a criação no Supabase Authentication
+              </p>
+            )}
           </div>
 
           <div>
@@ -221,46 +249,44 @@ export function UserManagement() {
             )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {editingUser ? 'Nova Senha (deixe em branco para manter atual)' : 'Senha *'}
-            </label>
-            <input
-              type="password"
-              required={!editingUser}
-              value={formData.password}
-              onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
-              placeholder={editingUser ? 'Digite nova senha...' : 'Digite a senha...'}
-            />
-            {editingUser && (
+          {!editingUser && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Senha *
+              </label>
+              <input
+                type="password"
+                required
+                value={formData.password}
+                onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
+                placeholder="Digite a senha..."
+                minLength={6}
+              />
               <p className="text-xs text-gray-500 mt-1">
-                Deixe em branco para manter a senha atual
+                Mínimo de 6 caracteres. O usuário será criado no Supabase Authentication.
               </p>
-            )}
-          </div>
+            </div>
+          )}
+
           {/* Manager Selection for Team Members */}
           {formData.authLevel === 'equipe' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Gestor Responsável *
+                Gestor Responsável
               </label>
               <select
-                required
                 value={formData.managerId}
                 onChange={(e) => setFormData(prev => ({ ...prev, managerId: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
               >
-                <option value="">Selecione um gestor</option>
+                <option value="">Selecione um gestor (opcional)</option>
                 {availableManagers.map(manager => (
                   <option key={manager.id} value={manager.id}>
                     {manager.name} - {manager.role}
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-gray-500 mt-1">
-                Usuários de equipe devem ter um gestor responsável
-              </p>
             </div>
           )}
 
@@ -306,12 +332,38 @@ export function UserManagement() {
           <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
             Gerenciamento de Usuários
           </h1>
-          <p className="text-gray-600 mt-1">{filteredUsers.length} usuários encontrados</p>
+          <p className="text-gray-600 mt-1">
+            {filteredUsers.length} usuários encontrados • Sincronizado com Supabase Authentication
+          </p>
         </div>
-        <Button onClick={handleCreateUser}>
-          <Plus className="h-4 w-4 mr-2" />
-          Novo Usuário
-        </Button>
+        <div className="flex items-center space-x-3">
+          <Button 
+            variant="outline" 
+            onClick={refreshUsers}
+            disabled={isLoadingUsers}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingUsers ? 'animate-spin' : ''}`} />
+            Atualizar
+          </Button>
+          <Button onClick={handleCreateUser}>
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Usuário
+          </Button>
+        </div>
+      </div>
+
+      {/* Info Alert */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="flex items-start space-x-3">
+          <Shield className="h-5 w-5 text-blue-600 mt-0.5" />
+          <div>
+            <h3 className="text-sm font-medium text-blue-900">Integração com Supabase Authentication</h3>
+            <p className="text-sm text-blue-700 mt-1">
+              Os usuários mostrados aqui são sincronizados com a aba Authentication do Supabase. 
+              Você pode definir níveis de acesso e informações adicionais que serão armazenadas no user_metadata.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Filters */}
@@ -435,6 +487,24 @@ export function UserManagement() {
           </table>
         </div>
       </Card>
+
+      {filteredUsers.length === 0 && !isLoadingUsers && (
+        <div className="text-center py-12">
+          <UserIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-500 mb-4">Nenhum usuário encontrado.</p>
+          <Button onClick={handleCreateUser}>
+            <Plus className="h-4 w-4 mr-2" />
+            Criar primeiro usuário
+          </Button>
+        </div>
+      )}
+
+      {isLoadingUsers && (
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black mx-auto mb-4"></div>
+          <p className="text-gray-500">Carregando usuários do Supabase...</p>
+        </div>
+      )}
     </div>
   );
-}
+};
