@@ -143,6 +143,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Handle specific duplicate key error gracefully
         if (syncError.code === '23505') {
           console.log('Usuários já existem na tabela, continuando com busca...');
+        } else if (syncError.code === '23503') {
+          console.log('Erro de chave estrangeira durante sincronização, continuando com busca...');
+          setError('Alguns usuários não puderam ser sincronizados devido a referências em projetos. Para resolver isso, modifique a constraint projects_created_by_fkey no Supabase para incluir ON DELETE CASCADE ou ON DELETE SET NULL.');
         } else {
           console.error('Erro na sincronização:', syncError);
           console.log('Continuando para buscar usuários da tabela...');
