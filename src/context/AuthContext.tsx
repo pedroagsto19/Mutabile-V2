@@ -140,8 +140,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { error: syncError } = await supabase.rpc('sync_auth_users');
       
       if (syncError) {
-        console.error('Erro na sincronização:', syncError);
-        console.log('Continuando para buscar usuários da tabela...');
+        // Handle specific duplicate key error gracefully
+        if (syncError.code === '23505') {
+          console.log('Usuários já existem na tabela, continuando com busca...');
+        } else {
+          console.error('Erro na sincronização:', syncError);
+          console.log('Continuando para buscar usuários da tabela...');
+        }
       }
       
       // 2. Buscar usuários sincronizados da tabela users
