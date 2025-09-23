@@ -15,8 +15,8 @@ export function UserManagement() {
     deleteUser, 
     hasPermission, 
     canEditUser
+    getAllUsers
   } = useAuth();
-  const { userOperations } = require('../../lib/database');
   const { toast, confirm } = useNotification();
   
   const [users, setUsers] = useState<User[]>([]);
@@ -27,18 +27,13 @@ export function UserManagement() {
 
   // Load users on mount
   useEffect(() => {
-    loadUsers();
+    setUsers(getAllUsers());
   }, []);
 
-  const loadUsers = async () => {
-    try {
-      const allUsers = await userOperations.getAll();
-      setUsers(allUsers);
-    } catch (error) {
-      console.error('Error loading users:', error);
-      toast.error('Erro ao carregar usuários');
-    }
-  };
+  // Update users when auth context changes
+  useEffect(() => {
+    setUsers(getAllUsers());
+  }, [getAllUsers]);
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -75,7 +70,7 @@ export function UserManagement() {
     if (confirmed) {
       try {
         await deleteUser(userId);
-        await loadUsers();
+        setUsers(getAllUsers());
         toast.success('Usuário excluído com sucesso!');
       } catch (error) {
         toast.error('Erro ao excluir usuário', 'Tente novamente mais tarde.');
@@ -127,7 +122,6 @@ export function UserManagement() {
           await updateUser(editingUser.id, updateData);
           toast.success('Usuário atualizado com sucesso!');
         } else {
-          // For new users, password is required
           if (!formData.password) {
             toast.error('Erro de validação', 'Senha é obrigatória para novos usuários');
             return;
@@ -135,7 +129,7 @@ export function UserManagement() {
           await register(formData);
           toast.success('Usuário criado com sucesso!');
         }
-        await loadUsers();
+        setUsers(getAllUsers());
         setShowUserForm(false);
         setEditingUser(null);
       } catch (error) {

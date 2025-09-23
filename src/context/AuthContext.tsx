@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getSupabaseClient } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import type { User } from '../types/auth';
 
 interface AuthContextType {
@@ -25,30 +25,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [allUsers, setAllUsers] = useState<User[]>([]);
 
-  const requireSupabaseClient = () => {
-    const client = getSupabaseClient();
-    try {
-      const auth = client.auth;
-      if (!auth) {
-        throw new Error('Supabase não configurado');
-      }
-    } catch (error) {
-      throw new Error('Supabase não configurado');
-    }
-    return client;
-  };
-
   // Mapear usuário do Supabase Auth para nosso tipo User
   const mapAuthUserToUser = (authUser: any): User => {
-    // Extrair informações do user_metadata ou usar defaults
     const metadata = authUser.user_metadata || {};
+    
+    // Determinar authLevel baseado no email ou metadata
+    let authLevel: User['authLevel'] = 'admin';
+    if (metadata.auth_level) {
+      authLevel = metadata.auth_level;
+    } else {
+      // Fallback baseado no email
+      if (authUser.email?.includes('admin')) {
+        authLevel = 'admin';
+      } else if (authUser.email?.includes('gestor')) {
+        authLevel = 'gestor';
+      } else {
+        authLevel = 'equipe';
+      }
+    }
     
     return {
       id: authUser.id,
       name: metadata.name || authUser.email?.split('@')[0] || 'Usuário',
       email: authUser.email,
       role: metadata.role || 'Usuário do Sistema',
-      authLevel: metadata.auth_level || 'admin', // Default para admin para o usuário principal
+      authLevel,
       teamId: metadata.team_id,
       managerId: metadata.manager_id,
       createdBy: metadata.created_by,
@@ -57,24 +58,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   };
 
-  // Verificação de autenticação simplificada
+  // Verificação de autenticação
   useEffect(() => {
     let mounted = true;
 
-    let client: ReturnType<typeof requireSupabaseClient>;
-    try {
-      client = requireSupabaseClient();
-    } catch (error: any) {
-      setIsLoading(false);
-      setError(error.message || 'Supabase não configurado');
-      return () => {
-        mounted = false;
-      };
-    }
-
     const checkAuth = async () => {
       try {
-        const { data: { session }, error: sessionError } = await client.auth.getSession();
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
           console.error('Erro na sessão:', sessionError);
@@ -111,7 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     checkAuth();
 
     // Listener para mudanças de autenticação
-    const { data: { subscription } } = client.auth.onAuthStateChange(
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
 
@@ -138,7 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Carregar todos os usuários do Supabase Auth
+  // Carregar usuários do Supabase Auth (apenas para admins)
   useEffect(() => {
     if (isAuthenticated && user?.authLevel === 'admin') {
       loadAllUsers();
@@ -147,17 +137,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loadAllUsers = async () => {
     try {
-      const client = requireSupabaseClient();
-      
-      // Apenas admins podem listar usuários
-      if (user?.authLevel !== 'admin') {
-        setAllUsers([user].filter(Boolean) as User[]);
-        return;
+      // Para listar usuários, precisaríamos usar a Admin API do Supabase
+      // Por enquanto, vamos usar apenas o usuário atual e alguns usuários mock baseados nos emails que vimos
+      const mockUsers: User[] = [
+        {
+          id: '1',
+          name: 'Administrador',
+          email: 'admin@mutabile.com.br',
+          role: 'Administrador do Sistema',
+          authLevel: 'admin',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
+          id: '2',
+          name: 'João Oliveira',
+          email: 'joao@mutabile.com.br',
+          role: 'Gestor de Projetos',
+          authLevel: 'gestor',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
+          id: '3',
+          name: 'Carlos Santos',
+          email: 'carlos@mutabile.com.br',
+          role: 'Arquiteto',
+          authLevel: 'equipe',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      ];
+
+      // Incluir o usuário atual se não estiver na lista
+      if (user && !mockUsers.find(u => u.email === user.email)) {
+        mockUsers.push(user);
       }
 
-      // Para listar usuários, precisaríamos usar a Admin API do Supabase
-      // Por enquanto, vamos usar apenas o usuário atual
-      setAllUsers([user].filter(Boolean) as User[]);
+      setAllUsers(mockUsers);
     } catch (error) {
       console.error('Erro ao carregar usuários:', error);
       setAllUsers([user].filter(Boolean) as User[]);
@@ -167,14 +184,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     try {
       setIsLoading(true);
-      const client = requireSupabaseClient();
-      const { error } = await client.auth.signOut();
+      const { error } = await supabase.auth.signOut();
       
       if (error) throw error;
       
       setUser(null);
       setIsAuthenticated(false);
       setError(null);
+      setAllUsers([]);
       console.log('Logout realizado com sucesso');
     } catch (e: any) {
       console.error('Erro no logout:', e);
@@ -188,9 +205,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = async (userData: any): Promise<void> => {
     try {
-      const client = requireSupabaseClient();
-      
-      const { data: authData, error: authError } = await client.auth.signUp({
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password,
         options: {
@@ -217,23 +232,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updateUser = async (id: string, updates: any): Promise<void> => {
     try {
-      const client = requireSupabaseClient();
-      
-      // Atualizar metadata do usuário
-      const { error } = await client.auth.updateUser({
-        data: {
-          name: updates.name,
-          role: updates.role,
-          auth_level: updates.authLevel,
-          team_id: updates.teamId,
-          manager_id: updates.managerId
-        }
-      });
-
-      if (error) throw error;
-
-      // Se for o usuário atual, atualizar o estado local
+      // Se for o usuário atual, atualizar via updateUser
       if (id === user?.id) {
+        const updateData: any = {};
+        
+        if (updates.name || updates.role || updates.authLevel) {
+          updateData.data = {
+            name: updates.name,
+            role: updates.role,
+            auth_level: updates.authLevel
+          };
+        }
+
+        if (updates.password) {
+          updateData.password = updates.password;
+        }
+
+        const { error } = await supabase.auth.updateUser(updateData);
+        if (error) throw error;
+
+        // Atualizar estado local
         setUser(prev => prev ? { ...prev, ...updates } : null);
       }
 

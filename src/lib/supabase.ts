@@ -1,43 +1,34 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 
-const url = import.meta.env.VITE_SUPABASE_URL?.trim();
-const key = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-let clientInstance: SupabaseClient | null = null;
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Variáveis de ambiente do Supabase não encontradas');
+  console.error('VITE_SUPABASE_URL:', supabaseUrl ? 'Configurada' : 'Não configurada');
+  console.error('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'Configurada' : 'Não configurada');
+}
 
-function createStubClient(): SupabaseClient {
-  return new Proxy({}, {
-    get() {
-      throw new Error('Supabase não configurado');
+export const supabase = createClient(
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseAnonKey || 'placeholder-key',
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
     }
-  }) as SupabaseClient;
-}
-
-function createSupabaseClient(): SupabaseClient {
-  if (!url || !key) {
-    console.error('Supabase não configurado - variáveis de ambiente ausentes');
-    return createStubClient();
   }
+);
 
+// Função para testar a conectividade
+export const testConnection = async () => {
   try {
-    return createClient(url, key, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true
-      }
-    });
+    const { data, error } = await supabase.auth.getSession();
+    if (error) throw error;
+    return { success: true, data };
   } catch (error) {
-    console.error('Erro ao criar cliente Supabase:', error);
-    return createStubClient();
+    console.error('Erro na conexão:', error);
+    return { success: false, error };
   }
-}
-
-export function getSupabaseClient(): SupabaseClient {
-  if (!clientInstance) {
-    clientInstance = createSupabaseClient();
-  }
-  return clientInstance;
-}
-
-export const supabase = getSupabaseClient();
+};

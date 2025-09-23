@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, LogIn, AlertTriangle, CheckCircle } from 'lucide-react';
 import { Button } from '../UI/Button';
 import { Card, CardHeader, CardContent } from '../UI/Card';
-import { getSupabaseClient } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 
 interface LoginFormProps {
   onLoginSuccess: () => void;
@@ -23,21 +23,24 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
 
   const checkSystem = async () => {
     setChecking(true);
+    setError('');
 
-    let client: ReturnType<typeof getSupabaseClient>;
     try {
-      client = getSupabaseClient();
-      const auth = client.auth;
-      if (!auth) {
-        throw new Error('Supabase não configurado');
-      }
+      // Teste de conectividade simples
+      const { data, error } = await supabase.auth.getSession();
       
-      // Teste simples de conectividade
-      await client.auth.getSession();
-      setSystemReady(true);
-    } catch (error) {
-      console.log('Problema de conectividade detectado:', error);
+      if (error) {
+        console.error('Erro na verificação do sistema:', error);
+        setSystemReady(false);
+        setError('Problema de conectividade com Supabase: ' + error.message);
+      } else {
+        setSystemReady(true);
+        console.log('Conexão com Supabase estabelecida com sucesso');
+      }
+    } catch (error: any) {
+      console.error('Erro na verificação do sistema:', error);
       setSystemReady(false);
+      setError('Erro de conectividade: ' + (error.message || 'Verifique sua conexão'));
     } finally {
       setChecking(false);
     }
@@ -52,22 +55,12 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
       return;
     }
 
-    let client: ReturnType<typeof getSupabaseClient>;
-    try {
-      client = getSupabaseClient();
-      const auth = client.auth;
-      if (!auth) {
-        throw new Error('Supabase não configurado');
-      }
-    } catch (error: any) {
-      setError(error.message || 'Sistema não configurado corretamente');
-      return;
-    }
-
     setIsLoading(true);
 
     try {
-      const { data, error: authError } = await client.auth.signInWithPassword({
+      console.log('Tentando login para:', email);
+      
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password
       });
@@ -76,7 +69,7 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
         console.error('Erro de autenticação:', authError);
         
         if (authError.message.includes('Invalid login credentials')) {
-          setError('E-mail ou senha incorretos. Verifique suas credenciais.');
+          setError('E-mail ou senha incorretos. Verifique suas credenciais na aba Authentication do Supabase.');
         } else if (authError.message.includes('Email not confirmed')) {
           setError('E-mail não confirmado. Verifique sua caixa de entrada.');
         } else if (authError.message.includes('Too many requests')) {
@@ -89,6 +82,7 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
 
       if (data.session && data.user) {
         console.log('Login realizado com sucesso para:', data.user.email);
+        console.log('Dados do usuário:', data.user);
         onLoginSuccess();
       } else {
         setError('Falha no login - sessão não criada');
@@ -108,8 +102,9 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
     setIsLoading(true);
 
     try {
-      const client = getSupabaseClient();
-      const { data, error: authError } = await client.auth.signInWithPassword({
+      console.log('Login rápido para:', userEmail);
+      
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
         email: userEmail,
         password: userPassword
       });
@@ -149,14 +144,14 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
             Acesso ao Sistema
           </h2>
-          <p className="text-gray-600">Entre com suas credenciais do Supabase</p>
+          <p className="text-gray-600">Entre com suas credenciais do Supabase Authentication</p>
         </div>
 
         {/* System Status */}
         <div className={`border rounded-lg p-3 ${
           checking ? 'bg-blue-50 border-blue-200 text-blue-800' :
           systemReady ? 'bg-green-50 border-green-200 text-green-800' :
-          'bg-yellow-50 border-yellow-200 text-yellow-800'
+          'bg-red-50 border-red-200 text-red-800'
         }`}>
           <div className="flex items-center space-x-2">
             {checking ? (
@@ -164,22 +159,22 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
             ) : systemReady ? (
               <CheckCircle className="h-4 w-4 text-green-600" />
             ) : (
-              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <AlertTriangle className="h-4 w-4 text-red-600" />
             )}
             <span className="text-sm font-medium">
               {checking ? 'Verificando conexão com Supabase...' :
-               systemReady ? 'Conectado ao Supabase - Sistema pronto' :
-               'Problemas de conectividade detectados'}
+               systemReady ? 'Conectado ao Supabase Authentication' :
+               'Problema de conectividade detectado'}
             </span>
           </div>
           {!checking && !systemReady && (
             <div className="mt-2">
-              <p className="text-xs text-yellow-700">
-                Você ainda pode tentar fazer login. Se persistir, verifique sua conexão com a internet.
+              <p className="text-xs text-red-700">
+                Verifique se as variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY estão configuradas.
               </p>
               <button
                 onClick={checkSystem}
-                className="text-xs text-yellow-800 underline hover:text-yellow-900 mt-1"
+                className="text-xs text-red-800 underline hover:text-red-900 mt-1"
               >
                 Tentar verificar novamente
               </button>
@@ -240,7 +235,7 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button type="submit" className="w-full" disabled={isLoading || !systemReady}>
                 {isLoading ? (
                   <div className="flex items-center justify-center">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
@@ -260,16 +255,16 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
         {/* Quick Access */}
         <Card>
           <CardHeader>
-            <h3 className="text-sm font-semibold text-gray-900">Acesso Rápido</h3>
+            <h3 className="text-sm font-semibold text-gray-900">Usuários Cadastrados no Authentication</h3>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm text-blue-800 mb-2">
-                  <strong>Usuários cadastrados no Supabase Authentication:</strong>
+                  <strong>Use as credenciais da aba Authentication:</strong>
                 </p>
                 <p className="text-xs text-blue-700">
-                  Use as credenciais cadastradas na aba Authentication do Supabase.
+                  Os usuários devem estar cadastrados no Supabase Authentication para fazer login.
                 </p>
               </div>
               
@@ -277,27 +272,33 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
                 type="button"
                 onClick={() => handleQuickLogin('admin@mutabile.com.br', 'admin123')}
                 className="w-full text-left p-3 text-sm bg-red-50 hover:bg-red-100 rounded border transition-colors font-medium"
-                disabled={isLoading}
+                disabled={isLoading || !systemReady}
               >
-                <strong>Admin:</strong> admin@mutabile.com.br / admin123
+                <strong>Admin:</strong> admin@mutabile.com.br
+                <br />
+                <span className="text-xs text-gray-600">Acesso total ao sistema</span>
               </button>
               
               <button
                 type="button"
                 onClick={() => handleQuickLogin('joao@mutabile.com.br', 'joao123')}
                 className="w-full text-left p-3 text-sm bg-green-50 hover:bg-green-100 rounded border transition-colors font-medium"
-                disabled={isLoading}
+                disabled={isLoading || !systemReady}
               >
-                <strong>João:</strong> joao@mutabile.com.br / joao123
+                <strong>João (Gestor):</strong> joao@mutabile.com.br
+                <br />
+                <span className="text-xs text-gray-600">Gerenciamento de projetos</span>
               </button>
               
               <button
                 type="button"
                 onClick={() => handleQuickLogin('carlos@mutabile.com.br', 'carlos123')}
                 className="w-full text-left p-3 text-sm bg-blue-50 hover:bg-blue-100 rounded border transition-colors font-medium"
-                disabled={isLoading}
+                disabled={isLoading || !systemReady}
               >
-                <strong>Carlos:</strong> carlos@mutabile.com.br / carlos123
+                <strong>Carlos (Equipe):</strong> carlos@mutabile.com.br
+                <br />
+                <span className="text-xs text-gray-600">Execução de atividades</span>
               </button>
             </div>
           </CardContent>

@@ -1,123 +1,13 @@
 import { supabase } from './supabase';
-import type { User } from '../types/auth';
 import type { Project, Stage, Activity, ActivityDependency, ChecklistItem, DriveLink } from '../types';
 import type { Supplier, SupplierEvaluation } from '../types/supplier';
 import type { Client, Proposal, CommercialActivity } from '../types/client';
 import type { Notification, NotificationPreferences } from '../types/notification';
 
-export type DbUserRecord = {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  auth_level: string;
-  team_id: string | null;
-  manager_id: string | null;
-  created_by: string | null;
-  created_at: string;
-  updated_at: string;
-};
-
-const normalizeAuthLevel = (value: string | null | undefined): User['authLevel'] => {
-  const allowed: User['authLevel'][] = ['admin', 'gestor', 'equipe', 'leitor'];
-  return allowed.includes(value as User['authLevel']) ? value as User['authLevel'] : 'admin';
-};
-
 // Helper function to get current user ID
 const getCurrentUserId = async (): Promise<string | null> => {
   const { data: { session } } = await supabase.auth.getSession();
   return session?.user?.id || null;
-};
-
-const mapUserRecord = (record: DbUserRecord): User => ({
-  id: record.id,
-  name: record.name,
-  email: record.email,
-  role: record.role,
-  authLevel: normalizeAuthLevel(record.auth_level),
-  teamId: record.team_id ?? undefined,
-  managerId: record.manager_id ?? undefined,
-  createdBy: record.created_by ?? undefined,
-  createdAt: new Date(record.created_at),
-  updatedAt: new Date(record.updated_at)
-});
-
-// User operations
-export const userOperations = {
-  async getAll(): Promise<User[]> {
-    const { data, error } = await supabase
-      .from<DbUserRecord>('users')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    return (data || []).map(mapUserRecord);
-  },
-
-  async create(userData: {
-    id?: string;
-    name: string;
-    email: string;
-    role: string;
-    authLevel: User['authLevel'];
-    teamId?: string | null;
-    managerId?: string | null;
-    createdBy?: string | null;
-  }): Promise<User> {
-    const payload: Partial<DbUserRecord> & {
-      name: string;
-      email: string;
-      role: string;
-      auth_level: string;
-    } = {
-      name: userData.name,
-      email: userData.email,
-      role: userData.role,
-      auth_level: userData.authLevel,
-      team_id: userData.teamId ?? null,
-      manager_id: userData.managerId ?? null,
-      created_by: userData.createdBy ?? null
-    };
-
-    if (userData.id) {
-      payload.id = userData.id;
-    }
-
-    const { data, error } = await supabase
-      .from<DbUserRecord>('users')
-      .upsert(payload, { onConflict: 'id' })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return mapUserRecord(data);
-  },
-
-  async update(id: string, updates: Partial<User>): Promise<void> {
-    const updateData: any = {};
-    if (updates.name) updateData.name = updates.name;
-    if (updates.email) updateData.email = updates.email;
-    if (updates.role) updateData.role = updates.role;
-    if (updates.authLevel) updateData.auth_level = updates.authLevel;
-    if (updates.teamId) updateData.team_id = updates.teamId;
-    if (updates.managerId) updateData.manager_id = updates.managerId;
-
-    const { error } = await supabase
-      .from('users')
-      .update(updateData)
-      .eq('id', id);
-    
-    if (error) throw error;
-  },
-
-  async delete(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('users')
-      .delete()
-      .eq('id', id);
-    
-    if (error) throw error;
-  }
 };
 
 // Project operations
