@@ -395,7 +395,7 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
 
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} title={project ? 'Editar Projeto' : 'Novo Projeto'} size="lg">
+      <Modal isOpen={isOpen} onClose={onClose} title={project ? 'Editar Projeto' : 'Novo Projeto'} size="xl">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div>

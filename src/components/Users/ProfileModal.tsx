@@ -96,7 +96,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Meu Perfil" size="md">
+    <Modal isOpen={isOpen} onClose={onClose} title="Meu Perfil" size="lg">
       <div className="space-y-6">
         {/* User Avatar */}
         <div className="flex items-center space-x-4">

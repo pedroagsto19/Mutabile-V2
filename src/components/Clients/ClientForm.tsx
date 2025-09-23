@@ -200,7 +200,7 @@ export function ClientForm({ isOpen, onClose, client }: ClientFormProps) {
       isOpen={isOpen} 
       onClose={onClose} 
       title={client ? 'Editar Cliente' : 'Novo Cliente'}
-      size="lg"
+      size="xl"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Information */}
