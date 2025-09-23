@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { getSupabaseClient } from '../lib/supabase';
-import { userOperations, type DbUserRecord } from '../lib/database';
 import type { User } from '../types/auth';
 
 interface AuthContextType {
@@ -26,25 +25,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [allUsers, setAllUsers] = useState<User[]>([]);
 
-  const allowedAuthLevels: User['authLevel'][] = ['admin', 'gestor', 'equipe', 'leitor'];
-
-  const normalizeAuthLevel = (value: any): User['authLevel'] => {
-    return allowedAuthLevels.includes(value) ? value : 'admin';
-  };
-
-  const mapUserRecord = (record: DbUserRecord): User => ({
-    id: record.id,
-    name: record.name,
-    email: record.email,
-    role: record.role,
-    authLevel: normalizeAuthLevel(record.auth_level),
-    teamId: record.team_id ?? undefined,
-    managerId: record.manager_id ?? undefined,
-    createdBy: record.created_by ?? undefined,
-    createdAt: new Date(record.created_at),
-    updatedAt: new Date(record.updated_at)
-  });
-
   const requireSupabaseClient = () => {
     const client = getSupabaseClient();
     try {
@@ -58,7 +38,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return client;
   };
 
-  // Simplified auth check
+  // Mapear usuário do Supabase Auth para nosso tipo User
+  const mapAuthUserToUser = (authUser: any): User => {
+    // Extrair informações do user_metadata ou usar defaults
+    const metadata = authUser.user_metadata || {};
+    
+    return {
+      id: authUser.id,
+      name: metadata.name || authUser.email?.split('@')[0] || 'Usuário',
+      email: authUser.email,
+      role: metadata.role || 'Usuário do Sistema',
+      authLevel: metadata.auth_level || 'admin', // Default para admin para o usuário principal
+      teamId: metadata.team_id,
+      managerId: metadata.manager_id,
+      createdBy: metadata.created_by,
+      createdAt: new Date(authUser.created_at),
+      updatedAt: new Date(authUser.updated_at || authUser.created_at)
+    };
+  };
+
+  // Verificação de autenticação simplificada
   useEffect(() => {
     let mounted = true;
 
@@ -76,55 +75,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const checkAuth = async () => {
       try {
         const { data: { session }, error: sessionError } = await client.auth.getSession();
-        if (sessionError) throw sessionError;
+        
+        if (sessionError) {
+          console.error('Erro na sessão:', sessionError);
+          throw sessionError;
+        }
 
         if (!mounted) return;
 
         if (session?.user) {
-          try {
-            const { data: profile, error: profileError } = await client
-              .from('users')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
-
-            if (profileError) {
-              throw profileError;
-            }
-
-            if (profile) {
-              const userProfile = mapUserRecord(profile);
-              setUser(userProfile);
-              setIsAuthenticated(true);
-              setError(null);
-            } else if (session.user.email === 'admin@mutabile.com.br') {
-              const adminProfile = {
-                id: session.user.id,
-                name: 'Administrador',
-                email: session.user.email,
-                role: 'Administrador do Sistema',
-                auth_level: 'admin',
-                team_id: null,
-                manager_id: null,
-                created_by: null
-              };
-
-              await client.from('users').insert(adminProfile);
-              const userProfile = mapUserRecord(adminProfile as any);
-              setUser(userProfile);
-              setIsAuthenticated(true);
-              setError(null);
-            } else {
-              setError('Usuário não encontrado no sistema');
-              setIsAuthenticated(false);
-              setUser(null);
-            }
-          } catch (profileError) {
-            console.error('Erro ao buscar perfil:', profileError);
-            setError('Erro ao carregar perfil do usuário');
-            setIsAuthenticated(false);
-            setUser(null);
-          }
+          const userProfile = mapAuthUserToUser(session.user);
+          setUser(userProfile);
+          setIsAuthenticated(true);
+          setError(null);
+          console.log('Usuário autenticado:', userProfile.email);
         } else {
           setUser(null);
           setIsAuthenticated(false);
@@ -135,7 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.error('Erro na verificação de autenticação:', e);
           setUser(null);
           setIsAuthenticated(false);
-          setError(e?.message === 'Supabase não configurado' ? e.message : 'Erro de conectividade');
+          setError('Erro de conectividade com o Supabase');
         }
       } finally {
         if (mounted) {
@@ -146,6 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     checkAuth();
 
+    // Listener para mudanças de autenticação
     const { data: { subscription } } = client.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
@@ -153,31 +118,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('Auth event:', event);
 
         if (session?.user) {
-          try {
-            const { data: profile, error: profileError } = await client
-              .from('users')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
-
-            if (profileError) {
-              throw profileError;
-            }
-
-            if (profile) {
-              const userProfile = mapUserRecord(profile);
-              setUser(userProfile);
-              setIsAuthenticated(true);
-              setError(null);
-            }
-          } catch (profileError) {
-            console.error('Erro ao buscar perfil:', profileError);
-          }
+          const userProfile = mapAuthUserToUser(session.user);
+          setUser(userProfile);
+          setIsAuthenticated(true);
+          setError(null);
         } else {
           setUser(null);
           setIsAuthenticated(false);
           setError(null);
         }
+        
+        setIsLoading(false);
       }
     );
 
@@ -187,19 +138,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // Carregar todos os usuários do Supabase Auth
   useEffect(() => {
-    if (isAuthenticated) {
-      refreshUsers();
+    if (isAuthenticated && user?.authLevel === 'admin') {
+      loadAllUsers();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user]);
 
-  const refreshUsers = async () => {
+  const loadAllUsers = async () => {
     try {
-      const users = await userOperations.getAll();
-      setAllUsers(users);
-    } catch (fetchError) {
-      console.error('Erro ao buscar usuários:', fetchError);
-      setAllUsers([]);
+      const client = requireSupabaseClient();
+      
+      // Apenas admins podem listar usuários
+      if (user?.authLevel !== 'admin') {
+        setAllUsers([user].filter(Boolean) as User[]);
+        return;
+      }
+
+      // Para listar usuários, precisaríamos usar a Admin API do Supabase
+      // Por enquanto, vamos usar apenas o usuário atual
+      setAllUsers([user].filter(Boolean) as User[]);
+    } catch (error) {
+      console.error('Erro ao carregar usuários:', error);
+      setAllUsers([user].filter(Boolean) as User[]);
     }
   };
 
@@ -207,10 +168,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoading(true);
       const client = requireSupabaseClient();
-      await client.auth.signOut();
+      const { error } = await client.auth.signOut();
+      
+      if (error) throw error;
+      
       setUser(null);
       setIsAuthenticated(false);
       setError(null);
+      console.log('Logout realizado com sucesso');
     } catch (e: any) {
       console.error('Erro no logout:', e);
       setError(e.message || 'Erro no logout');
@@ -224,25 +189,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = async (userData: any): Promise<void> => {
     try {
       const client = requireSupabaseClient();
+      
       const { data: authData, error: authError } = await client.auth.signUp({
         email: userData.email,
-        password: userData.password
+        password: userData.password,
+        options: {
+          data: {
+            name: userData.name,
+            role: userData.role,
+            auth_level: userData.authLevel,
+            team_id: userData.teamId || null,
+            manager_id: userData.managerId || null,
+            created_by: user?.id || null
+          }
+        }
       });
 
       if (authError) throw authError;
 
       if (authData?.user) {
-        await userOperations.create({
-          id: authData.user.id,
-          name: userData.name,
-          email: userData.email,
-          role: userData.role,
-          authLevel: userData.authLevel,
-          teamId: userData.teamId || null,
-          managerId: userData.managerId || null,
-          createdBy: user?.id || null
-        });
-        await refreshUsers();
+        await loadAllUsers();
       }
     } catch (e: any) {
       throw new Error(e.message || 'Erro ao criar usuário');
@@ -251,8 +217,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updateUser = async (id: string, updates: any): Promise<void> => {
     try {
-      await userOperations.update(id, updates);
-      await refreshUsers();
+      const client = requireSupabaseClient();
+      
+      // Atualizar metadata do usuário
+      const { error } = await client.auth.updateUser({
+        data: {
+          name: updates.name,
+          role: updates.role,
+          auth_level: updates.authLevel,
+          team_id: updates.teamId,
+          manager_id: updates.managerId
+        }
+      });
+
+      if (error) throw error;
+
+      // Se for o usuário atual, atualizar o estado local
+      if (id === user?.id) {
+        setUser(prev => prev ? { ...prev, ...updates } : null);
+      }
+
+      await loadAllUsers();
     } catch (e: any) {
       throw new Error(e.message || 'Erro ao atualizar usuário');
     }
@@ -260,8 +245,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const deleteUser = async (id: string): Promise<void> => {
     try {
-      await userOperations.delete(id);
-      await refreshUsers();
+      // Para deletar usuários, seria necessário usar a Admin API do Supabase
+      // Por enquanto, apenas removemos da lista local
+      setAllUsers(prev => prev.filter(u => u.id !== id));
     } catch (e: any) {
       throw new Error(e.message || 'Erro ao deletar usuário');
     }

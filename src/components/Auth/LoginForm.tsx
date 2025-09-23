@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, LogIn, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
+import { Eye, EyeOff, LogIn, AlertTriangle, CheckCircle } from 'lucide-react';
 import { Button } from '../UI/Button';
 import { Card, CardHeader, CardContent } from '../UI/Card';
 import { getSupabaseClient } from '../../lib/supabase';
@@ -31,29 +31,13 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
       if (!auth) {
         throw new Error('Supabase não configurado');
       }
-    } catch (error) {
-      setSystemReady(false);
-      setChecking(false);
-      return;
-    }
-
-    // Simple check - just verify if supabase is available
-
-    try {
-      // Try a simple operation with timeout
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Timeout')), 3000)
-      );
-
-      await Promise.race([
-        client.from('users').select('count').limit(1),
-        timeoutPromise
-      ]);
-
+      
+      // Teste simples de conectividade
+      await client.auth.getSession();
       setSystemReady(true);
-    } catch (e) {
-      console.log('Sistema pode ter problemas de conectividade, mas permitindo login');
-      setSystemReady(true); // Allow login attempt anyway
+    } catch (error) {
+      console.log('Problema de conectividade detectado:', error);
+      setSystemReady(false);
     } finally {
       setChecking(false);
     }
@@ -89,64 +73,62 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
       });
 
       if (authError) {
+        console.error('Erro de autenticação:', authError);
+        
         if (authError.message.includes('Invalid login credentials')) {
-          setError('E-mail ou senha incorretos');
+          setError('E-mail ou senha incorretos. Verifique suas credenciais.');
+        } else if (authError.message.includes('Email not confirmed')) {
+          setError('E-mail não confirmado. Verifique sua caixa de entrada.');
+        } else if (authError.message.includes('Too many requests')) {
+          setError('Muitas tentativas de login. Aguarde alguns minutos.');
         } else {
           setError('Erro de autenticação: ' + authError.message);
         }
         return;
       }
 
-      if (data.session) {
-        console.log('Login realizado com sucesso');
+      if (data.session && data.user) {
+        console.log('Login realizado com sucesso para:', data.user.email);
         onLoginSuccess();
       } else {
-        setError('Falha no login');
+        setError('Falha no login - sessão não criada');
       }
     } catch (e: any) {
       console.error('Erro no login:', e);
-      setError(e?.message === 'Supabase não configurado'
-        ? 'Sistema não configurado corretamente'
-        : 'Erro de conexão. Tente novamente.');
+      setError('Erro de conexão. Verifique sua internet e tente novamente.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleAdminLogin = async () => {
-    setEmail('admin@mutabile.com.br');
-    setPassword('admin123');
+  const handleQuickLogin = async (userEmail: string, userPassword: string) => {
+    setEmail(userEmail);
+    setPassword(userPassword);
     setError('');
     setIsLoading(true);
 
     try {
       const client = getSupabaseClient();
-      const auth = client.auth;
-      if (!auth) {
-        throw new Error('Supabase não configurado');
-      }
-
       const { data, error: authError } = await client.auth.signInWithPassword({
-        email: 'admin@mutabile.com.br',
-        password: 'admin123'
+        email: userEmail,
+        password: userPassword
       });
 
       if (authError) {
-        setError('Erro no login admin: ' + authError.message);
+        console.error('Erro no login rápido:', authError);
+        setError('Erro no login: ' + authError.message);
         return;
       }
 
-      if (data.session) {
-        console.log('Login Admin realizado com sucesso');
+      if (data.session && data.user) {
+        console.log('Login rápido realizado com sucesso para:', data.user.email);
         onLoginSuccess();
       } else {
-        setError('Falha no login admin');
+        setError('Falha no login rápido');
       }
     } catch (e: any) {
-      console.error('Erro no login Admin:', e);
-      setError(e?.message === 'Supabase não configurado'
-        ? 'Sistema não configurado corretamente'
-        : 'Erro de conexão no login admin');
+      console.error('Erro no login rápido:', e);
+      setError('Erro de conexão no login rápido');
     } finally {
       setIsLoading(false);
     }
@@ -167,7 +149,7 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
             Acesso ao Sistema
           </h2>
-          <p className="text-gray-600">Entre com suas credenciais</p>
+          <p className="text-gray-600">Entre com suas credenciais do Supabase</p>
         </div>
 
         {/* System Status */}
@@ -185,11 +167,24 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
               <AlertTriangle className="h-4 w-4 text-yellow-600" />
             )}
             <span className="text-sm font-medium">
-              {checking ? 'Verificando sistema...' :
-               systemReady ? 'Sistema pronto para login' :
-               'Sistema com possíveis problemas de conectividade'}
+              {checking ? 'Verificando conexão com Supabase...' :
+               systemReady ? 'Conectado ao Supabase - Sistema pronto' :
+               'Problemas de conectividade detectados'}
             </span>
           </div>
+          {!checking && !systemReady && (
+            <div className="mt-2">
+              <p className="text-xs text-yellow-700">
+                Você ainda pode tentar fazer login. Se persistir, verifique sua conexão com a internet.
+              </p>
+              <button
+                onClick={checkSystem}
+                className="text-xs text-yellow-800 underline hover:text-yellow-900 mt-1"
+              >
+                Tentar verificar novamente
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Login Form */}
@@ -198,7 +193,10 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
             <form onSubmit={handleSubmit} className="space-y-6">
               {error && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <p className="text-sm text-red-600">{error}</p>
+                  <div className="flex items-center space-x-2">
+                    <AlertTriangle className="h-4 w-4 text-red-600" />
+                    <p className="text-sm text-red-600">{error}</p>
+                  </div>
                 </div>
               )}
 
@@ -259,7 +257,7 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
           </CardContent>
         </Card>
 
-        {/* Quick Admin Login */}
+        {/* Quick Access */}
         <Card>
           <CardHeader>
             <h3 className="text-sm font-semibold text-gray-900">Acesso Rápido</h3>
@@ -268,23 +266,51 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
             <div className="space-y-3">
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm text-blue-800 mb-2">
-                  <strong>Login de Administrador:</strong>
+                  <strong>Usuários cadastrados no Supabase Authentication:</strong>
                 </p>
                 <p className="text-xs text-blue-700">
-                  Use este login para acessar o sistema como administrador.
+                  Use as credenciais cadastradas na aba Authentication do Supabase.
                 </p>
               </div>
+              
               <button
                 type="button"
-                onClick={handleAdminLogin}
+                onClick={() => handleQuickLogin('admin@mutabile.com.br', 'admin123')}
                 className="w-full text-left p-3 text-sm bg-red-50 hover:bg-red-100 rounded border transition-colors font-medium"
                 disabled={isLoading}
               >
                 <strong>Admin:</strong> admin@mutabile.com.br / admin123
               </button>
+              
+              <button
+                type="button"
+                onClick={() => handleQuickLogin('joao@mutabile.com.br', 'joao123')}
+                className="w-full text-left p-3 text-sm bg-green-50 hover:bg-green-100 rounded border transition-colors font-medium"
+                disabled={isLoading}
+              >
+                <strong>João:</strong> joao@mutabile.com.br / joao123
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => handleQuickLogin('carlos@mutabile.com.br', 'carlos123')}
+                className="w-full text-left p-3 text-sm bg-blue-50 hover:bg-blue-100 rounded border transition-colors font-medium"
+                disabled={isLoading}
+              >
+                <strong>Carlos:</strong> carlos@mutabile.com.br / carlos123
+              </button>
             </div>
           </CardContent>
         </Card>
+
+        {/* Instructions */}
+        <div className="text-center">
+          <p className="text-xs text-gray-500">
+            A autenticação é feita diretamente com o Supabase Authentication.
+            <br />
+            Verifique a aba Authentication no painel do Supabase para gerenciar usuários.
+          </p>
+        </div>
       </div>
     </div>
   );
