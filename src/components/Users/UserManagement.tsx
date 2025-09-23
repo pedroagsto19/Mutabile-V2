@@ -61,8 +61,7 @@ export function UserManagement() {
   });
 
   const handleCreateUser = () => {
-    setEditingUser(null);
-    setShowUserForm(true);
+    toast.warning('Funcionalidade não disponível', 'A criação de usuários requer implementação de backend seguro. Entre em contato com o administrador do sistema.');
   };
 
   const handleEditUser = (user: User) => {
@@ -76,46 +75,32 @@ export function UserManagement() {
       return;
     }
     
-    const confirmed = await confirm({
-      title: 'Excluir Usuário',
-      message: 'Tem certeza que deseja excluir este usuário? Esta ação removerá o usuário do Supabase Authentication e não pode ser desfeita.',
-      type: 'danger',
-      confirmText: 'Excluir',
-      cancelText: 'Cancelar'
-    });
-    
-    if (confirmed) {
-      try {
-        await deleteAuthUser(userId);
-        await refreshUsers();
-        toast.success('Usuário excluído com sucesso!');
-      } catch (error: any) {
-        console.error('Erro ao excluir usuário:', error);
-        toast.error('Erro ao excluir usuário', error.message || 'Tente novamente mais tarde.');
-      }
-    }
+    toast.warning('Funcionalidade não disponível', 'A exclusão de usuários requer implementação de backend seguro. Entre em contato com o administrador do sistema.');
   };
 
   const handleUpdatePermissions = async (userId: string, newAuthLevel: string) => {
-    try {
-      // Atualizar no Authentication via metadata
-      const user = users.find(u => u.id === userId);
-      if (!user) return;
-      
-      const updatedMetadata = {
-        name: user.name,
-        role: user.role,
-        auth_level: newAuthLevel,
-        team_id: user.teamId,
-        manager_id: user.managerId,
-        created_by: user.createdBy
-      };
-      
-      await updateUserMetadata(userId, updatedMetadata);
-      toast.success('Nível de acesso atualizado com sucesso!');
-    } catch (error: any) {
-      console.error('Erro ao atualizar permissões:', error);
-      toast.error('Erro ao atualizar permissões', error.message);
+    if (userId === currentUser?.id) {
+      try {
+        const user = users.find(u => u.id === userId);
+        if (!user) return;
+        
+        const updatedMetadata = {
+          name: user.name,
+          role: user.role,
+          auth_level: newAuthLevel,
+          team_id: user.teamId,
+          manager_id: user.managerId,
+          created_by: user.createdBy
+        };
+        
+        await updateUserMetadata(userId, updatedMetadata);
+        toast.success('Nível de acesso atualizado com sucesso!');
+      } catch (error: any) {
+        console.error('Erro ao atualizar permissões:', error);
+        toast.error('Erro ao atualizar permissões', error.message);
+      }
+    } else {
+      toast.warning('Funcionalidade não disponível', 'A alteração de permissões de outros usuários requer implementação de backend seguro. Entre em contato com o administrador do sistema.');
     }
   };
 

@@ -132,18 +132,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('Carregando usuários do Authentication...');
       
-      // Primeiro sincronizar usuários do Authentication para a tabela users
-      await userOperations.syncFromAuth();
-      
-      // Buscar usuários da tabela users (usando RLS)
-      const users = await userOperations.getAll();
+      // Por enquanto, usar apenas usuários do Authentication
+      // A sincronização com tabela users requer configuração adequada de RLS
+      const users = [user].filter(Boolean) as User[];
       
       setAllUsers(users);
       
-      console.log(`${users.length} usuários carregados da tabela users`);
+      console.log(`${users.length} usuários carregados`);
     } catch (error: any) {
-      console.error('Erro ao sincronizar usuários:', error);
-      throw new Error('Erro ao carregar usuários da tabela users');
+      console.error('Erro ao carregar usuários:', error);
+      // Em caso de erro, usar apenas o usuário atual
+      setAllUsers(user ? [user] : []);
     }
   };
 
@@ -158,75 +157,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Criar usuário no Authentication
   const createAuthUser = async (userData: any): Promise<void> => {
-    // AVISO: Esta operação requer acesso admin e falhará no frontend com a chave anon
-    // Deve ser executada em um backend com a chave service_role do Supabase
-    try {
-      console.log('Criando usuário no Authentication:', userData.email);
-      
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: userData.email,
-        password: userData.password,
-        user_metadata: {
-          name: userData.name,
-          role: userData.role,
-          auth_level: userData.authLevel,
-          team_id: userData.teamId || null,
-          manager_id: userData.managerId || null,
-          created_by: user?.id || null
-        },
-        email_confirm: true
-      });
-
-      if (authError) {
-        console.error('Erro ao criar usuário no Authentication:', authError);
-        throw authError;
-      }
-
-      console.log('Usuário criado no Authentication:', authData.user?.email);
-      
-      // Recarregar usuários
-      await syncAuthUsers();
-      
-    } catch (e: any) {
-      console.error('Erro no createAuthUser:', e);
-      throw new Error(e.message || 'Erro ao criar usuário');
-    }
+    throw new Error('Criação de usuários deve ser implementada via backend seguro com service_role key. Esta operação não pode ser executada no frontend por questões de segurança.');
   };
 
   // Atualizar metadata do usuário no Authentication
   const updateUserMetadata = async (userId: string, metadata: any): Promise<void> => {
-    try {
-      console.log('Atualizando metadata do usuário:', userId, metadata);
-      
-      let authError;
-      
-      if (userId === user?.id) {
-        // Atualizar usuário atual (permitido com chave anon)
+    if (userId === user?.id) {
+      // Atualizar usuário atual (permitido com chave anon)
+      try {
         const { error } = await supabase.auth.updateUser({
           data: metadata
         });
-        authError = error;
-      } else {
-        // AVISO: Atualizar outros usuários requer acesso admin e falhará no frontend
-        // Deve ser executada em um backend com a chave service_role do Supabase
-        const { error } = await supabase.auth.admin.updateUserById(userId, {
-          user_metadata: metadata
-        });
-        authError = error;
-      }
-
-      if (authError) {
-        console.error('Erro ao atualizar metadata no Authentication:', authError);
-        throw authError;
-      }
-
-      console.log('Metadata atualizado no Authentication');
-      
-      // Recarregar usuários
-      await syncAuthUsers();
-      
-      // Se for o usuário atual, atualizar estado local
-      if (userId === user?.id) {
+        
+        if (error) {
+          throw error;
+        }
+        
+        // Atualizar estado local
         setUser(prev => prev ? { 
           ...prev, 
           name: metadata.name || prev.name,
@@ -235,37 +182,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           teamId: metadata.team_id || prev.teamId,
           managerId: metadata.manager_id || prev.managerId
         } : null);
+        
+      } catch (e: any) {
+        console.error('Erro ao atualizar próprio usuário:', e);
+        throw new Error(e.message || 'Erro ao atualizar usuário');
       }
-      
-    } catch (e: any) {
-      console.error('Erro no updateUserMetadata:', e);
-      throw new Error(e.message || 'Erro ao atualizar usuário');
+    } else {
+      // Atualizar outros usuários requer backend seguro
+      throw new Error('Atualização de outros usuários deve ser implementada via backend seguro com service_role key. Esta operação não pode ser executada no frontend por questões de segurança.');
     }
   };
 
   // Deletar usuário do Authentication
   const deleteAuthUser = async (userId: string): Promise<void> => {
-    // AVISO: Esta operação requer acesso admin e falhará no frontend com a chave anon
-    // Deve ser executada em um backend com a chave service_role do Supabase
-    try {
-      console.log('Deletando usuário do Authentication:', userId);
-      
-      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
-
-      if (authError) {
-        console.error('Erro ao deletar usuário do Authentication:', authError);
-        throw authError;
-      }
-
-      console.log('Usuário deletado do Authentication');
-      
-      // Recarregar usuários
-      await syncAuthUsers();
-      
-    } catch (e: any) {
-      console.error('Erro no deleteAuthUser:', e);
-      throw new Error(e.message || 'Erro ao deletar usuário');
-    }
+    throw new Error('Exclusão de usuários deve ser implementada via backend seguro com service_role key. Esta operação não pode ser executada no frontend por questões de segurança.');
   };
 
   const logout = async () => {
