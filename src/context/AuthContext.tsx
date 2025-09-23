@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { getSupabaseClient } from '../lib/supabase';
 import { userOperations, type DbUserRecord } from '../lib/database';
 import type { User } from '../types/auth';
 
@@ -45,68 +45,79 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     updatedAt: new Date(record.updated_at)
   });
 
+  const requireSupabaseClient = () => {
+    const client = getSupabaseClient();
+    try {
+      const auth = client.auth;
+      if (!auth) {
+        throw new Error('Supabase não configurado');
+      }
+    } catch (error) {
+      throw new Error('Supabase não configurado');
+    }
+    return client;
+  };
+
   // Simplified auth check
   useEffect(() => {
     let mounted = true;
 
+    let client: ReturnType<typeof requireSupabaseClient>;
+    try {
+      client = requireSupabaseClient();
+    } catch (error: any) {
+      setIsLoading(false);
+      setError(error.message || 'Supabase não configurado');
+      return () => {
+        mounted = false;
+      };
+    }
+
     const checkAuth = async () => {
       try {
-        if (!supabase) {
-          if (mounted) {
-            setIsLoading(false);
-            setError('Supabase não configurado');
-          }
-          return;
-        }
-
-        // Simple session check with timeout
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout')), 5000)
-        );
-
-        const sessionPromise = supabase.auth.getSession();
-        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]) as any;
+        const { data: { session }, error: sessionError } = await client.auth.getSession();
+        if (sessionError) throw sessionError;
 
         if (!mounted) return;
 
         if (session?.user) {
-          // Try to get user profile
           try {
-            const { data: profile } = await supabase
+            const { data: profile, error: profileError } = await client
               .from('users')
               .select('*')
               .eq('id', session.user.id)
               .single();
+
+            if (profileError) {
+              throw profileError;
+            }
 
             if (profile) {
               const userProfile = mapUserRecord(profile);
               setUser(userProfile);
               setIsAuthenticated(true);
               setError(null);
-            } else {
-              // Create admin profile if it's the admin user
-              if (session.user.email === 'admin@mutabile.com.br') {
-                const adminProfile = {
-                  id: session.user.id,
-                  name: 'Administrador',
-                  email: session.user.email,
-                  role: 'Administrador do Sistema',
-                  auth_level: 'admin',
-                  team_id: null,
-                  manager_id: null,
-                  created_by: null
-                };
+            } else if (session.user.email === 'admin@mutabile.com.br') {
+              const adminProfile = {
+                id: session.user.id,
+                name: 'Administrador',
+                email: session.user.email,
+                role: 'Administrador do Sistema',
+                auth_level: 'admin',
+                team_id: null,
+                manager_id: null,
+                created_by: null
+              };
 
-                await supabase.from('users').insert(adminProfile);
-                const userProfile = mapUserRecord(adminProfile as any);
-                setUser(userProfile);
-                setIsAuthenticated(true);
-                setError(null);
-              } else {
-                setError('Usuário não encontrado no sistema');
-                setIsAuthenticated(false);
-                setUser(null);
-              }
+              await client.from('users').insert(adminProfile);
+              const userProfile = mapUserRecord(adminProfile as any);
+              setUser(userProfile);
+              setIsAuthenticated(true);
+              setError(null);
+            } else {
+              setError('Usuário não encontrado no sistema');
+              setIsAuthenticated(false);
+              setUser(null);
             }
           } catch (profileError) {
             console.error('Erro ao buscar perfil:', profileError);
@@ -124,9 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.error('Erro na verificação de autenticação:', e);
           setUser(null);
           setIsAuthenticated(false);
-          if (e.message !== 'Timeout') {
-            setError('Erro de conectividade');
-          }
+          setError(e?.message === 'Supabase não configurado' ? e.message : 'Erro de conectividade');
         }
       } finally {
         if (mounted) {
@@ -137,20 +146,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     checkAuth();
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase?.auth?.onAuthStateChange?.(
+    const { data: { subscription } } = client.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
-        
+
         console.log('Auth event:', event);
 
         if (session?.user) {
           try {
-            const { data: profile } = await supabase
+            const { data: profile, error: profileError } = await client
               .from('users')
               .select('*')
               .eq('id', session.user.id)
               .single();
+
+            if (profileError) {
+              throw profileError;
+            }
 
             if (profile) {
               const userProfile = mapUserRecord(profile);
@@ -167,7 +179,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setError(null);
         }
       }
-    ) || { data: { subscription: { unsubscribe: () => {} } } };
+    );
 
     return () => {
       mounted = false;
@@ -194,12 +206,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     try {
       setIsLoading(true);
-      await supabase?.auth?.signOut();
+      const client = requireSupabaseClient();
+      await client.auth.signOut();
       setUser(null);
       setIsAuthenticated(false);
       setError(null);
     } catch (e: any) {
       console.error('Erro no logout:', e);
+      setError(e.message || 'Erro no logout');
     } finally {
       setIsLoading(false);
     }
@@ -209,7 +223,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = async (userData: any): Promise<void> => {
     try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const client = requireSupabaseClient();
+      const { data: authData, error: authError } = await client.auth.signUp({
         email: userData.email,
         password: userData.password
       });

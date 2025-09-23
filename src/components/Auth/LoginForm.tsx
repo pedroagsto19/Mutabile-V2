@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, LogIn, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '../UI/Button';
 import { Card, CardHeader, CardContent } from '../UI/Card';
-import { supabase } from '../../lib/supabase';
+import { getSupabaseClient } from '../../lib/supabase';
 
 interface LoginFormProps {
   onLoginSuccess: () => void;
@@ -23,22 +23,30 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
 
   const checkSystem = async () => {
     setChecking(true);
-    
-    // Simple check - just verify if supabase is available
-    if (!supabase) {
+
+    let client: ReturnType<typeof getSupabaseClient>;
+    try {
+      client = getSupabaseClient();
+      const auth = client.auth;
+      if (!auth) {
+        throw new Error('Supabase não configurado');
+      }
+    } catch (error) {
       setSystemReady(false);
       setChecking(false);
       return;
     }
 
+    // Simple check - just verify if supabase is available
+
     try {
       // Try a simple operation with timeout
-      const timeoutPromise = new Promise((_, reject) => 
+      const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Timeout')), 3000)
       );
 
       await Promise.race([
-        supabase.from('users').select('count').limit(1),
+        client.from('users').select('count').limit(1),
         timeoutPromise
       ]);
 
@@ -60,15 +68,22 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
       return;
     }
 
-    if (!supabase) {
-      setError('Sistema não configurado corretamente');
+    let client: ReturnType<typeof getSupabaseClient>;
+    try {
+      client = getSupabaseClient();
+      const auth = client.auth;
+      if (!auth) {
+        throw new Error('Supabase não configurado');
+      }
+    } catch (error: any) {
+      setError(error.message || 'Sistema não configurado corretamente');
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
+      const { data, error: authError } = await client.auth.signInWithPassword({
         email: email.trim(),
         password
       });
@@ -90,7 +105,9 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
       }
     } catch (e: any) {
       console.error('Erro no login:', e);
-      setError('Erro de conexão. Tente novamente.');
+      setError(e?.message === 'Supabase não configurado'
+        ? 'Sistema não configurado corretamente'
+        : 'Erro de conexão. Tente novamente.');
     } finally {
       setIsLoading(false);
     }
@@ -101,9 +118,15 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
     setPassword('admin123');
     setError('');
     setIsLoading(true);
-    
+
     try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
+      const client = getSupabaseClient();
+      const auth = client.auth;
+      if (!auth) {
+        throw new Error('Supabase não configurado');
+      }
+
+      const { data, error: authError } = await client.auth.signInWithPassword({
         email: 'admin@mutabile.com.br',
         password: 'admin123'
       });
@@ -121,7 +144,9 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
       }
     } catch (e: any) {
       console.error('Erro no login Admin:', e);
-      setError('Erro de conexão no login admin');
+      setError(e?.message === 'Supabase não configurado'
+        ? 'Sistema não configurado corretamente'
+        : 'Erro de conexão no login admin');
     } finally {
       setIsLoading(false);
     }

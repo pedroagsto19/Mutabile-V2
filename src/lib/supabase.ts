@@ -1,24 +1,43 @@
-import { createClient } from './supabaseClient';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 const url = import.meta.env.VITE_SUPABASE_URL?.trim();
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
 
-// Simple validation
-if (!url || !key) {
-  console.error('Supabase não configurado - variáveis de ambiente ausentes');
+let clientInstance: SupabaseClient | null = null;
+
+function createStubClient(): SupabaseClient {
+  return new Proxy({}, {
+    get() {
+      throw new Error('Supabase não configurado');
+    }
+  }) as SupabaseClient;
 }
 
-let clientInstance: any;
+function createSupabaseClient(): SupabaseClient {
+  if (!url || !key) {
+    console.error('Supabase não configurado - variáveis de ambiente ausentes');
+    return createStubClient();
+  }
 
-function ensureClient() {
-  if (!clientInstance && url && key) {
-    try {
-      clientInstance = createClient(url, key);
-    } catch (error) {
-      console.error('Erro ao criar cliente Supabase:', error);
-    }
+  try {
+    return createClient(url, key, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao criar cliente Supabase:', error);
+    return createStubClient();
+  }
+}
+
+export function getSupabaseClient(): SupabaseClient {
+  if (!clientInstance) {
+    clientInstance = createSupabaseClient();
   }
   return clientInstance;
 }
 
-export const supabase = ensureClient();
+export const supabase = getSupabaseClient();
