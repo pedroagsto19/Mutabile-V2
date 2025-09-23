@@ -25,14 +25,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [allUsers, setAllUsers] = useState<User[]>([]);
-  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
 
   // Mapear usuário do Supabase Auth para nosso tipo User
   const mapAuthUserToUser = (authUser: any): User => {
     const metadata = authUser.user_metadata || {};
     
-    // Usar authLevel do metadata ou buscar na tabela users
-    const authLevel: User['authLevel'] = metadata.auth_level || 'equipe';
+    // Definir authLevel baseado no email para usuários específicos
+    let authLevel: User['authLevel'] = metadata.auth_level || 'equipe';
+    
+    // Override para usuários específicos
+    if (authUser.email === 'admin@mutabile.com.br') {
+      authLevel = 'admin';
+    } else if (authUser.email === 'joao@mutabile.com.br') {
+      authLevel = 'gestor';
+    } else if (authUser.email === 'carlos@mutabile.com.br') {
+      authLevel = 'equipe';
+    }
     
     return {
       id: authUser.id,
@@ -65,39 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (session?.user) {
           const userProfile = mapAuthUserToUser(session.user);
-          
-          // Buscar dados completos do usuário na tabela users
-          try {
-            const { data: userData, error: userError } = await supabase
-              .from('users')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
-            
-            if (userData && !userError) {
-              // Usar dados da tabela users se disponível
-              const completeUserProfile: User = {
-                id: userData.id,
-                name: userData.name,
-                email: userData.email,
-                role: userData.role,
-                authLevel: userData.auth_level,
-                teamId: userData.team_id,
-                managerId: userData.manager_id,
-                createdBy: userData.created_by,
-                createdAt: new Date(userData.created_at),
-                updatedAt: new Date(userData.updated_at)
-              };
-              setUser(completeUserProfile);
-            } else {
-              // Fallback para dados do Authentication
-              setUser(userProfile);
-            }
-          } catch (error) {
-            console.error('Erro ao buscar dados do usuário na tabela:', error);
-            setUser(userProfile);
-          }
-          
+          setUser(userProfile);
           setIsAuthenticated(true);
           setError(null);
           console.log('Usuário autenticado:', session.user.email);
@@ -130,40 +106,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('Auth event:', event);
 
         if (session?.user) {
-          // Buscar dados completos do usuário na tabela users
-          try {
-            const { data: userData, error: userError } = await supabase
-              .from('users')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
-            
-            if (userData && !userError) {
-              // Usar dados da tabela users
-              const completeUserProfile: User = {
-                id: userData.id,
-                name: userData.name,
-                email: userData.email,
-                role: userData.role,
-                authLevel: userData.auth_level,
-                teamId: userData.team_id,
-                managerId: userData.manager_id,
-                createdBy: userData.created_by,
-                createdAt: new Date(userData.created_at),
-                updatedAt: new Date(userData.updated_at)
-              };
-              setUser(completeUserProfile);
-            } else {
-              // Fallback para dados do Authentication
-              const userProfile = mapAuthUserToUser(session.user);
-              setUser(userProfile);
-            }
-          } catch (error) {
-            console.error('Erro ao buscar dados do usuário na tabela:', error);
-            const userProfile = mapAuthUserToUser(session.user);
-            setUser(userProfile);
-          }
-          
+          const userProfile = mapAuthUserToUser(session.user);
+          setUser(userProfile);
           setIsAuthenticated(true);
           setError(null);
         } else {
@@ -182,61 +126,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Sincronizar usuários do Authentication com a tabela users
+  // Carregar todos os usuários do Authentication
   const syncAuthUsers = async () => {
     try {
-      console.log('Sincronizando usuários do Authentication...');
+      console.log('Carregando usuários do Authentication...');
       
-      // 1. Executar função de sincronização no Supabase
-      const { error: syncError } = await supabase.rpc('sync_auth_users');
+      // Buscar usuários do Authentication
+      const { data: { users: authUsers }, error } = await supabase.auth.admin.listUsers();
       
-      if (syncError) {
-        // Handle specific duplicate key error gracefully
-        if (syncError.code === '23505') {
-          console.log('Usuários já existem na tabela, continuando com busca...');
-        } else if (syncError.code === '23503') {
-          console.log('Erro de chave estrangeira durante sincronização, continuando com busca...');
-          setError('Alguns usuários não puderam ser sincronizados devido a referências em projetos. Para resolver isso, modifique a constraint projects_created_by_fkey no Supabase para incluir ON DELETE CASCADE ou ON DELETE SET NULL.');
-        } else {
-          console.error('Erro na sincronização:', syncError);
-          console.log('Continuando para buscar usuários da tabela...');
-        }
+      if (error) {
+        console.error('Erro ao buscar usuários:', error);
+        throw error;
       }
       
-      // 2. Buscar usuários sincronizados da tabela users
-      const users = await userOperations.getAll();
-      setAllUsers(users);
-      setLastSyncTime(new Date());
+      const mappedUsers = (authUsers || []).map(mapAuthUserToUser);
+      setAllUsers(mappedUsers);
       
-      console.log(`${users.length} usuários sincronizados com sucesso`);
+      console.log(`${mappedUsers.length} usuários carregados do Authentication`);
     } catch (error: any) {
       console.error('Erro ao sincronizar usuários:', error);
-      throw new Error('Erro ao carregar usuários da tabela users');
+      throw new Error('Erro ao carregar usuários do Authentication');
     }
   };
 
   // Carregar usuários quando autenticado
   useEffect(() => {
     if (isAuthenticated && user) {
-      syncAuthUsers();
-      
-      // Sincronizar a cada 5 minutos para manter atualizado
-      const interval = setInterval(() => {
-        syncAuthUsers();
-      }, 5 * 60 * 1000);
-      
-      return () => clearInterval(interval);
+      syncAuthUsers().catch(console.error);
     }
   }, [isAuthenticated, user]);
 
   const getAllUsers = (): User[] => allUsers;
 
-  // Criar usuário no Authentication e sincronizar automaticamente
+  // Criar usuário no Authentication
   const createAuthUser = async (userData: any): Promise<void> => {
     try {
       console.log('Criando usuário no Authentication:', userData.email);
       
-      // 1. Criar usuário no Supabase Authentication
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email: userData.email,
         password: userData.password,
@@ -258,7 +184,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       console.log('Usuário criado no Authentication:', authData.user?.email);
       
-      // 2. Sincronizar automaticamente
+      // Recarregar usuários
       await syncAuthUsers();
       
     } catch (e: any) {
@@ -267,12 +193,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Atualizar metadata do usuário no Authentication e sincronizar
+  // Atualizar metadata do usuário no Authentication
   const updateUserMetadata = async (userId: string, metadata: any): Promise<void> => {
     try {
       console.log('Atualizando metadata do usuário:', userId, metadata);
       
-      // 1. Atualizar no Supabase Authentication
       const { error: authError } = await supabase.auth.admin.updateUserById(userId, {
         user_metadata: metadata
       });
@@ -284,10 +209,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       console.log('Metadata atualizado no Authentication');
       
-      // 2. Sincronizar automaticamente
+      // Recarregar usuários
       await syncAuthUsers();
       
-      // 3. Se for o usuário atual, atualizar estado local
+      // Se for o usuário atual, atualizar estado local
       if (userId === user?.id) {
         setUser(prev => prev ? { 
           ...prev, 
@@ -305,12 +230,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Deletar usuário do Authentication (sincronização automática via trigger)
+  // Deletar usuário do Authentication
   const deleteAuthUser = async (userId: string): Promise<void> => {
     try {
       console.log('Deletando usuário do Authentication:', userId);
       
-      // Deletar do Supabase Authentication
       const { error: authError } = await supabase.auth.admin.deleteUser(userId);
 
       if (authError) {
@@ -320,7 +244,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       console.log('Usuário deletado do Authentication');
       
-      // Sincronizar automaticamente
+      // Recarregar usuários
       await syncAuthUsers();
       
     } catch (e: any) {
