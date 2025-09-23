@@ -3,6 +3,7 @@ import type { Project, Stage, Activity, ActivityDependency, ChecklistItem, Drive
 import type { Supplier, SupplierEvaluation } from '../types/supplier';
 import type { Client, Proposal, CommercialActivity } from '../types/client';
 import type { Notification, NotificationPreferences } from '../types/notification';
+import type { User } from '../types/auth';
 
 // Helper function to get current user ID
 const getCurrentUserId = async (): Promise<string | null> => {
@@ -296,6 +297,49 @@ export const activityOperations = {
         if (checklistError) throw checklistError;
       }
     }
+  }
+};
+
+// User operations
+export const userOperations = {
+  async getAll(): Promise<User[]> {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    
+    return (data || []).map(user => ({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      authLevel: user.auth_level,
+      teamId: user.team_id,
+      managerId: user.manager_id,
+      createdBy: user.created_by,
+      createdAt: new Date(user.created_at),
+      updatedAt: new Date(user.updated_at)
+    }));
+  },
+
+  async updatePermissions(userId: string, authLevel: string, role?: string): Promise<void> {
+    const { error } = await supabase
+      .from('users')
+      .update({
+        auth_level: authLevel,
+        role: role,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', userId);
+    
+    if (error) throw error;
+  },
+
+  async syncFromAuth(): Promise<void> {
+    const { error } = await supabase.rpc('sync_auth_users');
+    if (error) throw error;
   }
 };
 

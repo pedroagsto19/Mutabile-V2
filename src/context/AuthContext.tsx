@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import type { User } from '../types/auth';
+import { userOperations } from '../lib/database';
 
 interface AuthContextType {
   user: User | null;
@@ -9,7 +10,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   error: string | null;
   getAllUsers: () => User[];
-  loadAllUsers: () => Promise<void>;
+  syncAuthUsers: () => Promise<void>;
   updateUserMetadata: (userId: string, metadata: any) => Promise<void>;
   deleteAuthUser: (userId: string) => Promise<void>;
   createAuthUser: (userData: any) => Promise<void>;
@@ -25,6 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
 
   // Mapear usuário do Supabase Auth para nosso tipo User
   const mapAuthUserToUser = (authUser: any): User => {
@@ -129,60 +131,170 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Carregar todos os usuários do Supabase Authentication
-  const loadAllUsers = async () => {
+  // Sincronizar usuários do Authentication com a tabela users
+  const syncAuthUsers = async () => {
     try {
-      // Buscar usuários da tabela users que sincroniza com Authentication
-      const { data: usersData, error } = await supabase
-        .from('users')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Erro ao carregar usuários:', error);
-        // Fallback para usuários mock se não conseguir carregar
-        const mockUsers: User[] = [
-          {
-            id: '1',
-            name: 'Administrador',
-            email: 'admin@mutabile.com.br',
-            role: 'Administrador do Sistema',
-            authLevel: 'admin',
-            createdAt: new Date(),
-            updatedAt: new Date()
-          }
-        ];
-        setAllUsers(mockUsers);
-        return;
+      console.log('Sincronizando usuários do Authentication...');
+      
+      // 1. Executar função de sincronização no Supabase
+      const { error: syncError } = await supabase.rpc('sync_auth_users');
+      
+      if (syncError) {
+        console.error('Erro na sincronização:', syncError);
+        throw syncError;
       }
-
-      // Mapear dados da tabela users para o tipo User
-      const mappedUsers: User[] = (usersData || []).map(userData => ({
-        id: userData.admin_user_id || userData.id,
-        name: userData.name,
-        email: userData.email,
-        role: userData.role,
-        authLevel: userData.auth_level,
-        teamId: userData.team_id,
-        managerId: userData.manager_id,
-        createdBy: userData.created_by,
-        createdAt: new Date(userData.created_at),
-        updatedAt: new Date(userData.updated_at)
-      }));
-
-      setAllUsers(mappedUsers);
-    } catch (error) {
-      console.error('Erro ao carregar usuários:', error);
-      setAllUsers([]);
+      
+      // 2. Buscar usuários sincronizados da tabela users
+      const users = await userOperations.getAll();
+      setAllUsers(users);
+      setLastSyncTime(new Date());
+      
+      console.log(`${users.length} usuários sincronizados com sucesso`);
+    } catch (error: any) {
+      console.error('Erro ao sincronizar usuários:', error);
+      
+      // Fallback: buscar diretamente do Authentication se a sincronização falhar
+      try {
+        console.log('Tentando buscar diretamente do Authentication...');
+        const { data: authUsers, error: authError } = await supabase.rpc('get_auth_users');
+        
+        if (authError) throw authError;
+        
+        const mappedUsers: User[] = (authUsers || []).map((authUser: any) => ({
+          id: authUser.id,
+          name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'Usuário',
+          email: authUser.email,
+          role: authUser.user_metadata?.role || 'Usuário do Sistema',
+          authLevel: authUser.user_metadata?.auth_level || 'equipe',
+          teamId: authUser.user_metadata?.team_id,
+          managerId: authUser.user_metadata?.manager_id,
+          createdBy: authUser.user_metadata?.created_by,
+          createdAt: new Date(authUser.created_at),
+          updatedAt: new Date(authUser.updated_at || authUser.created_at)
+        }));
+        
+        setAllUsers(mappedUsers);
+        console.log(`${mappedUsers.length} usuários carregados diretamente do Authentication`);
+      } catch (fallbackError) {
+        console.error('Erro no fallback:', fallbackError);
+        throw new Error('Não foi possível carregar usuários do Authentication');
+      }
     }
   };
 
   // Carregar usuários quando autenticado
   useEffect(() => {
-    if (isAuthenticated && user?.authLevel === 'admin') {
-      loadAllUsers();
+    if (isAuthenticated && user) {
+      syncAuthUsers();
+      
+      // Sincronizar a cada 5 minutos para manter atualizado
+      const interval = setInterval(() => {
+        syncAuthUsers();
+      }, 5 * 60 * 1000);
+      
+      return () => clearInterval(interval);
     }
   }, [isAuthenticated, user]);
+
+  const getAllUsers = (): User[] => allUsers;
+
+  // Criar usuário no Authentication e sincronizar automaticamente
+  const createAuthUser = async (userData: any): Promise<void> => {
+    try {
+      console.log('Criando usuário no Authentication:', userData.email);
+      
+      // 1. Criar usuário no Supabase Authentication
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: userData.email,
+        password: userData.password,
+        user_metadata: {
+          name: userData.name,
+          role: userData.role,
+          auth_level: userData.authLevel,
+          team_id: userData.teamId || null,
+          manager_id: userData.managerId || null,
+          created_by: user?.id || null
+        },
+        email_confirm: true
+      });
+
+      if (authError) {
+        console.error('Erro ao criar usuário no Authentication:', authError);
+        throw authError;
+      }
+
+      console.log('Usuário criado no Authentication:', authData.user?.email);
+      
+      // 2. Sincronizar automaticamente
+      await syncAuthUsers();
+      
+    } catch (e: any) {
+      console.error('Erro no createAuthUser:', e);
+      throw new Error(e.message || 'Erro ao criar usuário');
+    }
+  };
+
+  // Atualizar metadata do usuário no Authentication e sincronizar
+  const updateUserMetadata = async (userId: string, metadata: any): Promise<void> => {
+    try {
+      console.log('Atualizando metadata do usuário:', userId, metadata);
+      
+      // 1. Atualizar no Supabase Authentication
+      const { error: authError } = await supabase.auth.admin.updateUserById(userId, {
+        user_metadata: metadata
+      });
+
+      if (authError) {
+        console.error('Erro ao atualizar metadata no Authentication:', authError);
+        throw authError;
+      }
+
+      console.log('Metadata atualizado no Authentication');
+      
+      // 2. Sincronizar automaticamente
+      await syncAuthUsers();
+      
+      // 3. Se for o usuário atual, atualizar estado local
+      if (userId === user?.id) {
+        setUser(prev => prev ? { 
+          ...prev, 
+          name: metadata.name || prev.name,
+          role: metadata.role || prev.role,
+          authLevel: metadata.auth_level || prev.authLevel,
+          teamId: metadata.team_id || prev.teamId,
+          managerId: metadata.manager_id || prev.managerId
+        } : null);
+      }
+      
+    } catch (e: any) {
+      console.error('Erro no updateUserMetadata:', e);
+      throw new Error(e.message || 'Erro ao atualizar usuário');
+    }
+  };
+
+  // Deletar usuário do Authentication (sincronização automática via trigger)
+  const deleteAuthUser = async (userId: string): Promise<void> => {
+    try {
+      console.log('Deletando usuário do Authentication:', userId);
+      
+      // Deletar do Supabase Authentication
+      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+
+      if (authError) {
+        console.error('Erro ao deletar usuário do Authentication:', authError);
+        throw authError;
+      }
+
+      console.log('Usuário deletado do Authentication');
+      
+      // Sincronizar automaticamente
+      await syncAuthUsers();
+      
+    } catch (e: any) {
+      console.error('Erro no deleteAuthUser:', e);
+      throw new Error(e.message || 'Erro ao deletar usuário');
+    }
+  };
 
   const logout = async () => {
     try {
@@ -201,123 +313,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setError(e.message || 'Erro no logout');
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const getAllUsers = (): User[] => allUsers;
-
-  // Criar usuário no Authentication e sincronizar com tabela users
-  const createAuthUser = async (userData: any): Promise<void> => {
-    try {
-      // 1. Criar usuário no Supabase Authentication
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: userData.email,
-        password: userData.password,
-        user_metadata: {
-          name: userData.name,
-          role: userData.role,
-          auth_level: userData.authLevel,
-          team_id: userData.teamId || null,
-          manager_id: userData.managerId || null,
-          created_by: user?.id || null
-        },
-        email_confirm: true // Confirmar email automaticamente
-      });
-
-      if (authError) throw authError;
-
-      // 2. Sincronizar com tabela users
-      if (authData?.user) {
-        const { error: dbError } = await supabase
-          .from('users')
-          .insert([{
-            admin_user_id: authData.user.id,
-            name: userData.name,
-            email: userData.email,
-            role: userData.role,
-            auth_level: userData.authLevel,
-            team_id: userData.teamId || null,
-            manager_id: userData.managerId || null,
-            created_by: user?.id || null
-          }]);
-
-        if (dbError) {
-          console.error('Erro ao sincronizar com tabela users:', dbError);
-          // Não falhar se a sincronização der erro, o usuário foi criado no Authentication
-        }
-      }
-
-      await loadAllUsers();
-    } catch (e: any) {
-      throw new Error(e.message || 'Erro ao criar usuário');
-    }
-  };
-
-  // Atualizar metadata do usuário no Authentication e sincronizar com tabela users
-  const updateUserMetadata = async (userId: string, metadata: any): Promise<void> => {
-    try {
-      // 1. Atualizar no Supabase Authentication
-      const { error: authError } = await supabase.auth.admin.updateUserById(userId, {
-        user_metadata: metadata
-      });
-
-      if (authError) throw authError;
-
-      // 2. Sincronizar com tabela users
-      const { error: dbError } = await supabase
-        .from('users')
-        .update({
-          name: metadata.name,
-          role: metadata.role,
-          auth_level: metadata.auth_level,
-          team_id: metadata.team_id || null,
-          manager_id: metadata.manager_id || null
-        })
-        .eq('admin_user_id', userId);
-
-      if (dbError) {
-        console.error('Erro ao sincronizar com tabela users:', dbError);
-      }
-
-      // 3. Se for o usuário atual, atualizar estado local
-      if (userId === user?.id) {
-        setUser(prev => prev ? { 
-          ...prev, 
-          name: metadata.name,
-          role: metadata.role,
-          authLevel: metadata.auth_level,
-          teamId: metadata.team_id,
-          managerId: metadata.manager_id
-        } : null);
-      }
-
-      await loadAllUsers();
-    } catch (e: any) {
-      throw new Error(e.message || 'Erro ao atualizar usuário');
-    }
-  };
-
-  // Deletar usuário do Authentication e tabela users
-  const deleteAuthUser = async (userId: string): Promise<void> => {
-    try {
-      // 1. Deletar da tabela users primeiro
-      const { error: dbError } = await supabase
-        .from('users')
-        .delete()
-        .eq('admin_user_id', userId);
-
-      if (dbError) {
-        console.error('Erro ao deletar da tabela users:', dbError);
-      }
-
-      // 2. Deletar do Supabase Authentication
-      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
-
-      if (authError) throw authError;
-
-      await loadAllUsers();
-    } catch (e: any) {
-      throw new Error(e.message || 'Erro ao deletar usuário');
     }
   };
 
@@ -360,7 +355,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logout,
       error,
       getAllUsers,
-      loadAllUsers,
+      syncAuthUsers,
       updateUserMetadata,
       deleteAuthUser,
       createAuthUser,
