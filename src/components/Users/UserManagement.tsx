@@ -14,7 +14,7 @@ export function UserManagement() {
     updateUser, 
     deleteUser, 
     hasPermission, 
-    canEditUser
+    canEditUser,
     getAllUsers
   } = useAuth();
   const { toast, confirm } = useNotification();
