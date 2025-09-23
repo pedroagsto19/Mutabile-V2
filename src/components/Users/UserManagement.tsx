@@ -6,6 +6,7 @@ import { Modal } from '../UI/Modal';
 import { useAuth } from '../../context/AuthContext';
 import type { User } from '../../types/auth';
 import { useNotification } from '../../context/NotificationContext';
+import { userOperations } from '../../lib/database';
 
 export function UserManagement() {
   const { 
@@ -16,7 +17,7 @@ export function UserManagement() {
     hasPermission, 
     canEditUser,
     getAllUsers,
-    loadAllUsers
+    syncAuthUsers
   } = useAuth();
   const { toast, confirm } = useNotification();
   
@@ -40,11 +41,12 @@ export function UserManagement() {
   const refreshUsers = async () => {
     setIsLoadingUsers(true);
     try {
-      await loadAllUsers();
+      await syncAuthUsers();
       setUsers(getAllUsers());
+      toast.success('Usuários sincronizados com o Authentication!');
     } catch (error) {
       console.error('Erro ao carregar usuários:', error);
-      toast.error('Erro ao carregar usuários', 'Tente novamente mais tarde.');
+      toast.error('Erro ao sincronizar usuários', 'Verifique a conexão com o Supabase.');
     } finally {
       setIsLoadingUsers(false);
     }
@@ -88,8 +90,32 @@ export function UserManagement() {
         await refreshUsers();
         toast.success('Usuário excluído com sucesso!');
       } catch (error: any) {
+        console.error('Erro ao excluir usuário:', error);
         toast.error('Erro ao excluir usuário', error.message || 'Tente novamente mais tarde.');
       }
+    }
+  };
+
+  const handleUpdatePermissions = async (userId: string, newAuthLevel: string) => {
+    try {
+      // Atualizar no Authentication via metadata
+      const user = users.find(u => u.id === userId);
+      if (!user) return;
+      
+      const updatedMetadata = {
+        name: user.name,
+        role: user.role,
+        auth_level: newAuthLevel,
+        team_id: user.teamId,
+        manager_id: user.managerId,
+        created_by: user.createdBy
+      };
+      
+      await updateUserMetadata(userId, updatedMetadata);
+      toast.success('Nível de acesso atualizado com sucesso!');
+    } catch (error: any) {
+      console.error('Erro ao atualizar permissões:', error);
+      toast.error('Erro ao atualizar permissões', error.message);
     }
   };
 
@@ -148,7 +174,7 @@ export function UserManagement() {
           }
           
           await createAuthUser(formData);
-          toast.success('Usuário criado com sucesso no Supabase Authentication!');
+          toast.success('Usuário criado e sincronizado com sucesso!');
         }
         
         await refreshUsers();
@@ -333,7 +359,7 @@ export function UserManagement() {
             Gerenciamento de Usuários
           </h1>
           <p className="text-gray-600 mt-1">
-            {filteredUsers.length} usuários encontrados • Sincronizado com Supabase Authentication
+            {filteredUsers.length} usuários encontrados • Sincronizado com Authentication
           </p>
         </div>
         <div className="flex items-center space-x-3">
@@ -341,9 +367,10 @@ export function UserManagement() {
             variant="outline" 
             onClick={refreshUsers}
             disabled={isLoadingUsers}
+            title="Sincronizar com Supabase Authentication"
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingUsers ? 'animate-spin' : ''}`} />
-            Atualizar
+            Sincronizar
           </Button>
           <Button onClick={handleCreateUser}>
             <Plus className="h-4 w-4 mr-2" />
@@ -357,10 +384,10 @@ export function UserManagement() {
         <div className="flex items-start space-x-3">
           <Shield className="h-5 w-5 text-blue-600 mt-0.5" />
           <div>
-            <h3 className="text-sm font-medium text-blue-900">Integração com Supabase Authentication</h3>
+            <h3 className="text-sm font-medium text-blue-900">Sincronização Automática</h3>
             <p className="text-sm text-blue-700 mt-1">
-              Os usuários mostrados aqui são sincronizados com a aba Authentication do Supabase. 
-              Você pode definir níveis de acesso e informações adicionais que serão armazenadas no user_metadata.
+              Os usuários são automaticamente sincronizados com a aba Authentication do Supabase. 
+              Defina os níveis de acesso aqui e eles serão salvos no user_metadata do Authentication.
             </p>
           </div>
         </div>
@@ -411,6 +438,9 @@ export function UserManagement() {
                   Nível de Acesso
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Alterar Nível
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Criado em
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -453,6 +483,24 @@ export function UserManagement() {
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getAuthLevelColor(user.authLevel)}`}>
                       {getAuthLevelLabel(user.authLevel)}
                     </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    {hasPermission('canChangeUserAuthLevel') && user.id !== currentUser?.id ? (
+                      <select
+                        value={user.authLevel}
+                        onChange={(e) => handleUpdatePermissions(user.id, e.target.value)}
+                        className="text-xs px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-black focus:border-black outline-none"
+                      >
+                        <option value="leitor">Leitor</option>
+                        <option value="equipe">Equipe</option>
+                        <option value="gestor">Gestor</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                    ) : (
+                      <span className="text-xs text-gray-500">
+                        {user.id === currentUser?.id ? 'Você' : 'Sem permissão'}
+                      </span>
+                    )}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500">
                     {user.createdAt.toLocaleDateString('pt-BR')}
@@ -502,9 +550,9 @@ export function UserManagement() {
       {isLoadingUsers && (
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black mx-auto mb-4"></div>
-          <p className="text-gray-500">Carregando usuários do Supabase...</p>
+          <p className="text-gray-500">Sincronizando com Supabase Authentication...</p>
         </div>
       )}
     </div>
   );
-};
+}
