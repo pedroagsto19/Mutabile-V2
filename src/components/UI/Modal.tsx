@@ -27,9 +27,9 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
 
   const sizeClasses = {
     sm: 'max-w-md',
-    md: 'max-w-lg',
-    lg: 'max-w-4xl',
-    xl: 'max-w-4xl'
+    md: 'max-w-2xl',
+    lg: 'max-w-6xl',
+    xl: 'max-w-7xl'
   };
 
   return (

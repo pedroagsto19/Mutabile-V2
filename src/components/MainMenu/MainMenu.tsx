@@ -121,7 +121,9 @@ export function MainMenu({ onModuleSelect, currentUser }: MainMenuProps) {
                   <p className="text-sm font-medium text-gray-900">
                     {currentUser.name}
                   </p>
-                  <p className="text-xs text-gray-500">{currentUser.role}</p>
+                  <p className="text-xs text-gray-500">
+                    {currentUser.email}
+                  </p>
                   <p className="text-xs text-gray-500">
                     {currentUser.authLevel === 'admin' ? 'Administrador' :
                      currentUser.authLevel === 'gestor' ? 'Gestor' :

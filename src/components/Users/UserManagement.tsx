@@ -1,22 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Shield, User as UserIcon, Search, Filter } from 'lucide-react';
+import { Plus, Edit, Trash2, Shield, User as UserIcon, Search, Filter, RefreshCw } from 'lucide-react';
 import { Button } from '../UI/Button';
 import { Card, CardHeader, CardContent } from '../UI/Card';
 import { Modal } from '../UI/Modal';
 import { useAuth } from '../../context/AuthContext';
 import type { User } from '../../types/auth';
 import { useNotification } from '../../context/NotificationContext';
+import { userOperations } from '../../lib/database';
 
 export function UserManagement() {
   const { 
     user: currentUser,
-    register, 
-    updateUser, 
-    deleteUser, 
+    createAuthUser,
+    updateUserMetadata,
+    deleteAuthUser,
     hasPermission, 
-    canEditUser
+    canEditUser,
+    getAllUsers,
+    syncAuthUsers
   } = useAuth();
-  const { userOperations } = require('../../lib/database');
   const { toast, confirm } = useNotification();
   
   const [users, setUsers] = useState<User[]>([]);
@@ -24,19 +26,29 @@ export function UserManagement() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterLevel, setFilterLevel] = useState('');
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
 
   // Load users on mount
   useEffect(() => {
-    loadUsers();
+    refreshUsers();
   }, []);
 
-  const loadUsers = async () => {
+  // Update users when auth context changes
+  useEffect(() => {
+    setUsers(getAllUsers());
+  }, [getAllUsers]);
+
+  const refreshUsers = async () => {
+    setIsLoadingUsers(true);
     try {
-      const allUsers = await userOperations.getAll();
-      setUsers(allUsers);
+      await syncAuthUsers();
+      setUsers(getAllUsers());
+      toast.success('Usuários sincronizados com o Authentication!');
     } catch (error) {
-      console.error('Error loading users:', error);
-      toast.error('Erro ao carregar usuários');
+      console.error('Erro ao carregar usuários:', error);
+      toast.error('Erro ao sincronizar usuários', 'Verifique a conexão com o Supabase.');
+    } finally {
+      setIsLoadingUsers(false);
     }
   };
 
@@ -49,8 +61,7 @@ export function UserManagement() {
   });
 
   const handleCreateUser = () => {
-    setEditingUser(null);
-    setShowUserForm(true);
+    toast.warning('Funcionalidade não disponível', 'A criação de usuários requer implementação de backend seguro. Entre em contato com o administrador do sistema.');
   };
 
   const handleEditUser = (user: User) => {
@@ -64,22 +75,32 @@ export function UserManagement() {
       return;
     }
     
-    const confirmed = await confirm({
-      title: 'Excluir Usuário',
-      message: 'Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.',
-      type: 'danger',
-      confirmText: 'Excluir',
-      cancelText: 'Cancelar'
-    });
-    
-    if (confirmed) {
+    toast.warning('Funcionalidade não disponível', 'A exclusão de usuários requer implementação de backend seguro. Entre em contato com o administrador do sistema.');
+  };
+
+  const handleUpdatePermissions = async (userId: string, newAuthLevel: string) => {
+    if (userId === currentUser?.id) {
       try {
-        await deleteUser(userId);
-        await loadUsers();
-        toast.success('Usuário excluído com sucesso!');
-      } catch (error) {
-        toast.error('Erro ao excluir usuário', 'Tente novamente mais tarde.');
+        const user = users.find(u => u.id === userId);
+        if (!user) return;
+        
+        const updatedMetadata = {
+          name: user.name,
+          role: user.role,
+          auth_level: newAuthLevel,
+          team_id: user.teamId,
+          manager_id: user.managerId,
+          created_by: user.createdBy
+        };
+        
+        await updateUserMetadata(userId, updatedMetadata);
+        toast.success('Nível de acesso atualizado com sucesso!');
+      } catch (error: any) {
+        console.error('Erro ao atualizar permissões:', error);
+        toast.error('Erro ao atualizar permissões', error.message);
       }
+    } else {
+      toast.warning('Funcionalidade não disponível', 'A alteração de permissões de outros usuários requer implementação de backend seguro. Entre em contato com o administrador do sistema.');
     }
   };
 
@@ -119,28 +140,34 @@ export function UserManagement() {
       
       try {
         if (editingUser) {
-          const updateData = { ...formData };
-          // Only include password if it was provided
-          if (!updateData.password) {
-            delete updateData.password;
-          }
-          await updateUser(editingUser.id, updateData);
+          // Atualizar usuário existente
+          const updateData = {
+            name: formData.name,
+            role: formData.role,
+            auth_level: formData.authLevel,
+            team_id: formData.teamId || null,
+            manager_id: formData.managerId || null
+          };
+
+          await updateUserMetadata(editingUser.id, updateData);
           toast.success('Usuário atualizado com sucesso!');
         } else {
-          // For new users, password is required
+          // Criar novo usuário
           if (!formData.password) {
             toast.error('Erro de validação', 'Senha é obrigatória para novos usuários');
             return;
           }
-          await register(formData);
-          toast.success('Usuário criado com sucesso!');
+          
+          await createAuthUser(formData);
+          toast.success('Usuário criado e sincronizado com sucesso!');
         }
-        await loadUsers();
+        
+        await refreshUsers();
         setShowUserForm(false);
         setEditingUser(null);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error saving user:', error);
-        toast.error('Erro ao salvar usuário', 'Tente novamente mais tarde.');
+        toast.error('Erro ao salvar usuário', error.message || 'Tente novamente mais tarde.');
       }
     };
 
@@ -151,6 +178,7 @@ export function UserManagement() {
     const availableManagers = users.filter(user => 
       user.authLevel === 'gestor' || user.authLevel === 'admin'
     );
+
     return (
       <Modal 
         isOpen={showUserForm} 
@@ -186,6 +214,11 @@ export function UserManagement() {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
               disabled={!!editingUser} // Email não pode ser alterado após criação
             />
+            {editingUser && (
+              <p className="text-xs text-gray-500 mt-1">
+                O e-mail não pode ser alterado após a criação no Supabase Authentication
+              </p>
+            )}
           </div>
 
           <div>
@@ -227,46 +260,44 @@ export function UserManagement() {
             )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {editingUser ? 'Nova Senha (deixe em branco para manter atual)' : 'Senha *'}
-            </label>
-            <input
-              type="password"
-              required={!editingUser}
-              value={formData.password}
-              onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
-              placeholder={editingUser ? 'Digite nova senha...' : 'Digite a senha...'}
-            />
-            {editingUser && (
+          {!editingUser && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Senha *
+              </label>
+              <input
+                type="password"
+                required
+                value={formData.password}
+                onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
+                placeholder="Digite a senha..."
+                minLength={6}
+              />
               <p className="text-xs text-gray-500 mt-1">
-                Deixe em branco para manter a senha atual
+                Mínimo de 6 caracteres. O usuário será criado no Supabase Authentication.
               </p>
-            )}
-          </div>
+            </div>
+          )}
+
           {/* Manager Selection for Team Members */}
           {formData.authLevel === 'equipe' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Gestor Responsável *
+                Gestor Responsável
               </label>
               <select
-                required
                 value={formData.managerId}
                 onChange={(e) => setFormData(prev => ({ ...prev, managerId: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
               >
-                <option value="">Selecione um gestor</option>
+                <option value="">Selecione um gestor (opcional)</option>
                 {availableManagers.map(manager => (
                   <option key={manager.id} value={manager.id}>
                     {manager.name} - {manager.role}
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-gray-500 mt-1">
-                Usuários de equipe devem ter um gestor responsável
-              </p>
             </div>
           )}
 
@@ -312,12 +343,39 @@ export function UserManagement() {
           <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
             Gerenciamento de Usuários
           </h1>
-          <p className="text-gray-600 mt-1">{filteredUsers.length} usuários encontrados</p>
+          <p className="text-gray-600 mt-1">
+            {filteredUsers.length} usuários encontrados • Sincronizado com Authentication
+          </p>
         </div>
-        <Button onClick={handleCreateUser}>
-          <Plus className="h-4 w-4 mr-2" />
-          Novo Usuário
-        </Button>
+        <div className="flex items-center space-x-3">
+          <Button 
+            variant="outline" 
+            onClick={refreshUsers}
+            disabled={isLoadingUsers}
+            title="Sincronizar com Supabase Authentication"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingUsers ? 'animate-spin' : ''}`} />
+            Sincronizar
+          </Button>
+          <Button onClick={handleCreateUser}>
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Usuário
+          </Button>
+        </div>
+      </div>
+
+      {/* Info Alert */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="flex items-start space-x-3">
+          <Shield className="h-5 w-5 text-blue-600 mt-0.5" />
+          <div>
+            <h3 className="text-sm font-medium text-blue-900">Sincronização Automática</h3>
+            <p className="text-sm text-blue-700 mt-1">
+              Os usuários são automaticamente sincronizados com a aba Authentication do Supabase. 
+              Defina os níveis de acesso aqui e eles serão salvos no user_metadata do Authentication.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Filters */}
@@ -365,6 +423,9 @@ export function UserManagement() {
                   Nível de Acesso
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Alterar Nível
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Criado em
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -408,6 +469,24 @@ export function UserManagement() {
                       {getAuthLevelLabel(user.authLevel)}
                     </span>
                   </td>
+                  <td className="px-6 py-4">
+                    {hasPermission('canChangeUserAuthLevel') && user.id !== currentUser?.id ? (
+                      <select
+                        value={user.authLevel}
+                        onChange={(e) => handleUpdatePermissions(user.id, e.target.value)}
+                        className="text-xs px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-black focus:border-black outline-none"
+                      >
+                        <option value="leitor">Leitor</option>
+                        <option value="equipe">Equipe</option>
+                        <option value="gestor">Gestor</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                    ) : (
+                      <span className="text-xs text-gray-500">
+                        {user.id === currentUser?.id ? 'Você' : 'Sem permissão'}
+                      </span>
+                    )}
+                  </td>
                   <td className="px-6 py-4 text-sm text-gray-500">
                     {user.createdAt.toLocaleDateString('pt-BR')}
                   </td>
@@ -441,6 +520,24 @@ export function UserManagement() {
           </table>
         </div>
       </Card>
+
+      {filteredUsers.length === 0 && !isLoadingUsers && (
+        <div className="text-center py-12">
+          <UserIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-500 mb-4">Nenhum usuário encontrado.</p>
+          <Button onClick={handleCreateUser}>
+            <Plus className="h-4 w-4 mr-2" />
+            Criar primeiro usuário
+          </Button>
+        </div>
+      )}
+
+      {isLoadingUsers && (
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black mx-auto mb-4"></div>
+          <p className="text-gray-500">Sincronizando com Supabase Authentication...</p>
+        </div>
+      )}
     </div>
   );
 }

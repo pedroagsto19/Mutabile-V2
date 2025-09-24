@@ -73,9 +73,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Configurações" size="xl">
-      <div className="flex h-96">
+      <div className="flex h-[80vh]">
         {/* Sidebar */}
-        <div className="w-64 border-r border-gray-200 pr-4">
+        <div className="w-80 border-r border-gray-200 pr-6">
           <nav className="space-y-1">
             {tabs.map((tab) => {
               const IconComponent = tab.icon;
@@ -83,13 +83,13 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  className={`w-full flex items-center px-4 py-3 text-base font-medium rounded-lg transition-colors ${
                     activeTab === tab.id
                       ? 'bg-black text-white'
                       : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                   }`}
                 >
-                  <IconComponent className="h-4 w-4 mr-3" />
+                  <IconComponent className="h-5 w-5 mr-4" />
                   {tab.name}
                 </button>
               );
@@ -98,7 +98,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         </div>
 
         {/* Content */}
-        <div className="flex-1 pl-6 overflow-y-auto">
+        <div className="flex-1 pl-8 overflow-y-auto">
           {renderTabContent()}
         </div>
       </div>

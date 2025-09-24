@@ -251,7 +251,7 @@ export function NotificationCenter({ onNavigateToProject, onNavigateToActivity }
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
         title="Central de Notificações"
-        size="lg"
+        size="xl"
       >
         <div className="space-y-4">
           {/* Header Actions */}

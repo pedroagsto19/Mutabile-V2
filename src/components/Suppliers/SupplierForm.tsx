@@ -357,7 +357,7 @@ export function SupplierForm({ isOpen, onClose, supplier }: SupplierFormProps) {
       isOpen={isOpen} 
       onClose={onClose} 
       title={supplier ? 'Editar Fornecedor' : 'Novo Fornecedor'}
-      size="lg"
+      size="xl"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-2 gap-4">

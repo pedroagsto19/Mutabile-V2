@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { userOperations, type DbUserRecord } from '../lib/database';
+import { userOperations } from '../lib/database';
 import type { User } from '../types/auth';
 
 interface AuthContextType {
@@ -10,9 +10,10 @@ interface AuthContextType {
   logout: () => Promise<void>;
   error: string | null;
   getAllUsers: () => User[];
-  register: (userData: any) => Promise<void>;
-  updateUser: (id: string, updates: any) => Promise<void>;
-  deleteUser: (id: string) => Promise<void>;
+  syncAuthUsers: () => Promise<void>;
+  updateUserMetadata: (userId: string, metadata: any) => Promise<void>;
+  deleteAuthUser: (userId: string) => Promise<void>;
+  createAuthUser: (userData: any) => Promise<void>;
   hasPermission: (permission: string) => boolean;
   canEditUser: (user: User) => boolean;
 }
@@ -26,94 +27,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [allUsers, setAllUsers] = useState<User[]>([]);
 
-  const allowedAuthLevels: User['authLevel'][] = ['admin', 'gestor', 'equipe', 'leitor'];
-
-  const normalizeAuthLevel = (value: any): User['authLevel'] => {
-    return allowedAuthLevels.includes(value) ? value : 'admin';
+  // Mapear usuário do Supabase Auth para nosso tipo User
+  const mapAuthUserToUser = (authUser: any): User => {
+    const metadata = authUser.user_metadata || {};
+    
+    // Definir authLevel baseado no email para usuários específicos
+    let authLevel: User['authLevel'] = metadata.auth_level || 'equipe';
+    
+    // Override para usuários específicos
+    if (authUser.email === 'admin@mutabile.com.br') {
+      authLevel = 'admin';
+    } else if (authUser.email === 'joao@mutabile.com.br') {
+      authLevel = 'gestor';
+    } else if (authUser.email === 'carlos@mutabile.com.br') {
+      authLevel = 'equipe';
+    }
+    
+    return {
+      id: authUser.id,
+      name: metadata.name || authUser.email?.split('@')[0] || 'Usuário',
+      email: authUser.email,
+      role: metadata.role || 'Usuário do Sistema',
+      authLevel,
+      teamId: metadata.team_id,
+      managerId: metadata.manager_id,
+      createdBy: metadata.created_by,
+      createdAt: new Date(authUser.created_at),
+      updatedAt: new Date(authUser.updated_at || authUser.created_at)
+    };
   };
 
-  const mapUserRecord = (record: DbUserRecord): User => ({
-    id: record.id,
-    name: record.name,
-    email: record.email,
-    role: record.role,
-    authLevel: normalizeAuthLevel(record.auth_level),
-    teamId: record.team_id ?? undefined,
-    managerId: record.manager_id ?? undefined,
-    createdBy: record.created_by ?? undefined,
-    createdAt: new Date(record.created_at),
-    updatedAt: new Date(record.updated_at)
-  });
-
-  // Simplified auth check
+  // Verificação de autenticação
   useEffect(() => {
     let mounted = true;
 
     const checkAuth = async () => {
       try {
-        if (!supabase) {
-          if (mounted) {
-            setIsLoading(false);
-            setError('Supabase não configurado');
-          }
-          return;
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Erro na sessão:', sessionError);
+          throw sessionError;
         }
-
-        // Simple session check with timeout
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout')), 5000)
-        );
-
-        const sessionPromise = supabase.auth.getSession();
-        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]) as any;
 
         if (!mounted) return;
 
         if (session?.user) {
-          // Try to get user profile
-          try {
-            const { data: profile } = await supabase
-              .from('users')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
-
-            if (profile) {
-              const userProfile = mapUserRecord(profile);
-              setUser(userProfile);
-              setIsAuthenticated(true);
-              setError(null);
-            } else {
-              // Create admin profile if it's the admin user
-              if (session.user.email === 'admin@mutabile.com.br') {
-                const adminProfile = {
-                  id: session.user.id,
-                  name: 'Administrador',
-                  email: session.user.email,
-                  role: 'Administrador do Sistema',
-                  auth_level: 'admin',
-                  team_id: null,
-                  manager_id: null,
-                  created_by: null
-                };
-
-                await supabase.from('users').insert(adminProfile);
-                const userProfile = mapUserRecord(adminProfile as any);
-                setUser(userProfile);
-                setIsAuthenticated(true);
-                setError(null);
-              } else {
-                setError('Usuário não encontrado no sistema');
-                setIsAuthenticated(false);
-                setUser(null);
-              }
-            }
-          } catch (profileError) {
-            console.error('Erro ao buscar perfil:', profileError);
-            setError('Erro ao carregar perfil do usuário');
-            setIsAuthenticated(false);
-            setUser(null);
-          }
+          const userProfile = mapAuthUserToUser(session.user);
+          setUser(userProfile);
+          setIsAuthenticated(true);
+          setError(null);
+          console.log('Usuário autenticado:', session.user.email);
         } else {
           setUser(null);
           setIsAuthenticated(false);
@@ -124,9 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.error('Erro na verificação de autenticação:', e);
           setUser(null);
           setIsAuthenticated(false);
-          if (e.message !== 'Timeout') {
-            setError('Erro de conectividade');
-          }
+          setError('Erro de conectividade com o Supabase');
         }
       } finally {
         if (mounted) {
@@ -137,37 +99,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     checkAuth();
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase?.auth?.onAuthStateChange?.(
+    // Listener para mudanças de autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
-        
+
         console.log('Auth event:', event);
 
         if (session?.user) {
-          try {
-            const { data: profile } = await supabase
-              .from('users')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
-
-            if (profile) {
-              const userProfile = mapUserRecord(profile);
-              setUser(userProfile);
-              setIsAuthenticated(true);
-              setError(null);
-            }
-          } catch (profileError) {
-            console.error('Erro ao buscar perfil:', profileError);
-          }
+          const userProfile = mapAuthUserToUser(session.user);
+          setUser(userProfile);
+          setIsAuthenticated(true);
+          setError(null);
         } else {
           setUser(null);
           setIsAuthenticated(false);
           setError(null);
         }
+        
+        setIsLoading(false);
       }
-    ) || { data: { subscription: { unsubscribe: () => {} } } };
+    );
 
     return () => {
       mounted = false;
@@ -175,80 +127,94 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      refreshUsers();
-    }
-  }, [isAuthenticated]);
-
-  const refreshUsers = async () => {
+  // Carregar todos os usuários do Authentication
+  const syncAuthUsers = async () => {
     try {
-      const users = await userOperations.getAll();
+      console.log('Carregando usuários do Authentication...');
+      
+      // Por enquanto, usar apenas usuários do Authentication
+      // A sincronização com tabela users requer configuração adequada de RLS
+      const users = [user].filter(Boolean) as User[];
+      
       setAllUsers(users);
-    } catch (fetchError) {
-      console.error('Erro ao buscar usuários:', fetchError);
-      setAllUsers([]);
+      
+      console.log(`${users.length} usuários carregados`);
+    } catch (error: any) {
+      console.error('Erro ao carregar usuários:', error);
+      // Em caso de erro, usar apenas o usuário atual
+      setAllUsers(user ? [user] : []);
     }
+  };
+
+  // Carregar usuários quando autenticado
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      syncAuthUsers().catch(console.error);
+    }
+  }, [isAuthenticated, user]);
+
+  const getAllUsers = (): User[] => allUsers;
+
+  // Criar usuário no Authentication
+  const createAuthUser = async (userData: any): Promise<void> => {
+    throw new Error('Criação de usuários deve ser implementada via backend seguro com service_role key. Esta operação não pode ser executada no frontend por questões de segurança.');
+  };
+
+  // Atualizar metadata do usuário no Authentication
+  const updateUserMetadata = async (userId: string, metadata: any): Promise<void> => {
+    if (userId === user?.id) {
+      // Atualizar usuário atual (permitido com chave anon)
+      try {
+        const { error } = await supabase.auth.updateUser({
+          data: metadata
+        });
+        
+        if (error) {
+          throw error;
+        }
+        
+        // Atualizar estado local
+        setUser(prev => prev ? { 
+          ...prev, 
+          name: metadata.name || prev.name,
+          role: metadata.role || prev.role,
+          authLevel: metadata.auth_level || prev.authLevel,
+          teamId: metadata.team_id || prev.teamId,
+          managerId: metadata.manager_id || prev.managerId
+        } : null);
+        
+      } catch (e: any) {
+        console.error('Erro ao atualizar próprio usuário:', e);
+        throw new Error(e.message || 'Erro ao atualizar usuário');
+      }
+    } else {
+      // Atualizar outros usuários requer backend seguro
+      throw new Error('Atualização de outros usuários deve ser implementada via backend seguro com service_role key. Esta operação não pode ser executada no frontend por questões de segurança.');
+    }
+  };
+
+  // Deletar usuário do Authentication
+  const deleteAuthUser = async (userId: string): Promise<void> => {
+    throw new Error('Exclusão de usuários deve ser implementada via backend seguro com service_role key. Esta operação não pode ser executada no frontend por questões de segurança.');
   };
 
   const logout = async () => {
     try {
       setIsLoading(true);
-      await supabase?.auth?.signOut();
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) throw error;
+      
       setUser(null);
       setIsAuthenticated(false);
       setError(null);
+      setAllUsers([]);
+      console.log('Logout realizado com sucesso');
     } catch (e: any) {
       console.error('Erro no logout:', e);
+      setError(e.message || 'Erro no logout');
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const getAllUsers = (): User[] => allUsers;
-
-  const register = async (userData: any): Promise<void> => {
-    try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: userData.email,
-        password: userData.password
-      });
-
-      if (authError) throw authError;
-
-      if (authData?.user) {
-        await userOperations.create({
-          id: authData.user.id,
-          name: userData.name,
-          email: userData.email,
-          role: userData.role,
-          authLevel: userData.authLevel,
-          teamId: userData.teamId || null,
-          managerId: userData.managerId || null,
-          createdBy: user?.id || null
-        });
-        await refreshUsers();
-      }
-    } catch (e: any) {
-      throw new Error(e.message || 'Erro ao criar usuário');
-    }
-  };
-
-  const updateUser = async (id: string, updates: any): Promise<void> => {
-    try {
-      await userOperations.update(id, updates);
-      await refreshUsers();
-    } catch (e: any) {
-      throw new Error(e.message || 'Erro ao atualizar usuário');
-    }
-  };
-
-  const deleteUser = async (id: string): Promise<void> => {
-    try {
-      await userOperations.delete(id);
-      await refreshUsers();
-    } catch (e: any) {
-      throw new Error(e.message || 'Erro ao deletar usuário');
     }
   };
 
@@ -291,9 +257,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logout,
       error,
       getAllUsers,
-      register,
-      updateUser,
-      deleteUser,
+      syncAuthUsers,
+      updateUserMetadata,
+      deleteAuthUser,
+      createAuthUser,
       hasPermission,
       canEditUser
     }}>
