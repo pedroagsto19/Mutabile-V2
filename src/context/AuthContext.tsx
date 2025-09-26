@@ -1,7 +1,65 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { userOperations } from '../lib/database';
 import type { User } from '../types/auth';
+
+type SupabaseKeyRole = 'anon' | 'service_role' | string | null;
+
+const decodeSupabaseKeyRole = (key?: string): SupabaseKeyRole => {
+  if (!key) return null;
+
+  const [, payload] = key.split('.');
+  if (!payload) return null;
+
+  try {
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const globalObject = globalThis as unknown as {
+      atob?: (value: string) => string;
+      Buffer?: { from: (value: string, encoding: string) => { toString: (encoding: string) => string } };
+    };
+
+    let decoded = '';
+    if (typeof globalObject?.atob === 'function') {
+      decoded = globalObject.atob(base64);
+    } else if (globalObject?.Buffer) {
+      decoded = globalObject.Buffer.from(base64, 'base64').toString('binary');
+    } else {
+      return null;
+    }
+
+    const jsonPayload = decodeURIComponent(
+      decoded
+        .split('')
+        .map(char => `%${(`00${char.charCodeAt(0).toString(16)}`).slice(-2)}`)
+        .join('')
+    );
+
+    const parsed = JSON.parse(jsonPayload);
+    return typeof parsed.role === 'string' ? parsed.role : null;
+  } catch (error) {
+    console.warn('Não foi possível determinar o tipo da chave do Supabase:', error);
+    return null;
+  }
+};
+
+const determineAuthSyncAvailability = (): boolean => {
+  const explicitFlag = import.meta.env.VITE_SUPABASE_ENABLE_AUTH_SYNC;
+  if (explicitFlag === 'true') {
+    return true;
+  }
+
+  if (explicitFlag === 'false') {
+    return false;
+  }
+
+  const serviceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+  if (decodeSupabaseKeyRole(serviceRoleKey) === 'service_role') {
+    return true;
+  }
+
+  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  return decodeSupabaseKeyRole(anonKey) === 'service_role';
+};
 
 interface AuthContextType {
   user: User | null;
@@ -26,6 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [allUsers, setAllUsers] = useState<User[]>([]);
+  const canSyncAuthUsers = useMemo(() => determineAuthSyncAvailability(), []);
 
   // Mapear usuário do Supabase Auth para nosso tipo User
   const mapAuthUserToUser = (authUser: any): User => {
@@ -57,6 +116,65 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   };
 
+  const upsertUsers = useCallback((usersToMerge: User[]) => {
+    if (!usersToMerge.length) return;
+
+    setAllUsers(prev => {
+      const userMap = new Map(prev.map(existingUser => [existingUser.id, existingUser]));
+      usersToMerge.forEach(newUser => {
+        userMap.set(newUser.id, newUser);
+      });
+      return Array.from(userMap.values());
+    });
+  }, []);
+
+  const loadUsersFromDatabase = useCallback(async (fallbackUser?: User): Promise<User[]> => {
+    try {
+      const users = await userOperations.getAll();
+      if (users.length > 0) {
+        setAllUsers(users);
+        return users;
+      }
+
+      if (fallbackUser) {
+        upsertUsers([fallbackUser]);
+        return [fallbackUser];
+      }
+
+      return [];
+    } catch (loadError) {
+      console.error('Erro ao carregar usuários do banco de dados:', loadError);
+      if (fallbackUser) {
+        upsertUsers([fallbackUser]);
+        return [fallbackUser];
+      }
+      return [];
+    }
+  }, [upsertUsers]);
+
+  const syncUsersWithAuth = useCallback(async (fallbackUser?: User) => {
+    if (!canSyncAuthUsers) {
+      console.info('Sincronização de usuários com Auth ignorada: apenas chave anon disponível.');
+      await loadUsersFromDatabase(fallbackUser);
+      return;
+    }
+
+    try {
+      await userOperations.syncFromAuth();
+    } catch (syncError) {
+      console.error('Erro ao sincronizar usuários com Supabase Auth:', syncError);
+    } finally {
+      await loadUsersFromDatabase(fallbackUser);
+    }
+  }, [canSyncAuthUsers, loadUsersFromDatabase]);
+
+  const resolveUserProfile = useCallback((authUser: any): User => {
+    const mappedUser = mapAuthUserToUser(authUser);
+    upsertUsers([mappedUser]);
+    syncUsersWithAuth(mappedUser).catch(console.error);
+    return mappedUser;
+  }, [syncUsersWithAuth, upsertUsers]);
+
   // Verificação de autenticação
   useEffect(() => {
     let mounted = true;
@@ -64,7 +182,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const checkAuth = async () => {
       try {
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
+
         if (sessionError) {
           console.error('Erro na sessão:', sessionError);
           throw sessionError;
@@ -73,7 +191,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!mounted) return;
 
         if (session?.user) {
-          const userProfile = mapAuthUserToUser(session.user);
+          const userProfile = resolveUserProfile(session.user);
           setUser(userProfile);
           setIsAuthenticated(true);
           setError(null);
@@ -107,7 +225,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('Auth event:', event);
 
         if (session?.user) {
-          const userProfile = mapAuthUserToUser(session.user);
+          const userProfile = resolveUserProfile(session.user);
           setUser(userProfile);
           setIsAuthenticated(true);
           setError(null);
@@ -128,30 +246,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Carregar todos os usuários do Authentication
-  const syncAuthUsers = async () => {
-    try {
-      console.log('Carregando usuários do Authentication...');
-      
-      // Por enquanto, usar apenas usuários do Authentication
-      // A sincronização com tabela users requer configuração adequada de RLS
-      const users = [user].filter(Boolean) as User[];
-      
-      setAllUsers(users);
-      
-      console.log(`${users.length} usuários carregados`);
-    } catch (error: any) {
-      console.error('Erro ao carregar usuários:', error);
-      // Em caso de erro, usar apenas o usuário atual
-      setAllUsers(user ? [user] : []);
+  const syncAuthUsers = useCallback(async () => {
+    const fallbackUser = user ?? undefined;
+
+    if (!isAuthenticated) {
+      await loadUsersFromDatabase(fallbackUser);
+      return;
     }
-  };
+
+    await syncUsersWithAuth(fallbackUser);
+  }, [isAuthenticated, loadUsersFromDatabase, syncUsersWithAuth, user]);
 
   // Carregar usuários quando autenticado
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (isAuthenticated) {
       syncAuthUsers().catch(console.error);
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, syncAuthUsers]);
 
   const getAllUsers = (): User[] => allUsers;
 
