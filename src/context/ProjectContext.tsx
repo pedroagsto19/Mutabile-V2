@@ -4,6 +4,7 @@ import { useTimer } from '../hooks/useTimer';
 import { useAuth } from './AuthContext';
 import { useNotificationTriggers } from '../hooks/useNotificationTriggers';
 import { projectOperations, activityOperations } from '../lib/database';
+import { generateUUID } from '../utils/id';
 
 interface ProjectContextType {
   projects: Project[];
@@ -96,8 +97,6 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     // Leitor can see all projects (read-only)
     return projects;
   };
-
-  const generateId = () => Math.random().toString(36).substr(2, 9);
 
   const calculateActivityProgress = (activity: Activity) => {
     // If manually marked as completed, always return 100%
@@ -224,7 +223,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const addStage = (projectId: string, stageData: Omit<Stage, 'id' | 'projectId'>) => {
     const newStage: Stage = {
       ...stageData,
-      id: generateId(),
+      id: generateUUID(),
       projectId
     };
     
@@ -258,40 +257,34 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Sem permissão para criar atividades');
     }
     
-    const newActivity: Activity = {
+    const newActivityData: Omit<Activity, 'id'> = {
       ...activityData,
-      id: generateId(),
       stageId,
       checklist: activityData.checklist || [],
       driveLinks: activityData.driveLinks || []
     };
     
-    const project = projects.find(p => p.stages.some(s => s.id === stageId));
-    if (project) {
-      // Ensure stages array exists
-      const stages = project.stages || [];
-      
-      const updatedProject = {
-        ...project,
-        stages: stages.map(s => 
-          s.id === stageId 
-            ? { ...s, activities: [...(s.activities || []), newActivity] }
-            : s
-        ),
-        updatedAt: new Date()
-      };
-      updateProject(project.id, updatedProject, true);
-      
-      // Trigger notification if activity has a responsible
-      if (newActivity.responsible && currentUser) {
-        triggerActivityAssignedNotification(
-          newActivity,
-          updatedProject,
-          newActivity.responsible,
-          currentUser.id
-        );
-      }
-    }
+    activityOperations.create(newActivityData)
+      .then(newActivity => {
+        loadProjects();
+        
+        // Trigger notification if activity has a responsible
+        if (newActivity.responsible && currentUser) {
+          const project = projects.find(p => p.stages.some(s => s.id === stageId));
+          if (project) {
+            triggerActivityAssignedNotification(
+              newActivity,
+              project,
+              newActivity.responsible,
+              currentUser.id
+            );
+          }
+        }
+      })
+      .catch(error => {
+        console.error('Error creating activity:', error);
+        throw error;
+      });
   };
 
   const updateActivity = (activityId: string, updates: Partial<Activity>) => {

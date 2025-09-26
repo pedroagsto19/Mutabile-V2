@@ -250,6 +250,86 @@ export const projectOperations = {
 
 // Activity operations
 export const activityOperations = {
+  async create(activityData: Omit<Activity, 'id'>): Promise<Activity> {
+    const { data, error } = await supabase
+      .from('activities')
+      .insert([{
+        title: activityData.title,
+        description: activityData.description,
+        responsible: activityData.responsible,
+        priority: activityData.priority,
+        planned_start_date: activityData.plannedStartDate.toISOString(),
+        planned_end_date: activityData.plannedEndDate.toISOString(),
+        actual_start_date: activityData.actualStartDate?.toISOString(),
+        actual_end_date: activityData.actualEndDate?.toISOString(),
+        planned_duration: activityData.plannedDuration,
+        actual_duration: activityData.actualDuration,
+        progress: activityData.progress,
+        status: activityData.status,
+        stage_id: activityData.stageId,
+        is_timer_active: activityData.isTimerActive,
+        timer_start_time: activityData.timerStartTime?.toISOString()
+      }])
+      .select()
+      .single();
+    
+    if (error) throw error;
+
+    // Create checklist items if provided
+    if (activityData.checklist && activityData.checklist.length > 0) {
+      const checklistItems = activityData.checklist.map(item => ({
+        activity_id: data.id,
+        title: item.title,
+        completed: item.completed
+      }));
+
+      const { error: checklistError } = await supabase
+        .from('checklist_items')
+        .insert(checklistItems);
+      
+      if (checklistError) throw checklistError;
+    }
+
+    // Create drive links if provided
+    if (activityData.driveLinks && activityData.driveLinks.length > 0) {
+      const driveLinks = activityData.driveLinks.map(link => ({
+        activity_id: data.id,
+        title: link.title,
+        url: link.url,
+        description: link.description
+      }));
+
+      const { error: driveLinksError } = await supabase
+        .from('drive_links')
+        .insert(driveLinks);
+      
+      if (driveLinksError) throw driveLinksError;
+    }
+
+    // Return the created activity with proper type conversion
+    return {
+      id: data.id,
+      title: data.title,
+      description: data.description || '',
+      responsible: data.responsible || '',
+      priority: data.priority,
+      plannedStartDate: new Date(data.planned_start_date),
+      plannedEndDate: new Date(data.planned_end_date),
+      actualStartDate: data.actual_start_date ? new Date(data.actual_start_date) : undefined,
+      actualEndDate: data.actual_end_date ? new Date(data.actual_end_date) : undefined,
+      plannedDuration: data.planned_duration,
+      actualDuration: data.actual_duration,
+      progress: data.progress,
+      status: data.status,
+      stageId: data.stage_id,
+      isTimerActive: data.is_timer_active,
+      timerStartTime: data.timer_start_time ? new Date(data.timer_start_time) : undefined,
+      dependencies: activityData.dependencies || [],
+      checklist: activityData.checklist || [],
+      driveLinks: activityData.driveLinks || []
+    };
+  },
+
   async update(id: string, updates: Partial<Activity>): Promise<void> {
     const updateData: any = {};
     if (updates.title) updateData.title = updates.title;
