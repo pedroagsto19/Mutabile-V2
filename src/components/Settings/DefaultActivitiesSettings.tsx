@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { defaultStages } from '../../data/mockData';
 import { defaultActivityOperations } from '../../lib/database';
+import { generateUUID } from '../../utils/id';
 
 interface DefaultActivity {
   id: string;
@@ -188,7 +189,7 @@ export function DefaultActivitiesSettings() {
     const addChecklistItem = () => {
       if (newChecklistItem.trim()) {
         const newItem = {
-          id: Date.now().toString(),
+          id: generateUUID(),
           title: newChecklistItem.trim()
         };
         setFormData(prev => ({
@@ -209,7 +210,7 @@ export function DefaultActivitiesSettings() {
     const addDriveLink = () => {
       if (newDriveLink.title.trim() && newDriveLink.url.trim()) {
         const newLink = {
-          id: Date.now().toString(),
+          id: generateUUID(),
           title: newDriveLink.title.trim(),
           url: newDriveLink.url.trim(),
           description: newDriveLink.description.trim() || undefined
@@ -234,10 +235,10 @@ export function DefaultActivitiesSettings() {
         ...prev,
         dependencies: prev.dependencies.some(dep => dep.dependsOn === activityId)
           ? prev.dependencies.filter(dep => dep.dependsOn !== activityId)
-          : [...prev.dependencies, { 
-              id: Date.now().toString(), 
-              dependsOn: activityId, 
-              type: 'finish_start' 
+          : [...prev.dependencies, {
+              id: generateUUID(),
+              dependsOn: activityId,
+              type: 'finish_start'
             }]
       }));
     };

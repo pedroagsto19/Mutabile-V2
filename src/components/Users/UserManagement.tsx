@@ -41,11 +41,12 @@ export function UserManagement() {
   const refreshUsers = async () => {
     setIsLoadingUsers(true);
     try {
-      await syncAuthUsers();
-      setUsers(getAllUsers());
+      const syncedUsers = await syncAuthUsers();
+      setUsers(syncedUsers);
       toast.success('Usuários sincronizados com o Authentication!');
     } catch (error) {
       console.error('Erro ao carregar usuários:', error);
+      setUsers(getAllUsers());
       toast.error('Erro ao sincronizar usuários', 'Verifique a conexão com o Supabase.');
     } finally {
       setIsLoadingUsers(false);
@@ -129,7 +130,7 @@ export function UserManagement() {
       name: editingUser?.name || '',
       email: editingUser?.email || '',
       role: editingUser?.role || '',
-      authLevel: editingUser?.authLevel || 'equipe' as const,
+      authLevel: editingUser?.authLevel || 'leitor' as const,
       teamId: editingUser?.teamId || currentUser?.teamId || '',
       managerId: editingUser?.managerId || '',
       password: ''

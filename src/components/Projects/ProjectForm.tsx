@@ -9,6 +9,7 @@ import { useClient } from '../../context/ClientContext';
 import { useConfirm } from '../../hooks/useConfirm';
 import type { Project } from '../../types';
 import { defaultStages } from '../../data/mockData';
+import { generateUUID } from '../../utils/id';
 
 interface ProjectFormProps {
   isOpen: boolean;
@@ -182,7 +183,7 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
           // Create new stage with default activities
           const defaultActivities = loadDefaultActivities(stageName);
           const activities = defaultActivities.map((defaultActivity: any) => ({
-            id: Math.random().toString(36).substr(2, 9),
+            id: generateUUID(),
             title: defaultActivity.title,
             description: defaultActivity.description,
             responsible: '', // Will be assigned later
@@ -198,18 +199,18 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
             stageId: '',
             dependencies: (defaultActivity.dependencies || []).map((dep: any) => ({
               ...dep,
-              id: Math.random().toString(36).substr(2, 9)
+              id: generateUUID()
             })),
             isTimerActive: false,
             timerStartTime: undefined,
             checklist: defaultActivity.checklist.map((item: any) => ({
-              id: Math.random().toString(36).substr(2, 9),
+              id: generateUUID(),
               title: item.title,
               completed: false,
               createdAt: new Date()
             })),
             driveLinks: (defaultActivity.driveLinks || []).map((link: any) => ({
-              id: Math.random().toString(36).substr(2, 9),
+              id: generateUUID(),
               title: link.title,
               url: link.url,
               description: link.description,
@@ -218,7 +219,7 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
           }));
           
           return {
-            id: Math.random().toString(36).substr(2, 9),
+            id: generateUUID(),
             name: stageName,
             projectId: project.id,
             order: index + 1,
@@ -233,14 +234,14 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
     } else {
       // When creating new project, create stages with default activities
       stages = allStages.map((stageName, index) => ({
-        id: Math.random().toString(36).substr(2, 9),
+        id: generateUUID(),
         name: stageName,
         projectId: '',
         order: index + 1,
         progress: 0,
         status: 'not_started' as const,
         activities: loadDefaultActivities(stageName).map((defaultActivity: any) => ({
-          id: Math.random().toString(36).substr(2, 9),
+          id: generateUUID(),
           title: defaultActivity.title,
           description: defaultActivity.description,
           responsible: '', // Will be assigned later
@@ -256,14 +257,21 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
           stageId: '',
           dependencies: (defaultActivity.dependencies || []).map((dep: any) => ({
             ...dep,
-            id: Math.random().toString(36).substr(2, 9)
+            id: generateUUID()
           })),
           isTimerActive: false,
           timerStartTime: undefined,
           checklist: defaultActivity.checklist.map((item: any) => ({
-            id: Math.random().toString(36).substr(2, 9),
+            id: generateUUID(),
             title: item.title,
             completed: false,
+            createdAt: new Date()
+          })),
+          driveLinks: (defaultActivity.driveLinks || []).map((link: any) => ({
+            id: generateUUID(),
+            title: link.title,
+            url: link.url,
+            description: link.description,
             createdAt: new Date()
           }))
         })),
