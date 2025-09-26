@@ -4,6 +4,7 @@ import { useTimer } from '../hooks/useTimer';
 import { useAuth } from './AuthContext';
 import { useNotificationTriggers } from '../hooks/useNotificationTriggers';
 import { projectOperations, activityOperations } from '../lib/database';
+import { generateUUID } from '../utils/id';
 
 interface ProjectContextType {
   projects: Project[];
@@ -96,8 +97,6 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     // Leitor can see all projects (read-only)
     return projects;
   };
-
-  const generateId = () => Math.random().toString(36).substr(2, 9);
 
   const calculateActivityProgress = (activity: Activity) => {
     // If manually marked as completed, always return 100%
@@ -224,7 +223,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const addStage = (projectId: string, stageData: Omit<Stage, 'id' | 'projectId'>) => {
     const newStage: Stage = {
       ...stageData,
-      id: generateId(),
+      id: generateUUID(),
       projectId
     };
     
@@ -260,7 +259,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     
     const newActivity: Activity = {
       ...activityData,
-      id: generateId(),
+      id: generateUUID(),
       stageId,
       checklist: activityData.checklist || [],
       driveLinks: activityData.driveLinks || []

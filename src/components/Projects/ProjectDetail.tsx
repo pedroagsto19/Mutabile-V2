@@ -11,6 +11,7 @@ import { useAuth } from '../../context/AuthContext';
 import { ProtectedRoute } from '../Auth/ProtectedRoute';
 import type { Project, Activity } from '../../types';
 import { useNotification } from '../../context/NotificationContext';
+import { generateUUID } from '../../utils/id';
 
 interface ProjectDetailProps {
   projectId: string;
@@ -510,14 +511,14 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
         ...prev,
         dependencies: prev.dependencies.some(dep => dep.dependsOn === activityId)
           ? prev.dependencies.filter(dep => dep.dependsOn !== activityId)
-          : [...prev.dependencies, { id: Math.random().toString(36).substr(2, 9), dependsOn: activityId, type: 'finish_start' }]
+          : [...prev.dependencies, { id: generateUUID(), dependsOn: activityId, type: 'finish_start' }]
       }));
     };
 
     const addChecklistItem = () => {
       if (newChecklistItem.trim()) {
         const newItem = {
-          id: Math.random().toString(36).substr(2, 9),
+          id: generateUUID(),
           title: newChecklistItem.trim(),
           completed: false,
           createdAt: new Date()
@@ -549,7 +550,7 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
     const addDriveLink = () => {
       if (newDriveLink.title.trim() && newDriveLink.url.trim()) {
         const newLink = {
-          id: Math.random().toString(36).substr(2, 9),
+          id: generateUUID(),
           title: newDriveLink.title.trim(),
           url: newDriveLink.url.trim(),
           description: newDriveLink.description.trim() || undefined,

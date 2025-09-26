@@ -1,3 +1,5 @@
+import { generateUUID } from '../utils/id';
+
 // Sistema de armazenamento local
 export interface LocalUser {
   id: string;
@@ -1973,7 +1975,7 @@ class LocalStorage {
       const users = this.getUsers();
       const newUser: LocalUser = {
         ...userData,
-        id: Date.now().toString(),
+        id: generateUUID(),
         passwordHash: simpleHash(userData.password),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -2051,7 +2053,7 @@ class LocalStorage {
       const projects = this.getProjects();
       const newProject: LocalProject = {
         ...projectData,
-        id: Date.now().toString(),
+        id: generateUUID(),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
