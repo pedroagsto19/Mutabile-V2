@@ -312,28 +312,33 @@ export const userOperations = {
     
     return (data || []).map(user => ({
       id: user.id,
-      name: user.name,
+      name: user.name || user.email?.split('@')[0] || 'Usuário',
       email: user.email,
-      role: user.role,
-      authLevel: user.auth_level,
-      teamId: user.team_id,
-      managerId: user.manager_id,
-      createdBy: user.created_by,
+      role: user.role || 'Usuário do Sistema',
+      authLevel: (user.auth_level || 'leitor') as User['authLevel'],
+      teamId: user.team_id || undefined,
+      managerId: user.manager_id || undefined,
+      createdBy: user.created_by || undefined,
       createdAt: new Date(user.created_at),
       updatedAt: new Date(user.updated_at)
     }));
   },
 
   async updatePermissions(userId: string, authLevel: string, role?: string): Promise<void> {
+    const updatePayload: Record<string, any> = {
+      auth_level: authLevel,
+      updated_at: new Date().toISOString()
+    };
+
+    if (typeof role !== 'undefined') {
+      updatePayload.role = role;
+    }
+
     const { error } = await supabase
       .from('users')
-      .update({
-        auth_level: authLevel,
-        role: role,
-        updated_at: new Date().toISOString()
-      })
+      .update(updatePayload)
       .eq('id', userId);
-    
+
     if (error) throw error;
   },
 

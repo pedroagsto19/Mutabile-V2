@@ -10,7 +10,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   error: string | null;
   getAllUsers: () => User[];
-  syncAuthUsers: () => Promise<void>;
+  syncAuthUsers: () => Promise<User[]>;
   updateUserMetadata: (userId: string, metadata: any) => Promise<void>;
   deleteAuthUser: (userId: string) => Promise<void>;
   createAuthUser: (userData: any) => Promise<void>;
@@ -30,31 +30,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Mapear usuário do Supabase Auth para nosso tipo User
   const mapAuthUserToUser = (authUser: any): User => {
     const metadata = authUser.user_metadata || {};
-    
-    // Definir authLevel baseado no email para usuários específicos
-    let authLevel: User['authLevel'] = metadata.auth_level || 'equipe';
-    
-    // Override para usuários específicos
-    if (authUser.email === 'admin@mutabile.com.br') {
-      authLevel = 'admin';
-    } else if (authUser.email === 'joao@mutabile.com.br') {
-      authLevel = 'gestor';
-    } else if (authUser.email === 'carlos@mutabile.com.br') {
-      authLevel = 'equipe';
-    }
-    
+
     return {
       id: authUser.id,
       name: metadata.name || authUser.email?.split('@')[0] || 'Usuário',
       email: authUser.email,
       role: metadata.role || 'Usuário do Sistema',
-      authLevel,
+      authLevel: (metadata.auth_level || 'leitor') as User['authLevel'],
       teamId: metadata.team_id,
       managerId: metadata.manager_id,
       createdBy: metadata.created_by,
       createdAt: new Date(authUser.created_at),
       updatedAt: new Date(authUser.updated_at || authUser.created_at)
     };
+  };
+
+  const loadUsersFromDatabase = async (fallback?: User): Promise<User[]> => {
+    try {
+      const usersFromDb = await userOperations.getAll();
+      setAllUsers(usersFromDb);
+      return usersFromDb;
+    } catch (error) {
+      console.error('Erro ao carregar usuários da tabela users:', error);
+      const fallbackUsers = allUsers.length > 0
+        ? allUsers
+        : fallback
+          ? [fallback]
+          : [];
+      setAllUsers(fallbackUsers);
+      return fallbackUsers;
+    }
+  };
+
+  const syncUsersWithAuth = async (fallback?: User): Promise<User[]> => {
+    try {
+      await userOperations.syncFromAuth();
+    } catch (error) {
+      console.error('Erro ao sincronizar usuários do Authentication:', error);
+    }
+
+    return loadUsersFromDatabase(fallback);
+  };
+
+  const resolveUserProfile = async (authUser: any): Promise<User> => {
+    const fallbackProfile = mapAuthUserToUser(authUser);
+    const users = await syncUsersWithAuth(fallbackProfile);
+    const matchedUser = users.find((candidate) => candidate.id === authUser.id);
+    return matchedUser || fallbackProfile;
   };
 
   // Verificação de autenticação
@@ -73,7 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!mounted) return;
 
         if (session?.user) {
-          const userProfile = mapAuthUserToUser(session.user);
+          const userProfile = await resolveUserProfile(session.user);
           setUser(userProfile);
           setIsAuthenticated(true);
           setError(null);
@@ -82,6 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(null);
           setIsAuthenticated(false);
           setError(null);
+          setAllUsers([]);
         }
       } catch (e: any) {
         if (mounted) {
@@ -107,7 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('Auth event:', event);
 
         if (session?.user) {
-          const userProfile = mapAuthUserToUser(session.user);
+          const userProfile = await resolveUserProfile(session.user);
           setUser(userProfile);
           setIsAuthenticated(true);
           setError(null);
@@ -115,6 +138,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(null);
           setIsAuthenticated(false);
           setError(null);
+          setAllUsers([]);
         }
         
         setIsLoading(false);
@@ -129,29 +153,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Carregar todos os usuários do Authentication
   const syncAuthUsers = async () => {
-    try {
-      console.log('Carregando usuários do Authentication...');
-      
-      // Por enquanto, usar apenas usuários do Authentication
-      // A sincronização com tabela users requer configuração adequada de RLS
-      const users = [user].filter(Boolean) as User[];
-      
-      setAllUsers(users);
-      
-      console.log(`${users.length} usuários carregados`);
-    } catch (error: any) {
-      console.error('Erro ao carregar usuários:', error);
-      // Em caso de erro, usar apenas o usuário atual
-      setAllUsers(user ? [user] : []);
-    }
+    const fallback = user || undefined;
+    return syncUsersWithAuth(fallback);
   };
 
   // Carregar usuários quando autenticado
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (isAuthenticated && user && allUsers.length === 0) {
       syncAuthUsers().catch(console.error);
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, allUsers.length]);
 
   const getAllUsers = (): User[] => allUsers;
 

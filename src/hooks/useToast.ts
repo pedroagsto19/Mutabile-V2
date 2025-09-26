@@ -1,11 +1,12 @@
 import { useState, useCallback } from 'react';
 import type { Toast } from '../components/UI/Toast';
+import { generateUUID } from '../utils/id';
 
 export function useToast() {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const addToast = useCallback((toast: Omit<Toast, 'id'>) => {
-    const id = Math.random().toString(36).substr(2, 9);
+    const id = generateUUID();
     const newToast: Toast = { ...toast, id };
     
     setToasts(prev => [...prev, newToast]);
