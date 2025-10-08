@@ -716,11 +716,11 @@ export function ProjectsGanttOverview() {
             </div>
           </div>
 
-          <div className="overflow-x-auto overflow-y-hidden border border-gray-200 rounded-lg shadow-sm" style={{ maxWidth: '100%' }}>
+          <div className="relative overflow-x-auto overflow-y-hidden border border-gray-200 rounded-lg shadow-sm" style={{ maxWidth: '100%' }}>
             <div style={{ minWidth: '1200px', width: `${Math.max(1200, totalDays * 30)}px` }}>
               {/* Timeline Header */}
-              <div className="flex border-b border-gray-200 mb-4">
-                <div className="w-80 flex-shrink-0 py-2 px-4 font-medium text-gray-700">
+              <div className="flex border-b border-gray-200 mb-4 relative">
+                <div className="w-80 flex-shrink-0 py-2 px-4 font-medium text-gray-700 bg-white sticky left-0 z-10 border-r border-gray-200">
                   Projeto / Atividade
                 </div>
                 <div className="flex-1 relative">
@@ -747,10 +747,10 @@ export function ProjectsGanttOverview() {
                   return (
                   <div key={project.id} className="space-y-2">
                     {/* Project Header */}
-                    <div className="flex items-center bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors cursor-pointer">
+                    <div className="flex items-center bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors cursor-pointer relative">
                       <button
                         onClick={() => toggleProjectCollapse(project.id)}
-                        className="w-80 flex-shrink-0 px-4 py-3 flex items-start space-x-2 text-left hover:opacity-75 transition-opacity"
+                        className="w-80 flex-shrink-0 px-4 py-3 flex items-start space-x-2 text-left hover:opacity-75 transition-opacity bg-gray-100 hover:bg-gray-200 sticky left-0 z-10 border-r border-gray-200"
                       >
                         <div className="mt-1">
                           {isCollapsed ? (
@@ -821,9 +821,9 @@ export function ProjectsGanttOverview() {
                       const variance = getVarianceInfo(activity);
                       
                       return (
-                        <div key={activity.id} className="flex items-center">
+                        <div key={activity.id} className="flex items-center relative">
                           {/* Activity Info */}
-                          <div className="w-80 flex-shrink-0 px-4 py-3 pl-8">
+                          <div className="w-80 flex-shrink-0 px-4 py-3 pl-8 bg-white sticky left-0 z-10 border-r border-gray-200">
                             <div className="text-sm font-medium text-gray-900 truncate">
                               {activity.title}
                             </div>

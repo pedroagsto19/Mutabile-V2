@@ -21,3 +21,8 @@
 .overflow-x-auto::-webkit-scrollbar-thumb:hover {
   background: #64748b;
 }
+
+/* Shadow for sticky column */
+.sticky[class*="left-0"] {
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+}
