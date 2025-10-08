@@ -176,25 +176,27 @@ export function ProjectsGanttOverview() {
       };
     }
 
-    const dates: Date[] = [];
-    
+    const startDates: Date[] = [];
+    const endDates: Date[] = [];
+
     calculatedActivities.forEach(activity => {
-      dates.push(activity.planned.startDate, activity.planned.endDate);
-      
+      startDates.push(activity.planned.startDate);
+      endDates.push(activity.planned.endDate);
+
       if (activity.actual.startDate) {
-        dates.push(activity.actual.startDate);
+        startDates.push(activity.actual.startDate);
       }
       if (activity.actual.endDate) {
-        dates.push(activity.actual.endDate);
+        endDates.push(activity.actual.endDate);
       }
       if (activity.actual.estimatedEndDate) {
-        dates.push(activity.actual.estimatedEndDate);
+        endDates.push(activity.actual.estimatedEndDate);
       }
     });
 
-    const minDate = startOfDay(new Date(Math.min(...dates.map(d => d.getTime()))));
-    const maxDate = endOfDay(new Date(Math.max(...dates.map(d => d.getTime()))));
-    
+    const minDate = startOfDay(new Date(Math.min(...startDates.map(d => d.getTime()))));
+    const maxDate = endOfDay(new Date(Math.max(...endDates.map(d => d.getTime()))));
+
     return {
       startDate: minDate,
       endDate: maxDate,
@@ -566,9 +568,10 @@ export function ProjectsGanttOverview() {
               <h3 className="text-lg font-semibold text-gray-900">Cronograma Geral dos Projetos</h3>
               <p className="text-sm text-gray-600">
                 {format(startDate, 'dd/MM/yyyy', { locale: ptBR })} - {format(endDate, 'dd/MM/yyyy', { locale: ptBR })}
+                <span className="ml-2 text-gray-500">({totalDays} dias)</span>
                 {selectedProjects.length > 0 && (
                   <span className="ml-2 text-blue-600">
-                    ({selectedProjects.length} projeto{selectedProjects.length !== 1 ? 's' : ''} selecionado{selectedProjects.length !== 1 ? 's' : ''})
+                    • {selectedProjects.length} projeto{selectedProjects.length !== 1 ? 's' : ''} selecionado{selectedProjects.length !== 1 ? 's' : ''}
                   </span>
                 )}
               </p>
@@ -691,9 +694,30 @@ export function ProjectsGanttOverview() {
           </div>
         </CardHeader>
         <CardContent>
+          {/* Timeline info bar */}
+          <div className="mb-4 px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <Calendar className="h-4 w-4 text-blue-600" />
+                  <span className="font-medium text-blue-900">Período Total:</span>
+                  <span className="text-blue-700">
+                    {format(startDate, 'dd/MM/yyyy', { locale: ptBR })} até {format(endDate, 'dd/MM/yyyy', { locale: ptBR })}
+                  </span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Clock className="h-4 w-4 text-blue-600" />
+                  <span className="font-medium text-blue-700">{totalDays} dias</span>
+                </div>
+              </div>
+              <div className="text-xs text-blue-600">
+                Use a barra de rolagem horizontal para navegar pela linha do tempo
+              </div>
+            </div>
+          </div>
 
-          <div className="overflow-x-auto">
-            <div className="min-w-[1000px]">
+          <div className="overflow-x-auto overflow-y-hidden border border-gray-200 rounded-lg shadow-sm" style={{ maxWidth: '100%' }}>
+            <div style={{ minWidth: '1200px', width: `${Math.max(1200, totalDays * 30)}px` }}>
               {/* Timeline Header */}
               <div className="flex border-b border-gray-200 mb-4">
                 <div className="w-80 flex-shrink-0 py-2 px-4 font-medium text-gray-700">
