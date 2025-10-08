@@ -3,7 +3,7 @@ import { format, differenceInDays, addDays, startOfDay, endOfDay } from 'date-fn
 import { ptBR } from 'date-fns/locale';
 import { Card, CardHeader, CardContent } from '../UI/Card';
 import { Button } from '../UI/Button';
-import { Calendar, Clock, User, TrendingUp, AlertTriangle, Filter, X, ChevronDown, Check } from 'lucide-react';
+import { Calendar, Clock, User, TrendingUp, AlertTriangle, Filter, X, ChevronDown, Check, ChevronRight } from 'lucide-react';
 import { useProject } from '../../context/ProjectContext';
 import type { Activity, Project } from '../../types';
 
@@ -41,6 +41,7 @@ export function ProjectsGanttOverview() {
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(new Set());
 
   // Filter active projects by default
   const activeProjects = projects.filter(p => 
@@ -296,6 +297,43 @@ export function ProjectsGanttOverview() {
   const clearFilters = () => {
     setSelectedProjects([]);
     setShowProjectDropdown(false);
+  };
+
+  const toggleProjectCollapse = (projectId: string) => {
+    setCollapsedProjects(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(projectId)) {
+        newSet.delete(projectId);
+      } else {
+        newSet.add(projectId);
+      }
+      return newSet;
+    });
+  };
+
+  const getProjectTimeline = (activities: CalculatedActivity[]) => {
+    if (activities.length === 0) return null;
+
+    const dates: Date[] = [];
+    activities.forEach(activity => {
+      dates.push(activity.planned.startDate, activity.planned.endDate);
+      if (activity.actual.startDate) dates.push(activity.actual.startDate);
+      if (activity.actual.endDate) dates.push(activity.actual.endDate);
+      if (activity.actual.estimatedEndDate) dates.push(activity.actual.estimatedEndDate);
+    });
+
+    const minDate = new Date(Math.min(...dates.map(d => d.getTime())));
+    const maxDate = new Date(Math.max(...dates.map(d => d.getTime())));
+
+    const plannedStart = differenceInDays(minDate, startDate);
+    const plannedDuration = differenceInDays(maxDate, minDate) + 1;
+
+    return {
+      left: (plannedStart / totalDays) * 100,
+      width: (plannedDuration / totalDays) * 100,
+      startDate: minDate,
+      endDate: maxDate
+    };
   };
 
   // Group activities by project for better organization
@@ -678,24 +716,82 @@ export function ProjectsGanttOverview() {
 
               {/* Activities grouped by project */}
               <div className="space-y-6">
-                {activitiesByProject.map(({ project, activities }) => (
+                {activitiesByProject.map(({ project, activities }) => {
+                  const isCollapsed = collapsedProjects.has(project.id);
+                  const projectTimeline = getProjectTimeline(activities);
+
+                  return (
                   <div key={project.id} className="space-y-2">
                     {/* Project Header */}
-                    <div className="flex items-center bg-gray-100 rounded-lg">
-                      <div className="w-80 flex-shrink-0 px-4 py-3">
-                        <div className="font-semibold text-gray-900">{project.name}</div>
-                        <div className="text-sm text-gray-600">{project.client} • {project.location}</div>
-                        <div className="text-xs text-gray-500">
-                          {activities.length} atividade{activities.length !== 1 ? 's' : ''}
+                    <div className="flex items-center bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors cursor-pointer">
+                      <button
+                        onClick={() => toggleProjectCollapse(project.id)}
+                        className="w-80 flex-shrink-0 px-4 py-3 flex items-start space-x-2 text-left hover:opacity-75 transition-opacity"
+                      >
+                        <div className="mt-1">
+                          {isCollapsed ? (
+                            <ChevronRight className="h-4 w-4 text-gray-600" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4 text-gray-600" />
+                          )}
                         </div>
-                      </div>
-                      <div className="flex-1 relative h-8 bg-gray-200 rounded-r-lg">
-                        {/* Project progress indicator could go here */}
+                        <div className="flex-1">
+                          <div className="font-semibold text-gray-900">{project.name}</div>
+                          <div className="text-sm text-gray-600">{project.client} • {project.location}</div>
+                          <div className="flex items-center space-x-3 mt-1">
+                            <div className="text-xs text-gray-500">
+                              {activities.length} atividade{activities.length !== 1 ? 's' : ''}
+                            </div>
+                            {isCollapsed && (
+                              <div className="text-xs font-medium text-blue-600">
+                                {project.progress || 0}% concluído
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                      <div className="flex-1 relative h-12 bg-gray-50 rounded-r-lg">
+                        {isCollapsed && projectTimeline && (
+                          <>
+                            {/* Planned timeline for collapsed view */}
+                            {(showMode === 'planned' || showMode === 'both') && (
+                              <div
+                                className="absolute rounded bg-blue-300 opacity-60"
+                                style={{
+                                  left: `${projectTimeline.left}%`,
+                                  width: `${projectTimeline.width}%`,
+                                  top: showMode === 'both' ? '4px' : '8px',
+                                  height: showMode === 'both' ? '14px' : '28px'
+                                }}
+                                title={`Previsto: ${format(projectTimeline.startDate, 'dd/MM/yyyy')} - ${format(projectTimeline.endDate, 'dd/MM/yyyy')}`}
+                              />
+                            )}
+                            {/* Actual timeline for collapsed view */}
+                            {(showMode === 'actual' || showMode === 'both') && (
+                              <div
+                                className="absolute rounded bg-blue-600"
+                                style={{
+                                  left: `${projectTimeline.left}%`,
+                                  width: `${projectTimeline.width}%`,
+                                  top: showMode === 'both' ? '24px' : '8px',
+                                  height: showMode === 'both' ? '14px' : '28px'
+                                }}
+                                title={`Real: ${format(projectTimeline.startDate, 'dd/MM/yyyy')} - ${format(projectTimeline.endDate, 'dd/MM/yyyy')}`}
+                              >
+                                {/* Progress indicator */}
+                                <div
+                                  className="h-full bg-white bg-opacity-30 rounded-l"
+                                  style={{ width: `${project.progress || 0}%` }}
+                                />
+                              </div>
+                            )}
+                          </>
+                        )}
                       </div>
                     </div>
 
                     {/* Project Activities */}
-                    {activities.map((activity) => {
+                    {!isCollapsed && activities.map((activity) => {
                       const plannedPosition = getPlannedPosition(activity);
                       const actualPosition = getActualPosition(activity);
                       const variance = getVarianceInfo(activity);
@@ -780,7 +876,8 @@ export function ProjectsGanttOverview() {
                       );
                     })}
                   </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Legend */}
