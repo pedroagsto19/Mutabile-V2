@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { format, differenceInDays, addDays, startOfDay, endOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Card, CardHeader, CardContent } from '../UI/Card';
@@ -55,9 +55,12 @@ export function ProjectsGanttOverview() {
     ? projects.filter(p => selectedProjects.includes(p.id))
     : activeProjects;
 
+  // Ref to store scroll containers for synchronization
+  const scrollContainersRef = useRef<HTMLDivElement[]>([]);
+
   const allActivities = useMemo(() => {
-    return displayProjects.flatMap(project => 
-      project.stages.flatMap(stage => 
+    return displayProjects.flatMap(project =>
+      project.stages.flatMap(stage =>
         stage.activities.map(activity => ({
           ...activity,
           stageName: stage.name,
@@ -551,12 +554,46 @@ export function ProjectsGanttOverview() {
     );
   }
 
+  // Synchronize scroll across all timeline containers
+  useEffect(() => {
+    const containers = document.querySelectorAll('.gantt-scroll-container');
+    let isScrolling = false;
+
+    const handleScroll = (e: Event) => {
+      if (isScrolling) return;
+
+      const target = e.target as HTMLDivElement;
+      const scrollLeft = target.scrollLeft;
+
+      isScrolling = true;
+      containers.forEach(container => {
+        if (container !== target) {
+          (container as HTMLDivElement).scrollLeft = scrollLeft;
+        }
+      });
+
+      requestAnimationFrame(() => {
+        isScrolling = false;
+      });
+    };
+
+    containers.forEach(container => {
+      container.addEventListener('scroll', handleScroll);
+    });
+
+    return () => {
+      containers.forEach(container => {
+        container.removeEventListener('scroll', handleScroll);
+      });
+    };
+  }, [activitiesByProject.length]);
+
   return (
     <>
       {/* Overlay to close tooltip */}
       {tooltip && (
-        <div 
-          className="fixed inset-0 z-40" 
+        <div
+          className="fixed inset-0 z-40"
           onClick={() => setTooltip(null)}
         />
       )}
@@ -716,14 +753,14 @@ export function ProjectsGanttOverview() {
             </div>
           </div>
 
-          <div className="relative overflow-x-auto overflow-y-hidden border border-gray-200 rounded-lg shadow-sm" style={{ maxWidth: '100%' }}>
-            <div style={{ minWidth: '1200px', width: `${Math.max(1200, totalDays * 30)}px` }}>
-              {/* Timeline Header */}
-              <div className="flex border-b border-gray-200 mb-4 relative">
-                <div className="w-80 flex-shrink-0 py-2 px-4 font-medium text-gray-700 bg-white sticky left-0 z-10 border-r border-gray-200">
-                  Projeto / Atividade
-                </div>
-                <div className="flex-1 relative">
+          <div className="border border-gray-200 rounded-lg shadow-sm">
+            {/* Timeline Header - Fixed */}
+            <div className="flex border-b border-gray-200 bg-white relative">
+              <div className="w-80 flex-shrink-0 py-2 px-4 font-medium text-gray-700 bg-white border-r border-gray-200">
+                Projeto / Atividade
+              </div>
+              <div className="flex-1 relative overflow-x-auto overflow-y-hidden gantt-scroll-container">
+                <div style={{ minWidth: `${Math.max(920, (totalDays * 30))}px` }}>
                   <div className="flex">
                     {timelineHeaders.map((header, index) => (
                       <div
@@ -737,44 +774,47 @@ export function ProjectsGanttOverview() {
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* Activities grouped by project */}
-              <div className="space-y-6">
-                {activitiesByProject.map(({ project, activities }) => {
-                  const isCollapsed = collapsedProjects.has(project.id);
-                  const projectTimeline = getProjectTimeline(activities);
+            {/* Activities grouped by project */}
+            <div className="space-y-6 p-4">
+              {activitiesByProject.map(({ project, activities }) => {
+                const isCollapsed = collapsedProjects.has(project.id);
+                const projectTimeline = getProjectTimeline(activities);
 
-                  return (
-                  <div key={project.id} className="space-y-2">
-                    {/* Project Header */}
-                    <div className="flex items-center bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors cursor-pointer relative">
-                      <button
-                        onClick={() => toggleProjectCollapse(project.id)}
-                        className="w-80 flex-shrink-0 px-4 py-3 flex items-start space-x-2 text-left hover:opacity-75 transition-opacity bg-gray-100 hover:bg-gray-200 sticky left-0 z-10 border-r border-gray-200"
-                      >
-                        <div className="mt-1">
-                          {isCollapsed ? (
-                            <ChevronRight className="h-4 w-4 text-gray-600" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4 text-gray-600" />
+                return (
+                <div key={project.id} className="space-y-2">
+                  {/* Project Header */}
+                  <div className="flex items-center bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors cursor-pointer">
+                    <button
+                      onClick={() => toggleProjectCollapse(project.id)}
+                      className="w-80 flex-shrink-0 px-4 py-3 flex items-start space-x-2 text-left hover:opacity-75 transition-opacity bg-gray-100 hover:bg-gray-200 border-r border-gray-200"
+                    >
+                      <div className="mt-1">
+                        {isCollapsed ? (
+                          <ChevronRight className="h-4 w-4 text-gray-600" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4 text-gray-600" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-semibold text-gray-900">{project.name}</div>
+                        <div className="text-sm text-gray-600">{project.client} • {project.location}</div>
+                        <div className="flex items-center space-x-3 mt-1">
+                          <div className="text-xs text-gray-500">
+                            {activities.length} atividade{activities.length !== 1 ? 's' : ''}
+                          </div>
+                          {isCollapsed && (
+                            <div className="text-xs font-medium text-blue-600">
+                              {project.progress || 0}% concluído
+                            </div>
                           )}
                         </div>
-                        <div className="flex-1">
-                          <div className="font-semibold text-gray-900">{project.name}</div>
-                          <div className="text-sm text-gray-600">{project.client} • {project.location}</div>
-                          <div className="flex items-center space-x-3 mt-1">
-                            <div className="text-xs text-gray-500">
-                              {activities.length} atividade{activities.length !== 1 ? 's' : ''}
-                            </div>
-                            {isCollapsed && (
-                              <div className="text-xs font-medium text-blue-600">
-                                {project.progress || 0}% concluído
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </button>
-                      <div className="flex-1 relative h-12 bg-gray-50 rounded-r-lg">
+                      </div>
+                    </button>
+                    <div className="flex-1 relative overflow-x-auto overflow-y-hidden gantt-scroll-container">
+                      <div style={{ minWidth: `${Math.max(920, (totalDays * 30))}px` }}>
+                        <div className="relative h-12 bg-gray-50 rounded-r-lg">
                         {isCollapsed && projectTimeline && (
                           <>
                             {/* Planned timeline for collapsed view */}
@@ -811,41 +851,45 @@ export function ProjectsGanttOverview() {
                             )}
                           </>
                         )}
+                        </div>
                       </div>
                     </div>
+                  </div>
 
-                    {/* Project Activities */}
-                    {!isCollapsed && activities.map((activity) => {
-                      const plannedPosition = getPlannedPosition(activity);
-                      const actualPosition = getActualPosition(activity);
-                      const variance = getVarianceInfo(activity);
-                      
-                      return (
-                        <div key={activity.id} className="flex items-center relative">
-                          {/* Activity Info */}
-                          <div className="w-80 flex-shrink-0 px-4 py-3 pl-8 bg-white sticky left-0 z-10 border-r border-gray-200">
-                            <div className="text-sm font-medium text-gray-900 truncate">
-                              {activity.title}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {activity.stageName} • {activity.responsible}
-                            </div>
-                            <div className="text-xs text-gray-400 mt-1">
-                              {variance.durationVariance !== 0 && (
-                                <span className={variance.durationVariance > 0 ? 'text-red-600' : 'text-green-600'}>
-                                  {variance.durationVariance > 0 ? '+' : ''}{variance.durationVariance}d
-                                </span>
-                              )}
-                              {variance.startVariance !== 0 && (
-                                <span className={`ml-2 ${variance.startVariance > 0 ? 'text-orange-600' : 'text-blue-600'}`}>
-                                  Início: {variance.startVariance > 0 ? '+' : ''}{variance.startVariance}d
-                                </span>
-                              )}
-                            </div>
+                  {/* Project Activities */}
+                  {!isCollapsed && activities.map((activity) => {
+                    const plannedPosition = getPlannedPosition(activity);
+                    const actualPosition = getActualPosition(activity);
+                    const variance = getVarianceInfo(activity);
+
+                    return (
+                      <div key={activity.id} className="flex items-center">
+                        {/* Activity Info */}
+                        <div className="w-80 flex-shrink-0 px-4 py-3 pl-8 bg-white border-r border-gray-200">
+                          <div className="text-sm font-medium text-gray-900 truncate">
+                            {activity.title}
                           </div>
+                          <div className="text-xs text-gray-500">
+                            {activity.stageName} • {activity.responsible}
+                          </div>
+                          <div className="text-xs text-gray-400 mt-1">
+                            {variance.durationVariance !== 0 && (
+                              <span className={variance.durationVariance > 0 ? 'text-red-600' : 'text-green-600'}>
+                                {variance.durationVariance > 0 ? '+' : ''}{variance.durationVariance}d
+                              </span>
+                            )}
+                            {variance.startVariance !== 0 && (
+                              <span className={`ml-2 ${variance.startVariance > 0 ? 'text-orange-600' : 'text-blue-600'}`}>
+                                Início: {variance.startVariance > 0 ? '+' : ''}{variance.startVariance}d
+                              </span>
+                            )}
+                          </div>
+                        </div>
 
-                          {/* Gantt Bars */}
-                          <div className="flex-1 relative h-12 bg-gray-50 rounded">
+                        {/* Gantt Bars Container with Scroll */}
+                        <div className="flex-1 relative overflow-x-auto overflow-y-hidden gantt-scroll-container">
+                          <div style={{ minWidth: `${Math.max(920, (totalDays * 30))}px` }}>
+                            <div className="relative h-12 bg-gray-50 rounded">
                             {/* Planned Bar */}
                             {(showMode === 'planned' || showMode === 'both') && (
                               <div
@@ -895,16 +939,19 @@ export function ProjectsGanttOverview() {
                                 )}
                               </div>
                             )}
+                            </div>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                  );
-                })}
-              </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                );
+              })}
+            </div>
 
-              {/* Legend */}
+            {/* Legend */}
+            <div className="px-4 pb-4">
               <div className="mt-6 space-y-3 text-xs text-gray-600">
                 {/* Primeira fileira - Previsto */}
                 {(showMode === 'planned' || showMode === 'both') && (
@@ -943,8 +990,8 @@ export function ProjectsGanttOverview() {
                 )}
               </div>
 
-              {/* Summary */}
-              <div className="mt-6 bg-gray-50 rounded-lg p-4">
+            {/* Summary */}
+            <div className="mt-6 bg-gray-50 rounded-lg p-4">
                 <h4 className="text-sm font-medium text-gray-900 mb-3">Resumo Geral</h4>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                   <div>
