@@ -128,19 +128,19 @@ export function UserManagement() {
 
     const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
-      
+
       try {
         if (editingUser) {
-          // Atualizar usuário existente
-          const updateData = {
+          // Atualizar usuário existente diretamente na tabela users
+          // A trigger sync_user_to_auth() cuidará de sincronizar com auth.users
+          await userOperations.updateUser(editingUser.id, {
             name: formData.name,
             role: formData.role,
             auth_level: formData.authLevel,
-            team_id: formData.teamId || null,
-            manager_id: formData.managerId || null
-          };
+            teamId: formData.teamId || null,
+            managerId: formData.managerId || null
+          });
 
-          await updateUserMetadata(editingUser.id, updateData);
           toast.success('Usuário atualizado com sucesso!');
         } else {
           // Criar novo usuário
@@ -148,11 +148,11 @@ export function UserManagement() {
             toast.error('Erro de validação', 'Senha é obrigatória para novos usuários');
             return;
           }
-          
+
           await createAuthUser(formData);
           toast.success('Usuário criado e sincronizado com sucesso!');
         }
-        
+
         await refreshUsers();
         setShowUserForm(false);
         setEditingUser(null);
