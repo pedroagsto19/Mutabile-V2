@@ -759,7 +759,7 @@ export function ProjectsGanttOverview() {
               <div className="w-80 flex-shrink-0 py-2 px-4 font-medium text-gray-700 bg-white border-r border-gray-200">
                 Projeto / Atividade
               </div>
-              <div className="flex-1 relative overflow-x-auto overflow-y-hidden gantt-scroll-container">
+              <div className="flex-1 relative overflow-x-auto overflow-y-hidden gantt-scroll-container gantt-scroll-header">
                 <div style={{ minWidth: `${Math.max(920, (totalDays * 30))}px` }}>
                   <div className="flex">
                     {timelineHeaders.map((header, index) => (
