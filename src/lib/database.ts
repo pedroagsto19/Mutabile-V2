@@ -333,7 +333,28 @@ export const userOperations = {
         updated_at: new Date().toISOString()
       })
       .eq('id', userId);
-    
+
+    if (error) throw error;
+  },
+
+  async updateUser(userId: string, updates: Partial<User> & { auth_level?: string }): Promise<void> {
+    const updateData: any = {
+      updated_at: new Date().toISOString()
+    };
+
+    if (updates.name !== undefined) updateData.name = updates.name;
+    if (updates.email !== undefined) updateData.email = updates.email;
+    if (updates.role !== undefined) updateData.role = updates.role;
+    if (updates.authLevel !== undefined) updateData.auth_level = updates.authLevel;
+    if (updates.auth_level !== undefined) updateData.auth_level = updates.auth_level;
+    if (updates.teamId !== undefined) updateData.team_id = updates.teamId;
+    if (updates.managerId !== undefined) updateData.manager_id = updates.managerId;
+
+    const { error } = await supabase
+      .from('users')
+      .update(updateData)
+      .eq('id', userId);
+
     if (error) throw error;
   },
 
