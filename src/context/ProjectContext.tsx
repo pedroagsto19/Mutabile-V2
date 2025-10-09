@@ -240,41 +240,42 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     if (!hasPermission('canCreateActivities')) {
       throw new Error('Sem permissão para criar atividades');
     }
-    
-    const newActivity: Activity = {
-      ...activityData,
-      id: generateId(),
-      stageId,
-      checklist: activityData.checklist || [],
-      driveLinks: activityData.driveLinks || []
-    };
-    
+
     const project = projects.find(p => p.stages.some(s => s.id === stageId));
-    if (project) {
-      // Ensure stages array exists
-      const stages = project.stages || [];
-      
-      const updatedProject = {
-        ...project,
-        stages: stages.map(s => 
-          s.id === stageId 
-            ? { ...s, activities: [...(s.activities || []), newActivity] }
-            : s
-        ),
-        updatedAt: new Date()
-      };
-      updateProject(project.id, updatedProject, true);
-      
-      // Trigger notification if activity has a responsible
-      if (newActivity.responsible && currentUser) {
-        triggerActivityAssignedNotification(
-          newActivity,
-          updatedProject,
-          newActivity.responsible,
-          currentUser.id
-        );
-      }
-    }
+    if (!project) return;
+
+    // Create activity in database
+    activityOperations.create(stageId, activityData)
+      .then(newActivity => {
+        // Update local state
+        const updatedProject = {
+          ...project,
+          stages: project.stages.map(s =>
+            s.id === stageId
+              ? { ...s, activities: [...(s.activities || []), newActivity] }
+              : s
+          ),
+          updatedAt: new Date()
+        };
+
+        setProjects(prev => prev.map(p =>
+          p.id === project.id ? updatedProject : p
+        ));
+
+        // Trigger notification if activity has a responsible
+        if (newActivity.responsible && currentUser) {
+          triggerActivityAssignedNotification(
+            newActivity,
+            updatedProject,
+            newActivity.responsible,
+            currentUser.id
+          );
+        }
+      })
+      .catch(error => {
+        console.error('Error creating activity:', error);
+        throw error;
+      });
   };
 
   const updateActivity = (activityId: string, updates: Partial<Activity>) => {

@@ -250,6 +250,86 @@ export const projectOperations = {
 
 // Activity operations
 export const activityOperations = {
+  async create(stageId: string, activityData: Omit<Activity, 'id' | 'stageId'>): Promise<Activity> {
+    const { data: activity, error } = await supabase
+      .from('activities')
+      .insert([{
+        title: activityData.title,
+        description: activityData.description || '',
+        responsible: activityData.responsible || '',
+        priority: activityData.priority,
+        planned_start_date: activityData.plannedStartDate.toISOString(),
+        planned_end_date: activityData.plannedEndDate.toISOString(),
+        actual_start_date: activityData.actualStartDate?.toISOString(),
+        actual_end_date: activityData.actualEndDate?.toISOString(),
+        planned_duration: activityData.plannedDuration,
+        actual_duration: activityData.actualDuration || 0,
+        progress: activityData.progress || 0,
+        status: activityData.status || 'not_started',
+        stage_id: stageId,
+        is_timer_active: activityData.isTimerActive || false,
+        timer_start_time: activityData.timerStartTime?.toISOString()
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Create checklist items if provided
+    if (activityData.checklist && activityData.checklist.length > 0) {
+      const checklistItems = activityData.checklist.map(item => ({
+        activity_id: activity.id,
+        title: item.title,
+        completed: item.completed || false
+      }));
+
+      const { error: checklistError } = await supabase
+        .from('checklist_items')
+        .insert(checklistItems);
+
+      if (checklistError) throw checklistError;
+    }
+
+    // Create drive links if provided
+    if (activityData.driveLinks && activityData.driveLinks.length > 0) {
+      const driveLinks = activityData.driveLinks.map(link => ({
+        activity_id: activity.id,
+        title: link.title,
+        url: link.url,
+        description: link.description || ''
+      }));
+
+      const { error: driveLinksError } = await supabase
+        .from('drive_links')
+        .insert(driveLinks);
+
+      if (driveLinksError) throw driveLinksError;
+    }
+
+    // Return the created activity with proper typing
+    return {
+      id: activity.id,
+      title: activity.title,
+      description: activity.description || '',
+      responsible: activity.responsible || '',
+      priority: activity.priority,
+      plannedStartDate: new Date(activity.planned_start_date),
+      plannedEndDate: new Date(activity.planned_end_date),
+      actualStartDate: activity.actual_start_date ? new Date(activity.actual_start_date) : undefined,
+      actualEndDate: activity.actual_end_date ? new Date(activity.actual_end_date) : undefined,
+      plannedDuration: activity.planned_duration,
+      actualDuration: activity.actual_duration,
+      progress: activity.progress,
+      status: activity.status,
+      stageId: activity.stage_id,
+      isTimerActive: activity.is_timer_active,
+      timerStartTime: activity.timer_start_time ? new Date(activity.timer_start_time) : undefined,
+      dependencies: [],
+      checklist: activityData.checklist || [],
+      driveLinks: activityData.driveLinks || []
+    };
+  },
+
   async update(id: string, updates: Partial<Activity>): Promise<void> {
     const updateData: any = {};
     if (updates.title) updateData.title = updates.title;
