@@ -136,7 +136,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (currentUser.authLevel === 'equipe') {
-      return activity.responsible === currentUser.email;
+      return activity.responsible === currentUser.email || activity.responsible === currentUser.name;
     }
 
     return false;

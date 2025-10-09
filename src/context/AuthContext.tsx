@@ -368,9 +368,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (user.authLevel === 'gestor') {
       const userEmail = user.email;
-      const isResponsible = project.responsible === userEmail;
+      const userName = user.name;
+      const isResponsible = project.responsible === userEmail || project.responsible === userName;
       const isCollaborator = project.stages?.some((stage: any) =>
-        stage.activities?.some((activity: any) => activity.responsible === userEmail)
+        stage.activities?.some((activity: any) =>
+          activity.responsible === userEmail || activity.responsible === userName
+        )
       );
       return isResponsible || isCollaborator;
     }
@@ -385,9 +388,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (user.authLevel === 'equipe') {
       const userEmail = user.email;
-      const isResponsible = project.responsible === userEmail;
+      const userName = user.name;
+      const isResponsible = project.responsible === userEmail || project.responsible === userName;
       const isCollaborator = project.stages?.some((stage: any) =>
-        stage.activities?.some((activity: any) => activity.responsible === userEmail)
+        stage.activities?.some((activity: any) =>
+          activity.responsible === userEmail || activity.responsible === userName
+        )
       );
       return isResponsible || isCollaborator;
     }
