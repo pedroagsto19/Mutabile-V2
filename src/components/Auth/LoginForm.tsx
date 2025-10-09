@@ -147,27 +147,15 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
           <p className="text-gray-600">Entre com suas credenciais do Supabase Authentication</p>
         </div>
 
-        {/* System Status */}
-        <div className={`border rounded-lg p-3 ${
-          checking ? 'bg-blue-50 border-blue-200 text-blue-800' :
-          systemReady ? 'bg-green-50 border-green-200 text-green-800' :
-          'bg-red-50 border-red-200 text-red-800'
-        }`}>
-          <div className="flex items-center space-x-2">
-            {checking ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-            ) : systemReady ? (
-              <CheckCircle className="h-4 w-4 text-green-600" />
-            ) : (
+        {/* System Status - Only show if there's a problem */}
+        {!systemReady && !checking && (
+          <div className="border rounded-lg p-3 bg-red-50 border-red-200 text-red-800">
+            <div className="flex items-center space-x-2">
               <AlertTriangle className="h-4 w-4 text-red-600" />
-            )}
-            <span className="text-sm font-medium">
-              {checking ? 'Verificando conexão com Supabase...' :
-               systemReady ? 'Conectado ao Supabase Authentication' :
-               'Problema de conectividade detectado'}
-            </span>
-          </div>
-          {!checking && !systemReady && (
+              <span className="text-sm font-medium">
+                Problema de conectividade detectado
+              </span>
+            </div>
             <div className="mt-2">
               <p className="text-xs text-red-700">
                 Verifique se as variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY estão configuradas.
@@ -179,8 +167,8 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
                 Tentar verificar novamente
               </button>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Login Form */}
         <Card>
