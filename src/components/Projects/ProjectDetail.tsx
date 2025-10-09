@@ -20,7 +20,7 @@ interface ProjectDetailProps {
 
 export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: ProjectDetailProps) {
   const { projects, addActivity, updateActivity, startActivityTimer, stopActivityTimer, activeTimer, getElapsedTime, updateProject, calculateActivityProgress, canUserEditActivity } = useProject();
-  const { user: currentUser, hasPermission, getAllUsers } = useAuth();
+  const { user: currentUser, hasPermission, getAllUsers, canUserEditProject } = useAuth();
   const { toast, confirm } = useNotification();
   const users = getAllUsers();
   const [activeTab, setActiveTab] = useState<'stages' | 'gantt'>(initialTab === 'gantt' ? 'gantt' : 'stages');
@@ -902,17 +902,18 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
     <div className="space-y-6">
       <ActivityForm />
       <TimeEditorModal />
-      
+
+
       {/* Edit Project Form */}
-      <ProtectedRoute requiredPermission="canEditProjects">
+      {canUserEditProject(project) && (
         <ProjectForm
           isOpen={showEditProjectForm}
           onClose={() => setShowEditProjectForm(false)}
           onSubmit={handleUpdateProject}
           project={project}
         />
-      </ProtectedRoute>
-      
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
@@ -928,14 +929,14 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
           </div>
         </div>
         <div className="flex items-center space-x-3">
-          <ProtectedRoute requiredPermission="canEditProjects">
+          {canUserEditProject(project) && (
             <Button variant="outline" onClick={handleEditProject}>
               <Edit className="h-4 w-4 mr-2" />
               Editar projeto
             </Button>
-          </ProtectedRoute>
-          <ProtectedRoute requiredPermission="canEditProjects">
-            {project.status === 'completed' ? (
+          )}
+          {canUserEditProject(project) && (
+            project.status === 'completed' ? (
               <Button variant="outline" onClick={handleUncompleteProject}>
                 <RotateCcw className="h-4 w-4 mr-2" />
                 Desconcluir Projeto
@@ -945,8 +946,8 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
                 <CheckCircle className="h-4 w-4 mr-2" />
                 Concluir Projeto
               </Button>
-            )}
-          </ProtectedRoute>
+            )
+          )}
         </div>
       </div>
 
@@ -1041,16 +1042,17 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
                 {project.stages && project.stages[activeStage] ? `${project.stages[activeStage].activities?.length || 0} atividades` : 'Adicione uma etapa primeiro'}
               </p>
             </div>
-            
-            <ProtectedRoute requiredPermission="canCreateActivities">
-              <Button 
+
+
+            {(currentUser.authLevel === 'admin' || (currentUser.authLevel === 'gestor' && canUserEditProject(project))) && (
+              <Button
                 onClick={() => setShowActivityForm(true)}
                 disabled={!project.stages || !project.stages[activeStage]}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Nova Atividade
               </Button>
-            </ProtectedRoute>
+            )}
           </div>
 
           {/* Activities */}
