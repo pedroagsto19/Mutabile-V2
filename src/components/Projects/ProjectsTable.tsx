@@ -108,8 +108,8 @@ export function ProjectsTable({ onProjectSelect, onProjectGantt, onCreateProject
     }
   };
 
-  // Empty state - show only message, no filters or tables
-  if (filteredProjects.length === 0 && !filters.search && !filters.status && !filters.client && !filters.responsible) {
+  // Empty state - show only message when there are NO projects at all
+  if (projects.length === 0) {
     return (
       <div className="space-y-6">
         {/* Edit Project Modal */}
