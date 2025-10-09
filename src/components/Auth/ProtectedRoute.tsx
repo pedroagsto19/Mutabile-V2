@@ -97,23 +97,9 @@ export function ProtectedRoute({
     return <LoginForm onLoginSuccess={() => window.location.reload()} />;
   }
 
-  // Check permissions if required
+  // Check permissions if required - if no permission, don't render anything
   if (requiredPermission && !hasPermission(requiredPermission)) {
-    const title = fallbackTitle || 'Sem Projetos Disponíveis';
-    const message = fallbackMessage || 'Não existem projetos atribuídos a você no momento.';
-
-    return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-center max-w-md">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-            <h3 className="text-lg font-medium text-blue-900 mb-2">{title}</h3>
-            <p className="text-sm text-blue-700">
-              {message}
-            </p>
-          </div>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   // Show children if authenticated and has permission
