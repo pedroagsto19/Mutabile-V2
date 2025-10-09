@@ -196,109 +196,123 @@ export function ProjectsTable({ onProjectSelect, onProjectGantt, onCreateProject
 
       {/* Projects Table */}
       <Card>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Projeto
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Cliente
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Responsável
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Progresso
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Risco
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Ações
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredProjects.map((project) => (
-                <tr key={project.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{project.name}</div>
-                      <div className="text-sm text-gray-500">{project.controlNumber}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900">{project.client}</div>
-                    <div className="text-sm text-gray-500">{project.location}</div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">
-                    {project.responsible}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(project.status)}`}>
-                      {getStatusLabel(project.status)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="w-20">
-                      <ProgressBar value={project.progress} showLabel />
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRiskColor(project.risk)}`}>
-                      {getRiskLabel(project.risk)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onProjectSelect(project.id)}
-                        title="Ver detalhes do projeto"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onProjectGantt(project.id)}
-                        title="Ver cronograma Gantt"
-                      >
-                        <BarChart3 className="h-4 w-4" />
-                      </Button>
-                      {hasPermission('canEditProjects') && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => handleEditProject(project)}
-                          title="Editar projeto"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      )}
-                      {hasPermission('canDeleteProjects') && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => handleDeleteProject(project.id)}
-                          title="Excluir projeto"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </td>
+        {filteredProjects.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500 text-lg mb-4">Nenhum projeto encontrado</p>
+            {hasPermission('canCreateProjects') ? (
+              <Button onClick={onCreateProject}>
+                <Plus className="h-4 w-4 mr-2" />
+                Criar Primeiro Projeto
+              </Button>
+            ) : (
+              <p className="text-gray-400 text-sm">Entre em contato com um administrador para criar projetos</p>
+            )}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Projeto
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Cliente
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Responsável
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Progresso
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Risco
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Ações
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredProjects.map((project) => (
+                  <tr key={project.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">{project.name}</div>
+                        <div className="text-sm text-gray-500">{project.controlNumber}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900">{project.client}</div>
+                      <div className="text-sm text-gray-500">{project.location}</div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      {project.responsible}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(project.status)}`}>
+                        {getStatusLabel(project.status)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="w-20">
+                        <ProgressBar value={project.progress} showLabel />
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRiskColor(project.risk)}`}>
+                        {getRiskLabel(project.risk)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onProjectSelect(project.id)}
+                          title="Ver detalhes do projeto"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onProjectGantt(project.id)}
+                          title="Ver cronograma Gantt"
+                        >
+                          <BarChart3 className="h-4 w-4" />
+                        </Button>
+                        {hasPermission('canEditProjects') && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditProject(project)}
+                            title="Editar projeto"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {hasPermission('canDeleteProjects') && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteProject(project.id)}
+                            title="Excluir projeto"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Card>
     </div>
   );

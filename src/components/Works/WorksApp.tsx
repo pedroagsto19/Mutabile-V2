@@ -62,15 +62,13 @@ export function WorksApp({ onBackToMenu }: WorksAppProps) {
         return <DashboardOverview onProjectSelect={handleProjectSelect} />;
 
       case "projects":
-        // Aqui o ProtectedRoute faz o gate por permissão específica
+        // Todos os usuários autenticados podem ver a lista de projetos
         return (
-          <ProtectedRoute requiredPermission="canViewReports">
-            <ProjectsTable
-              onProjectSelect={handleProjectSelect}
-              onProjectGantt={handleProjectGantt}
-              onCreateProject={() => setShowProjectForm(true)}
-            />
-          </ProtectedRoute>
+          <ProjectsTable
+            onProjectSelect={handleProjectSelect}
+            onProjectGantt={handleProjectGantt}
+            onCreateProject={() => setShowProjectForm(true)}
+          />
         );
 
       case "fornecedores":

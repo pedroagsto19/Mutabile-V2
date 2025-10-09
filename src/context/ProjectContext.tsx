@@ -73,27 +73,10 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       .catch(console.error);
   };
 
-  // Filter projects based on user permissions
+  // All authenticated users can see all projects in the list
+  // Permission control is applied at the action level (edit, delete)
   const getVisibleProjects = () => {
     if (!currentUser) return [];
-    
-    // Admin and Gestor can see all projects
-    if (currentUser.authLevel === 'admin' || currentUser.authLevel === 'gestor') {
-      return projects;
-    }
-    
-    // Equipe can only see projects where they have activities
-    if (currentUser.authLevel === 'equipe') {
-      return projects.filter(project => 
-        project.stages.some(stage => 
-          stage.activities.some(activity => 
-            activity.responsible === currentUser.name
-          )
-        )
-      );
-    }
-    
-    // Leitor can see all projects (read-only)
     return projects;
   };
 
