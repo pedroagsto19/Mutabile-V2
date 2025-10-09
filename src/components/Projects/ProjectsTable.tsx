@@ -127,17 +127,10 @@ export function ProjectsTable({ onProjectSelect, onProjectGantt, onCreateProject
 
         {/* Centered empty state */}
         <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <h3 className="text-xl font-medium text-gray-900 mb-3">Sem Projetos Disponíveis</h3>
-            <p className="text-gray-500 mb-6">
+          <div className="text-center bg-white rounded-lg shadow-sm px-8 py-6">
+            <p className="text-lg text-blue-600">
               Não existem projetos atribuídos a você no momento.
             </p>
-            {hasPermission('canCreateProjects') && (
-              <Button onClick={onCreateProject}>
-                <Plus className="h-4 w-4 mr-2" />
-                Criar Primeiro Projeto
-              </Button>
-            )}
           </div>
         </div>
       </div>
