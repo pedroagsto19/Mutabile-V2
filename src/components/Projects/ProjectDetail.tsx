@@ -1163,38 +1163,6 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
                           </div>
                         )}
                         
-                        {/* Drive Links Display */}
-                        {activity.driveLinks && activity.driveLinks.length > 0 && (
-                          <div className="mt-4 bg-blue-50 rounded-lg p-3">
-                            <h4 className="text-sm font-medium text-gray-900 mb-2">Links para Modelos:</h4>
-                            <div className="space-y-2">
-                              {activity.driveLinks.map((link) => (
-                                <div key={link.id} className="flex items-center justify-between">
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center space-x-2">
-                                      <span className="text-sm font-medium text-gray-900 truncate">
-                                        {link.title}
-                                      </span>
-                                      <a
-                                        href={link.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-blue-600 hover:text-blue-800 text-xs font-medium hover:underline"
-                                      >
-                                        📁 Abrir Drive
-                                      </a>
-                                    </div>
-                                    {link.description && (
-                                      <p className="text-xs text-gray-500 mt-1 truncate">
-                                        {link.description}
-                                      </p>
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
                       </div>
                       
                       <div className="flex items-center space-x-2 ml-4">
