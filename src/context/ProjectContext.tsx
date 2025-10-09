@@ -54,12 +54,12 @@ const convertLocalProject = (localProject: any): Project => ({
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
-  const { user: currentUser, hasPermission, canUserEditProject } = useAuth();
+  const { user: currentUser, hasPermission } = useAuth();
   const { activeTimer, startTimer, stopTimer, getElapsedTime } = useTimer();
-  const {
-    triggerProjectCreatedNotification,
-    triggerProjectAssignedNotification,
-    triggerActivityAssignedNotification
+  const { 
+    triggerProjectCreatedNotification, 
+    triggerProjectAssignedNotification, 
+    triggerActivityAssignedNotification 
   } = useNotificationTriggers();
 
   // Load projects from localStorage on mount
@@ -114,32 +114,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   // Current calculation based on average progress of activities
   const calculateStageProgressByAverage = (stage: Stage) => {
     if (stage.activities.length === 0) return 0;
-
+    
     const totalProgress = stage.activities.reduce((sum, activity) => {
       return sum + calculateActivityProgress(activity);
     }, 0);
-
+    
     return Math.round(totalProgress / stage.activities.length);
-  };
-
-  const canUserEditActivity = (activity: Activity): boolean => {
-    if (!currentUser) return false;
-
-    if (currentUser.authLevel === 'admin') return true;
-
-    if (currentUser.authLevel === 'gestor') {
-      const project = projects.find(p =>
-        p.stages.some(s => s.activities.some(a => a.id === activity.id))
-      );
-      if (!project) return false;
-      return canUserEditProject(project);
-    }
-
-    if (currentUser.authLevel === 'equipe') {
-      return activity.responsible === currentUser.email || activity.responsible === currentUser.name;
-    }
-
-    return false;
   };
   const addProject = (projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (!hasPermission('canCreateProjects')) {
@@ -168,11 +148,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     updates: Partial<Project>,
     bypassPermissions = false
   ) => {
-    const project = projects.find(p => p.id === id);
-    if (!project) return;
-
-    if (!bypassPermissions && !canUserEditProject(project)) {
-      throw new Error('Sem permissão para editar este projeto');
+    if (!bypassPermissions && !hasPermission('canEditProjects')) {
+      throw new Error('Sem permissão para editar projetos');
     }
     
     projectOperations.update(id, updates)
@@ -260,16 +237,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addActivity = (stageId: string, activityData: Omit<Activity, 'id' | 'stageId'>) => {
+    if (!hasPermission('canCreateActivities')) {
+      throw new Error('Sem permissão para criar atividades');
+    }
+
     const project = projects.find(p => p.stages.some(s => s.id === stageId));
     if (!project) return;
-
-    if (currentUser?.authLevel === 'equipe') {
-      throw new Error('Usuários do nível Equipe não podem criar atividades');
-    }
-
-    if (currentUser?.authLevel === 'gestor' && !canUserEditProject(project)) {
-      throw new Error('Sem permissão para criar atividades neste projeto');
-    }
 
     // Create activity in database
     activityOperations.create(stageId, activityData)
@@ -355,6 +328,20 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
   const stopActivityTimer = () => {
     return stopTimer();
+  };
+
+  const canUserEditActivity = (activity: Activity): boolean => {
+    if (!currentUser) return false;
+    
+    // Admin e Gestor sempre podem editar todas as atividades
+    if (currentUser.authLevel === 'admin' || currentUser.authLevel === 'gestor') return true;
+    
+    // Usuários da equipe podem editar apenas suas próprias atividades  
+    if (currentUser.authLevel === 'equipe') {
+      return activity.responsible === currentUser.name;
+    }
+    
+    return false;
   };
 
   return (

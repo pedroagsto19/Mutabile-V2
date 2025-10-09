@@ -19,17 +19,15 @@ interface ProjectsTableProps {
 
 export function ProjectsTable({ onProjectSelect, onProjectGantt, onCreateProject }: ProjectsTableProps) {
   const { projects, deleteProject, updateProject } = useProject();
-  const { hasPermission, canUserEditProject, canUserViewProject, currentUser } = useAuth();
+  const { hasPermission } = useAuth();
   const { toast, confirm } = useNotification();
   const [filters, setFilters] = useState<ProjectFilters>({});
   const [showFilters, setShowFilters] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [showEditForm, setShowEditForm] = useState(false);
 
-  const visibleProjects = projects.filter(project => canUserViewProject(project));
-
-  const filteredProjects = visibleProjects.filter(project => {
-    if (filters.search && !project.name.toLowerCase().includes(filters.search.toLowerCase()) &&
+  const filteredProjects = projects.filter(project => {
+    if (filters.search && !project.name.toLowerCase().includes(filters.search.toLowerCase()) && 
         !project.client.toLowerCase().includes(filters.search.toLowerCase())) {
       return false;
     }
@@ -110,8 +108,8 @@ export function ProjectsTable({ onProjectSelect, onProjectGantt, onCreateProject
     }
   };
 
-  // Empty state - show only message when there are NO visible projects
-  if (visibleProjects.length === 0) {
+  // Empty state - show only message when there are NO projects at all
+  if (projects.length === 0) {
     return (
       <div className="space-y-6">
         {/* Edit Project Modal */}
@@ -314,7 +312,7 @@ export function ProjectsTable({ onProjectSelect, onProjectGantt, onCreateProject
                         >
                           <BarChart3 className="h-4 w-4" />
                         </Button>
-                        {canUserEditProject(project) && (
+                        {hasPermission('canEditProjects') && (
                           <Button
                             variant="ghost"
                             size="sm"

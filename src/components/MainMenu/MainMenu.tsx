@@ -36,19 +36,11 @@ export function MainMenu({ onModuleSelect, currentUser }: MainMenuProps) {
 
   const modules = [
     {
-      id: 'projetos',
-      name: 'Meus Projetos',
-      description: 'Visualize suas atividades e projetos atribuídos',
-      icon: FileText,
-      color: 'bg-blue-500',
-      available: true
-    },
-    {
       id: 'obras',
       name: 'Gestão de Projetos',
-      description: 'Gerencie todos os projetos, etapas e cronogramas',
+      description: 'Gerencie projetos, etapas e cronogramas',
       icon: Building2,
-      color: 'bg-slate-600',
+      color: 'bg-blue-500',
       available: true
     },
     {

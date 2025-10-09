@@ -1,5 +1,5 @@
 import React from 'react';
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { TrendingUp, Clock, AlertTriangle, CheckCircle, Calendar, User } from 'lucide-react';
 import { Card, CardHeader, CardContent } from '../UI/Card';
 import { Modal } from '../UI/Modal';
@@ -7,7 +7,6 @@ import { Button } from '../UI/Button';
 import { ProgressBar } from '../UI/ProgressBar';
 import { ProjectsGanttOverview } from './ProjectsGanttOverview';
 import { useProject } from '../../context/ProjectContext';
-import { useAuth } from '../../context/AuthContext';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -17,47 +16,36 @@ interface DashboardOverviewProps {
 
 export function DashboardOverview({ onProjectSelect }: DashboardOverviewProps) {
   const { projects } = useProject();
-  const { currentUser, canUserViewProject } = useAuth();
   const [showActiveProjectsModal, setShowActiveProjectsModal] = useState(false);
   const [showRiskProjectsModal, setShowRiskProjectsModal] = useState(false);
   const [showCompletedProjectsModal, setShowCompletedProjectsModal] = useState(false);
   const [showAllProjectsModal, setShowAllProjectsModal] = useState(false);
 
-  const visibleProjects = useMemo(() => {
-    if (!currentUser) return [];
-
-    if (currentUser.authLevel === 'admin' || currentUser.authLevel === 'gestor') {
-      return projects;
-    }
-
-    return projects.filter(project => canUserViewProject(project));
-  }, [projects, currentUser, canUserViewProject]);
-
   const stats = {
-    totalProjects: visibleProjects.length,
-    activeProjects: visibleProjects.filter(p => p.status === 'in_progress').length,
-    completedProjects: visibleProjects.filter(p => p.status === 'completed').length,
+    totalProjects: projects.length,
+    activeProjects: projects.filter(p => p.status === 'in_progress').length,
+    completedProjects: projects.filter(p => p.status === 'completed').length,
     averageProgress: Math.round(
-      visibleProjects.reduce((acc, p) => acc + p.progress, 0) / (visibleProjects.length || 1)
+      projects.reduce((acc, p) => acc + p.progress, 0) / (projects.length || 1)
     ),
-    projectsAtRisk: visibleProjects.filter(p => p.risk === 'at_risk' || p.risk === 'delayed').length,
+    projectsAtRisk: projects.filter(p => p.risk === 'at_risk' || p.risk === 'delayed').length,
   };
 
-  const recentProjects = visibleProjects
+  const recentProjects = projects
     .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
     .slice(0, 5);
 
-  const upcomingDeadlines = visibleProjects
+  const upcomingDeadlines = projects
     .filter(p => p.nextDeadline)
-    .sort((a, b) =>
+    .sort((a, b) => 
       (a.nextDeadline?.getTime() || 0) - (b.nextDeadline?.getTime() || 0)
     )
     .slice(0, 5);
 
-  const activeProjects = visibleProjects.filter(p => p.status === 'in_progress');
-  const riskProjects = visibleProjects.filter(p => p.risk === 'at_risk' || p.risk === 'delayed');
-  const completedProjects = visibleProjects.filter(p => p.status === 'completed');
-  const allProjects = visibleProjects;
+  const activeProjects = projects.filter(p => p.status === 'in_progress');
+  const riskProjects = projects.filter(p => p.risk === 'at_risk' || p.risk === 'delayed');
+  const completedProjects = projects.filter(p => p.status === 'completed');
+  const allProjects = projects; // Todos os projetos
 
   const StatCard = ({ title, value, icon: Icon, color, onClick }: any) => (
     <Card>

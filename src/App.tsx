@@ -9,8 +9,6 @@ import { NotificationSystemProvider } from "./context/NotificationSystemContext"
 import { WorksApp } from "./components/Works/WorksApp";
 import { SupplierApp } from "./components/Suppliers/SupplierApp";
 import { ClientApp } from "./components/Clients/ClientApp";
-import { MyActivitiesView } from "./components/Projects/MyActivitiesView";
-import { WorksHeader } from "./components/Layout/WorksHeader";
 import { NotificationProvider } from "./context/NotificationContext";
 import { ProjectProvider } from "./context/ProjectContext";
 import { ClientProvider } from "./context/ClientContext";
@@ -23,15 +21,6 @@ function AppContent() {
 
   const renderContent = () => {
     switch (currentModule) {
-      case "projetos":
-        return (
-          <div className="min-h-screen bg-gray-50">
-            <WorksHeader onBackToMenu={handleBackToMenu} title="Meus Projetos" />
-            <main className="max-w-7xl mx-auto px-6 py-8">
-              <MyActivitiesView />
-            </main>
-          </div>
-        );
       case "obras":
         return <WorksApp onBackToMenu={handleBackToMenu} />;
       case "fornecedores":

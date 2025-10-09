@@ -63,7 +63,6 @@ const determineAuthSyncAvailability = (): boolean => {
 
 interface AuthContextType {
   user: User | null;
-  currentUser: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   logout: () => Promise<void>;
@@ -75,8 +74,6 @@ interface AuthContextType {
   createAuthUser: (userData: any) => Promise<void>;
   hasPermission: (permission: string) => boolean;
   canEditUser: (user: User) => boolean;
-  canUserEditProject: (project: any) => boolean;
-  canUserViewProject: (project: any) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -334,13 +331,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const hasPermission = (permission: string): boolean => {
     if (!user) return false;
-
+    
     const permissions = {
-      canCreateProjects: user.authLevel === 'admin',
+      canCreateProjects: user.authLevel === 'admin' || user.authLevel === 'gestor',
+      canEditProjects: user.authLevel === 'admin' || user.authLevel === 'gestor',
       canDeleteProjects: user.authLevel === 'admin',
-      canArchiveProjects: user.authLevel === 'admin',
-      canViewAllProjects: user.authLevel === 'admin' || user.authLevel === 'gestor' || user.authLevel === 'equipe',
+      canCreateActivities: user.authLevel === 'admin' || user.authLevel === 'gestor' || user.authLevel === 'equipe',
       canEditOwnActivities: true,
+      canEditAllActivities: user.authLevel === 'admin' || user.authLevel === 'gestor',
+      canDeleteActivities: user.authLevel === 'admin' || user.authLevel === 'gestor',
       canUseTimer: true,
       canUpdateProgress: true,
       canManageUsers: user.authLevel === 'admin',
@@ -348,7 +347,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       canViewReports: true,
       canAccessSettings: user.authLevel === 'admin' || user.authLevel === 'gestor'
     };
-
+    
     return permissions[permission as keyof typeof permissions] || false;
   };
 
@@ -361,50 +360,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return user.id === targetUser.id;
   };
 
-  const canUserEditProject = (project: any): boolean => {
-    if (!user) return false;
-
-    if (user.authLevel === 'admin') return true;
-
-    if (user.authLevel === 'gestor') {
-      const userEmail = user.email;
-      const userName = user.name;
-      const isResponsible = project.responsible === userEmail || project.responsible === userName;
-      const isCollaborator = project.stages?.some((stage: any) =>
-        stage.activities?.some((activity: any) =>
-          activity.responsible === userEmail || activity.responsible === userName
-        )
-      );
-      return isResponsible || isCollaborator;
-    }
-
-    return false;
-  };
-
-  const canUserViewProject = (project: any): boolean => {
-    if (!user) return false;
-
-    if (user.authLevel === 'admin' || user.authLevel === 'gestor') return true;
-
-    if (user.authLevel === 'equipe') {
-      const userEmail = user.email;
-      const userName = user.name;
-      const isResponsible = project.responsible === userEmail || project.responsible === userName;
-      const isCollaborator = project.stages?.some((stage: any) =>
-        stage.activities?.some((activity: any) =>
-          activity.responsible === userEmail || activity.responsible === userName
-        )
-      );
-      return isResponsible || isCollaborator;
-    }
-
-    return false;
-  };
-
   return (
     <AuthContext.Provider value={{
       user,
-      currentUser: user,
       isAuthenticated,
       isLoading,
       logout,
@@ -415,9 +373,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       deleteAuthUser,
       createAuthUser,
       hasPermission,
-      canEditUser,
-      canUserEditProject,
-      canUserViewProject
+      canEditUser
     }}>
       {children}
     </AuthContext.Provider>
