@@ -108,6 +108,42 @@ export function ProjectsTable({ onProjectSelect, onProjectGantt, onCreateProject
     }
   };
 
+  // Empty state - show only message, no filters or tables
+  if (filteredProjects.length === 0 && !filters.search && !filters.status && !filters.client && !filters.responsible) {
+    return (
+      <div className="space-y-6">
+        {/* Edit Project Modal */}
+        {showEditForm && editingProject && (
+          <ProjectForm
+            isOpen={showEditForm}
+            onClose={() => {
+              setShowEditForm(false);
+              setEditingProject(null);
+            }}
+            onSubmit={handleUpdateProject}
+            project={editingProject}
+          />
+        )}
+
+        {/* Centered empty state */}
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <h3 className="text-xl font-medium text-gray-900 mb-3">Sem Projetos Disponíveis</h3>
+            <p className="text-gray-500 mb-6">
+              Não existem projetos atribuídos a você no momento.
+            </p>
+            {hasPermission('canCreateProjects') && (
+              <Button onClick={onCreateProject}>
+                <Plus className="h-4 w-4 mr-2" />
+                Criar Primeiro Projeto
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Edit Project Modal */}
@@ -122,7 +158,7 @@ export function ProjectsTable({ onProjectSelect, onProjectGantt, onCreateProject
           project={editingProject}
         />
       )}
-      
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -198,15 +234,13 @@ export function ProjectsTable({ onProjectSelect, onProjectGantt, onCreateProject
       <Card>
         {filteredProjects.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500 text-lg mb-4">Nenhum projeto encontrado</p>
-            {hasPermission('canCreateProjects') ? (
-              <Button onClick={onCreateProject}>
-                <Plus className="h-4 w-4 mr-2" />
-                Criar Primeiro Projeto
-              </Button>
-            ) : (
-              <p className="text-gray-400 text-sm">Entre em contato com um administrador para criar projetos</p>
-            )}
+            <p className="text-gray-500 text-lg mb-4">Nenhum projeto encontrado com os filtros aplicados</p>
+            <Button
+              variant="outline"
+              onClick={() => setFilters({})}
+            >
+              Limpar Filtros
+            </Button>
           </div>
         ) : (
           <div className="overflow-x-auto">
