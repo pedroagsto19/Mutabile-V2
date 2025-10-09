@@ -5,9 +5,16 @@ import { useAuth } from '../../context/AuthContext';
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requiredPermission?: string;
+  fallbackMessage?: string;
+  fallbackTitle?: string;
 }
 
-export function ProtectedRoute({ children, requiredPermission }: ProtectedRouteProps) {
+export function ProtectedRoute({
+  children,
+  requiredPermission,
+  fallbackMessage,
+  fallbackTitle
+}: ProtectedRouteProps) {
   const { isAuthenticated, isLoading, error, hasPermission } = useAuth();
   const [showFallback, setShowFallback] = useState(false);
 
@@ -92,13 +99,16 @@ export function ProtectedRoute({ children, requiredPermission }: ProtectedRouteP
 
   // Check permissions if required
   if (requiredPermission && !hasPermission(requiredPermission)) {
+    const title = fallbackTitle || 'Sem Projetos Disponíveis';
+    const message = fallbackMessage || 'Não existem projetos atribuídos a você no momento.';
+
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center max-w-md">
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-            <h3 className="text-lg font-medium text-yellow-900 mb-2">Acesso Restrito</h3>
-            <p className="text-sm text-yellow-700">
-              Você não tem permissão para acessar esta funcionalidade.
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <h3 className="text-lg font-medium text-blue-900 mb-2">{title}</h3>
+            <p className="text-sm text-blue-700">
+              {message}
             </p>
           </div>
         </div>

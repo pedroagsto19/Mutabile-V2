@@ -193,6 +193,32 @@ export function DashboardOverview({ onProjectSelect }: DashboardOverviewProps) {
       </div>
     </Modal>
   );
+  // Empty state when no projects
+  if (projects.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+            Dashboard
+          </h1>
+          <p className="text-gray-600 mt-1">Visão geral dos seus projetos</p>
+        </div>
+
+        <Card>
+          <CardContent>
+            <div className="text-center py-12">
+              <TrendingUp className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum projeto disponível</h3>
+              <p className="text-gray-500">
+                Não existem projetos cadastrados no sistema no momento.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Modals */}
@@ -202,28 +228,28 @@ export function DashboardOverview({ onProjectSelect }: DashboardOverviewProps) {
         title="Projetos Ativos"
         projects={activeProjects}
       />
-      
+
       <ProjectDetailsModal
         isOpen={showRiskProjectsModal}
         onClose={() => setShowRiskProjectsModal(false)}
         title="Projetos em Risco"
         projects={riskProjects}
       />
-      
+
       <ProjectDetailsModal
         isOpen={showCompletedProjectsModal}
         onClose={() => setShowCompletedProjectsModal(false)}
         title="Projetos Concluídos"
         projects={completedProjects}
       />
-      
+
       <ProjectDetailsModal
         isOpen={showAllProjectsModal}
         onClose={() => setShowAllProjectsModal(false)}
         title="Todos os Projetos"
         projects={allProjects}
       />
-      
+
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
@@ -275,7 +301,7 @@ export function DashboardOverview({ onProjectSelect }: DashboardOverviewProps) {
               {recentProjects.map((project) => (
                 <div key={project.id} className="flex items-center justify-between">
                   <div className="flex-1">
-                    <h3 
+                    <h3
                       className="font-medium text-gray-900 hover:text-blue-600 cursor-pointer transition-colors"
                       onClick={() => onProjectSelect?.(project.id)}
                     >
@@ -288,6 +314,11 @@ export function DashboardOverview({ onProjectSelect }: DashboardOverviewProps) {
                   </div>
                 </div>
               ))}
+              {recentProjects.length === 0 && (
+                <p className="text-gray-500 text-center py-4">
+                  Nenhum projeto recente
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
