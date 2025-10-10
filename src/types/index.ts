@@ -94,6 +94,25 @@ export interface Timer {
   isActive: boolean;
 }
 
+export interface ActivityTimeEntry {
+  id: string;
+  activityId: string;
+  userId: string;
+  startedAt: Date;
+  endedAt?: Date;
+  durationSeconds: number;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface UserTimeStats {
+  userId: string;
+  userName: string;
+  totalSeconds: number;
+  activeEntry?: ActivityTimeEntry;
+}
+
 export interface ProjectFilters {
   status?: string;
   client?: string;

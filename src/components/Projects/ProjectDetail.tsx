@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Edit, CheckCircle, Plus, Play, Pause, Square, Clock, BarChart3, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Edit, CheckCircle, Plus, BarChart3, RotateCcw } from 'lucide-react';
 import { Button } from '../UI/Button';
 import { Card, CardHeader, CardContent } from '../UI/Card';
 import { ProgressBar } from '../UI/ProgressBar';
 import { Modal } from '../UI/Modal';
 import { GanttChart } from './GanttChart';
 import { ProjectForm } from './ProjectForm';
+import { ActivityTimeTracker } from './ActivityTimeTracker';
 import { useProject } from '../../context/ProjectContext';
 import { useAuth } from '../../context/AuthContext';
 import { ProtectedRoute } from '../Auth/ProtectedRoute';
@@ -19,7 +20,7 @@ interface ProjectDetailProps {
 }
 
 export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: ProjectDetailProps) {
-  const { projects, addActivity, updateActivity, startActivityTimer, stopActivityTimer, activeTimer, getElapsedTime, updateProject, calculateActivityProgress, canUserEditActivity } = useProject();
+  const { projects, addActivity, updateActivity, updateProject, calculateActivityProgress, canUserEditActivity } = useProject();
   const { user: currentUser, hasPermission, getAllUsers } = useAuth();
   const { toast, confirm } = useNotification();
   const users = getAllUsers();
@@ -52,71 +53,6 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
     return `${h}h ${m}m ${s}s`;
   };
 
-  const handleTimerAction = async (activity: Activity) => {
-    if (activity.isTimerActive) {
-      // Pause timer
-      const elapsed = stopActivityTimer();
-      updateActivity(activity.id, {
-        isTimerActive: false,
-        actualDuration: activity.actualDuration + elapsed
-      });
-      toast.success('Timer pausado');
-    } else {
-      // Check if there's another active timer and warn user
-      const hasActiveTimer = projects
-        .flatMap(p => p.stages)
-        .flatMap(s => s.activities)
-        .some(a => a.isTimerActive && a.id !== activity.id);
-      
-      if (hasActiveTimer) {
-        const confirmed = await confirm({
-          title: 'Timer Ativo',
-          message: 'Já existe um timer ativo em outra atividade. Deseja parar o timer atual e iniciar este?',
-          type: 'warning',
-          confirmText: 'Sim, trocar timer',
-          cancelText: 'Cancelar'
-        });
-        
-        if (!confirmed) return;
-        
-        // Stop the currently active timer
-        const activeActivity = projects
-          .flatMap(p => p.stages)
-          .flatMap(s => s.activities)
-          .find(a => a.isTimerActive);
-        
-        if (activeActivity) {
-          const elapsed = stopActivityTimer();
-          updateActivity(activeActivity.id, {
-            isTimerActive: false,
-            actualDuration: activeActivity.actualDuration + elapsed
-          });
-        }
-      }
-      
-      // Start timer
-      startActivityTimer(activity.id);
-      const updateData: any = { 
-        isTimerActive: true,
-        status: 'in_progress'
-      };
-      
-      // Set actual start date if this is the first time starting
-      if (!activity.actualStartDate) {
-        updateData.actualStartDate = new Date();
-      }
-      
-      updateActivity(activity.id, updateData);
-      toast.success('Timer iniciado');
-    }
-  };
-
-  const getElapsedTimeForActivity = (activityId: string) => {
-    if (activeTimer?.activityId === activityId && activeTimer.isActive) {
-      return getElapsedTime();
-    }
-    return 0;
-  };
 
   const handleEditProject = () => {
     setShowEditProjectForm(true);
@@ -1055,12 +991,10 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
 
           {/* Activities */}
           <div className="space-y-4">
-            {project.stages && project.stages[activeStage] && project.stages[activeStage].activities ? 
+            {project.stages && project.stages[activeStage] && project.stages[activeStage].activities ?
               project.stages[activeStage].activities.map(activity => {
               const progress = calculateActivityProgress(activity);
-              const elapsedTime = getElapsedTimeForActivity(activity.id);
-              const totalTime = activity.actualDuration + elapsedTime;
-              
+
               return (
                 <Card key={activity.id}>
                   <CardContent>
@@ -1100,32 +1034,20 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
                             <p className="font-medium">{formatDate(activity.plannedEndDate)}</p>
                           </div>
                         </div>
-                        
-                        <div className="grid grid-cols-2 gap-4 text-sm mt-3">
-                          <div>
-                            <p className="text-gray-500">Tempo Realizado</p>
-                            <p className="font-medium">{formatTime(totalTime)}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500">Tempo Planejado</p>
-                            <p className="font-medium">{formatTime(activity.plannedDuration)}</p>
-                          </div>
+
+                        {/* Time Tracking */}
+                        <div className="mt-4 bg-gray-50 rounded-lg p-4">
+                          <ActivityTimeTracker
+                            activity={activity}
+                            onTimeUpdate={async () => {
+                              const { projects: updatedProjects } = await useProject.getState();
+                              if (updatedProjects) {
+                                window.location.reload();
+                              }
+                            }}
+                          />
                         </div>
-                        
-                        <div className="mt-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm text-gray-600">
-                              Progresso: {Math.round(progress)}% (tempo realizado ÷ tempo planejado)
-                            </span>
-                          </div>
-                          <ProgressBar value={progress} />
-                          {progress > 100 && (
-                            <p className="text-xs text-orange-600 mt-1">
-                              ⚠️ Tempo realizado excede o planejado
-                            </p>
-                          )}
-                        </div>
-                        
+
                         {/* Checklist Display */}
                         {activity.checklist && activity.checklist.length > 0 && (
                           <div className="mt-4 bg-gray-50 rounded-lg p-3">
@@ -1194,61 +1116,7 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
                             </Button>
                           )
                         )}
-                        
-                        {/* Timer Controls */}
-                        {activity.status !== 'completed' && currentUser && (
-                          <Button
-                            variant={activity.isTimerActive ? "primary" : "outline"}
-                            size="sm"
-                            onClick={() => handleTimerAction(activity)}
-                            title={activity.isTimerActive ? "Pausar timer" : "Iniciar timer"}
-                          >
-                            {activity.isTimerActive ? (
-                              <>
-                                <Pause className="h-4 w-4 mr-1" />
-                                Pausar
-                              </>
-                            ) : (
-                              <>
-                                <Play className="h-4 w-4 mr-1" />
-                                {activity.actualDuration > 0 ? 'Continuar' : 'Iniciar'}
-                              </>
-                            )}
-                          </Button>
-                        )}
-                        
-                        {activity.isTimerActive && activity.status !== 'completed' && currentUser && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              const elapsed = stopActivityTimer();
-                              updateActivity(activity.id, {
-                                isTimerActive: false,
-                                actualDuration: activity.actualDuration + elapsed
-                              });
-                              toast.success('Timer parado');
-                            }}
-                            title="Parar timer"
-                          >
-                            <Square className="h-4 w-4 mr-1" />
-                            Parar
-                          </Button>
-                        )}
-                        
-                        {/* Time Editor for Admin */}
-                        {currentUser?.authLevel === 'admin' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditTime(activity)}
-                            title="Editar tempo realizado e data de início real"
-                          >
-                            <Clock className="h-4 w-4 mr-1" />
-                            Editar Tempo
-                          </Button>
-                        )}
-                        
+
                         {canUserEditActivity(activity) && (
                           <Button
                             variant="ghost"
