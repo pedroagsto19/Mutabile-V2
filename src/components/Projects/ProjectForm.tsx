@@ -170,7 +170,7 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
   // Get clients that have completed the sales funnel (status: 'closed')
   const availableClients = clients.filter(client => client.funnelStage === 'closed');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const allStages = formData.selectedStages;
@@ -316,30 +316,39 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
       onClose();
     } else {
       // Creating new project
-      const createdProject = addProject(projectData);
-      const totalDefaultActivities = stages.reduce((sum, stage) => sum + stage.activities.length, 0);
-      if (totalDefaultActivities > 0) {
-        toast.success(`Projeto criado com sucesso! ${totalDefaultActivities} atividades padrão foram adicionadas automaticamente.`);
-      } else {
-        toast.success('Projeto criado com sucesso!');
+      try {
+        const createdProject = await addProject(projectData);
+        const totalDefaultActivities = stages.reduce((sum, stage) => sum + stage.activities.length, 0);
+        if (totalDefaultActivities > 0) {
+          toast.success(`Projeto criado com sucesso! ${totalDefaultActivities} atividades padrão foram adicionadas automaticamente.`);
+        } else {
+          toast.success('Projeto criado com sucesso!');
+        }
+
+        // Reset form
+        setFormData({
+          name: '',
+          client: '',
+          location: '',
+          responsible: '',
+          controlNumber: '',
+          description: '',
+          status: 'planning',
+          selectedStages: defaultStages.length > 0 ? [defaultStages[0].name] : []
+        });
+
+        // Close the project form
+        onClose();
+
+        // Store the created project and show stage order modal after a small delay
+        setTimeout(() => {
+          setNewlyCreatedProject(createdProject);
+          setShowStageOrderModal(true);
+        }, 100);
+      } catch (error) {
+        console.error('Error creating project:', error);
+        toast.error('Erro ao criar projeto');
       }
-
-      // Reset form
-      setFormData({
-        name: '',
-        client: '',
-        location: '',
-        responsible: '',
-        controlNumber: '',
-        description: '',
-        status: 'planning',
-        selectedStages: defaultStages.length > 0 ? [defaultStages[0].name] : []
-      });
-
-      // Store the created project and show stage order modal
-      setNewlyCreatedProject(createdProject);
-      onClose();
-      setShowStageOrderModal(true);
     }
   };
 

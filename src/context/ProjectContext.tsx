@@ -8,7 +8,7 @@ import { projectOperations, activityOperations } from '../lib/database';
 interface ProjectContextType {
   projects: Project[];
   currentProject: Project | null;
-  addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Project>;
   updateProject: (id: string, updates: Partial<Project>, bypassPermissions?: boolean) => void;
   deleteProject: (id: string) => void;
   setCurrentProject: (project: Project | null) => void;
@@ -121,26 +121,25 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     
     return Math.round(totalProgress / stage.activities.length);
   };
-  const addProject = (projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const addProject = async (projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>): Promise<Project> => {
     if (!hasPermission('canCreateProjects')) {
       throw new Error('Sem permissão para criar projetos');
     }
-    
-    projectOperations.create(projectData)
-      .then(newProject => {
-        setProjects(prev => [...prev, newProject]);
-        
-        // Trigger notifications
-        if (currentUser) {
-          triggerProjectCreatedNotification(newProject, currentUser.id);
-        }
-        
-        return newProject;
-      })
-      .catch(error => {
-        console.error('Error creating project:', error);
-        throw error;
-      });
+
+    try {
+      const newProject = await projectOperations.create(projectData);
+      setProjects(prev => [...prev, newProject]);
+
+      // Trigger notifications
+      if (currentUser) {
+        triggerProjectCreatedNotification(newProject, currentUser.id);
+      }
+
+      return newProject;
+    } catch (error) {
+      console.error('Error creating project:', error);
+      throw error;
+    }
   };
 
   const updateProject = (
