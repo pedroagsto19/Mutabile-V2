@@ -25,7 +25,7 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
   const { toast, confirm } = useNotification();
   const users = getAllUsers();
   const [activeTab, setActiveTab] = useState<'stages' | 'gantt'>(initialTab === 'gantt' ? 'gantt' : 'stages');
-  const [activeStageId, setActiveStageId] = useState(project?.stages?.length > 0 ? [...project.stages].sort((a, b) => a.order - b.order)[0]?.id : '');
+  const [activeStageId, setActiveStageId] = useState<string>('');
   const [showActivityForm, setShowActivityForm] = useState(false);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [showEditProject, setShowEditProject] = useState(false);
@@ -38,6 +38,14 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
 
   // Get sorted stages
   const sortedStages = [...project.stages].sort((a, b) => a.order - b.order);
+
+  // Initialize activeStageId if not set
+  React.useEffect(() => {
+    if (!activeStageId && sortedStages.length > 0) {
+      setActiveStageId(sortedStages[0].id);
+    }
+  }, [activeStageId, sortedStages]);
+
   const activeStage = sortedStages.find(s => s.id === activeStageId) || sortedStages[0];
 
   const formatDate = (date: Date) => {
