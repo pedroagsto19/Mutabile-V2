@@ -124,15 +124,19 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
       try {
         setIsLoadingDefaults(true);
         const defaultActivitiesData = await defaultActivityOperations.getAll();
+        console.log('Raw data from defaultActivityOperations.getAll():', defaultActivitiesData);
 
         const stageNames = [...new Set(defaultActivitiesData.map(d => d.stageName))];
         const stages = stageNames.map(name => ({ name, isCustom: false }));
+        console.log('Extracted stages:', stages);
         setDefaultStages(stages);
 
         const activitiesMap = new Map();
         defaultActivitiesData.forEach(stageData => {
+          console.log(`Setting activities for stage "${stageData.stageName}":`, stageData.activities);
           activitiesMap.set(stageData.stageName, stageData.activities);
         });
+        console.log('Final activitiesMap:', Array.from(activitiesMap.entries()));
         setDefaultActivitiesByStage(activitiesMap);
 
         if (!project && formData.selectedStages.length === 0 && stages.length > 0) {
@@ -169,11 +173,14 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const allStages = formData.selectedStages;
 
     const loadDefaultActivities = (stageName: string) => {
-      return defaultActivitiesByStage.get(stageName) || [];
+      const activities = defaultActivitiesByStage.get(stageName) || [];
+      console.log(`loadDefaultActivities("${stageName}"):`, activities);
+      console.log('defaultActivitiesByStage Map:', Array.from(defaultActivitiesByStage.entries()));
+      return activities;
     };
     
     let stages;
@@ -248,44 +255,56 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
       });
     } else {
       // When creating new project, create stages with default activities
-      stages = allStages.map((stageName, index) => ({
-        id: Math.random().toString(36).substr(2, 9),
-        name: stageName,
-        projectId: '',
-        order: index + 1,
-        progress: 0,
-        status: 'not_started' as const,
-        activities: loadDefaultActivities(stageName).map((defaultActivity: any) => ({
+      stages = allStages.map((stageName, index) => {
+        const defaultActivitiesForStage = loadDefaultActivities(stageName);
+        console.log(`Loading default activities for stage "${stageName}":`, defaultActivitiesForStage);
+
+        return {
           id: Math.random().toString(36).substr(2, 9),
-          title: defaultActivity.title,
-          description: defaultActivity.description,
-          responsible: '', // Will be assigned later
-          priority: defaultActivity.priority,
-          plannedStartDate: new Date(),
-          plannedEndDate: new Date(Date.now() + defaultActivity.plannedDuration * 60 * 60 * 1000),
-          actualStartDate: undefined,
-          actualEndDate: undefined,
-          plannedDuration: defaultActivity.plannedDuration,
-          actualDuration: 0,
+          name: stageName,
+          projectId: '',
+          order: index + 1,
           progress: 0,
           status: 'not_started' as const,
-          stageId: '',
-          dependencies: (defaultActivity.dependencies || []).map((dep: any) => ({
-            ...dep,
-            id: Math.random().toString(36).substr(2, 9)
-          })),
-          isTimerActive: false,
-          timerStartTime: undefined,
-          checklist: defaultActivity.checklist.map((item: any) => ({
+          activities: defaultActivitiesForStage.map((defaultActivity: any) => ({
             id: Math.random().toString(36).substr(2, 9),
-            title: item.title,
-            completed: false,
-            createdAt: new Date()
-          }))
-        })),
-        notificationRecipients: [],
-        isCustom: !defaultStages.some(ds => ds.name === stageName)
-      }));
+            title: defaultActivity.title,
+            description: defaultActivity.description,
+            responsible: '', // Will be assigned later
+            priority: defaultActivity.priority,
+            plannedStartDate: new Date(),
+            plannedEndDate: new Date(Date.now() + defaultActivity.plannedDuration * 60 * 60 * 1000),
+            actualStartDate: undefined,
+            actualEndDate: undefined,
+            plannedDuration: defaultActivity.plannedDuration,
+            actualDuration: 0,
+            progress: 0,
+            status: 'not_started' as const,
+            stageId: '',
+            dependencies: (defaultActivity.dependencies || []).map((dep: any) => ({
+              ...dep,
+              id: Math.random().toString(36).substr(2, 9)
+            })),
+            isTimerActive: false,
+            timerStartTime: undefined,
+            checklist: (defaultActivity.checklist || []).map((item: any) => ({
+              id: Math.random().toString(36).substr(2, 9),
+              title: item.title,
+              completed: false,
+              createdAt: new Date()
+            })),
+            driveLinks: (defaultActivity.driveLinks || []).map((link: any) => ({
+              id: Math.random().toString(36).substr(2, 9),
+              title: link.title,
+              url: link.url,
+              description: link.description,
+              createdAt: new Date()
+            }))
+          })),
+          notificationRecipients: [],
+          isCustom: !defaultStages.some(ds => ds.name === stageName)
+        };
+      });
     }
 
     const projectData = {
@@ -321,7 +340,7 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
         controlNumber: '',
         description: '',
         status: 'planning',
-        selectedStages: ['Anteprojeto']
+        selectedStages: defaultStages.length > 0 ? [defaultStages[0].name] : []
       });
     }
     
