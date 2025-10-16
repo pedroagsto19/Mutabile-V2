@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../UI/Button';
 import { Plus, X } from 'lucide-react';
 import { Modal } from '../UI/Modal';
@@ -8,7 +8,7 @@ import { useNotification } from '../../context/NotificationContext';
 import { useClient } from '../../context/ClientContext';
 import { useConfirm } from '../../hooks/useConfirm';
 import type { Project } from '../../types';
-import { defaultStages } from '../../data/mockData';
+import { defaultActivityOperations } from '../../lib/database';
 
 interface ProjectFormProps {
   isOpen: boolean;
@@ -103,7 +103,10 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
   const { toast, confirm } = useNotification();
   const users = getAllUsers();
   const [showCustomStageModal, setShowCustomStageModal] = useState(false);
-  
+  const [defaultStages, setDefaultStages] = useState<Array<{name: string, isCustom: boolean}>>([]);
+  const [defaultActivitiesByStage, setDefaultActivitiesByStage] = useState<Map<string, any[]>>(new Map());
+  const [isLoadingDefaults, setIsLoadingDefaults] = useState(true);
+
   const [formData, setFormData] = useState({
     name: project?.name || '',
     client: project?.client || '',
@@ -112,12 +115,41 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
     controlNumber: project?.controlNumber || '',
     description: project?.description || '',
     status: project?.status || 'planning' as const,
-    selectedStages: project?.stages.map(s => s.name) || ['Anteprojeto']
+    selectedStages: project?.stages.map(s => s.name) || []
   });
   const [customStagesCreatedInForm, setCustomStagesCreatedInForm] = useState<string[]>([]);
 
-  // Update form data when project changes
-  React.useEffect(() => {
+  useEffect(() => {
+    const loadDefaults = async () => {
+      try {
+        setIsLoadingDefaults(true);
+        const defaultActivitiesData = await defaultActivityOperations.getAll();
+
+        const stageNames = [...new Set(defaultActivitiesData.map(d => d.stageName))];
+        const stages = stageNames.map(name => ({ name, isCustom: false }));
+        setDefaultStages(stages);
+
+        const activitiesMap = new Map();
+        defaultActivitiesData.forEach(stageData => {
+          activitiesMap.set(stageData.stageName, stageData.activities);
+        });
+        setDefaultActivitiesByStage(activitiesMap);
+
+        if (!project && formData.selectedStages.length === 0 && stages.length > 0) {
+          setFormData(prev => ({ ...prev, selectedStages: [stages[0].name] }));
+        }
+      } catch (error) {
+        console.error('Error loading default stages and activities:', error);
+        toast.error('Erro ao carregar etapas padrão');
+      } finally {
+        setIsLoadingDefaults(false);
+      }
+    };
+
+    loadDefaults();
+  }, []);
+
+  useEffect(() => {
     if (project) {
       setFormData({
         name: project.name,
@@ -138,26 +170,10 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Garantir que as atividades padrão estejam disponíveis
-    try {
-      console.log('Carregando atividades padrão do Supabase...');
-    } catch (error) {
-      console.error('Erro ao carregar atividades padrão:', error);
-    }
-    
-    // Combine default and custom stages
     const allStages = formData.selectedStages;
-    
-    // Load default activities for each stage
+
     const loadDefaultActivities = (stageName: string) => {
-      try {
-        // As atividades padrão agora vêm do Supabase via defaultActivityOperations
-        console.log(`Atividades padrão para ${stageName} serão carregadas do banco`);
-        return [];
-      } catch (error) {
-        console.error('Error loading default activities:', error);
-      }
-      return [];
+      return defaultActivitiesByStage.get(stageName) || [];
     };
     
     let stages;
