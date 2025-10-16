@@ -585,16 +585,11 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
                     onClick={() => toggleStage(stageName)}
                   >
                     <div className="text-center">
-                      <h3 className={`font-medium text-sm mb-2 ${
+                      <h3 className={`font-medium text-sm ${
                         isSelected ? 'text-white' : 'text-gray-900'
                       }`}>
                         {stageName}
                       </h3>
-                      <p className={`text-xs ${
-                        isSelected ? 'text-gray-200' : 'text-gray-500'
-                      }`}>
-                        {stageActivities} atividade{stageActivities !== 1 ? 's' : ''}
-                      </p>
                     </div>
                     
                     {/* Selection indicator */}
@@ -624,16 +619,11 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
                     onClick={() => toggleStage(stageName)}
                   >
                     <div className="text-center">
-                      <h3 className={`font-medium text-sm mb-1 ${
+                      <h3 className={`font-medium text-sm ${
                         isSelected ? 'text-white' : 'text-gray-900'
                       }`}>
                         {stageName}
                       </h3>
-                      <p className={`text-xs ${
-                        isSelected ? 'text-gray-200' : 'text-gray-500'
-                      }`}>
-                        0 atividades
-                      </p>
                       
                       {/* Custom stage indicators */}
                       <div className="flex items-center justify-between mt-2">
