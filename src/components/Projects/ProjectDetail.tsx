@@ -25,7 +25,7 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
   const { toast, confirm } = useNotification();
   const users = getAllUsers();
   const [activeTab, setActiveTab] = useState<'stages' | 'gantt'>(initialTab === 'gantt' ? 'gantt' : 'stages');
-  const [activeStage, setActiveStage] = useState(0);
+  const [activeStageId, setActiveStageId] = useState(project?.stages?.length > 0 ? [...project.stages].sort((a, b) => a.order - b.order)[0]?.id : '');
   const [showActivityForm, setShowActivityForm] = useState(false);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [showEditProject, setShowEditProject] = useState(false);
@@ -35,6 +35,10 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
 
   const project = projects.find(p => p.id === projectId);
   if (!project || !currentUser) return null;
+
+  // Get sorted stages
+  const sortedStages = [...project.stages].sort((a, b) => a.order - b.order);
+  const activeStage = sortedStages.find(s => s.id === activeStageId) || sortedStages[0];
 
   const formatDate = (date: Date) => {
     // Criar uma nova data ajustando o fuso horário para evitar problemas de exibição
@@ -374,7 +378,7 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
   };
   
   const ActivityForm = () => {
-    const currentStageActivities = project.stages[activeStage]?.activities || [];
+    const currentStageActivities = activeStage?.activities || [];
     const allActivities = project.stages.flatMap(stage => stage.activities);
     
     const [formData, setFormData] = useState({
@@ -434,7 +438,7 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
       if (editingActivity) {
         updateActivity(editingActivity.id, activityData);
       } else {
-        addActivity(project.stages[activeStage].id, activityData);
+        addActivity(activeStage.id, activityData);
       }
       
       setShowActivityForm(false);
@@ -942,12 +946,12 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
             <BarChart3 className="h-4 w-4 mr-2" />
             Cronograma
           </button>
-          {activeTab === 'stages' && [...project.stages].sort((a, b) => a.order - b.order).map((stage, index) => (
+          {activeTab === 'stages' && sortedStages.map((stage) => (
             <button
               key={stage.id}
-              onClick={() => setActiveStage(index)}
+              onClick={() => setActiveStageId(stage.id)}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeStage === index
+                activeStageId === stage.id
                   ? 'border-black text-black'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
@@ -971,17 +975,17 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-semibold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                {project.stages && project.stages[activeStage] ? project.stages[activeStage].name : 'Nenhuma etapa'}
+                {activeStage ? activeStage.name : 'Nenhuma etapa'}
               </h2>
               <p className="text-gray-600 mt-1">
-                {project.stages && project.stages[activeStage] ? `${project.stages[activeStage].activities?.length || 0} atividades` : 'Adicione uma etapa primeiro'}
+                {activeStage ? `${activeStage.activities?.length || 0} atividades` : 'Adicione uma etapa primeiro'}
               </p>
             </div>
-            
+
             <ProtectedRoute requiredPermission="canCreateActivities">
-              <Button 
+              <Button
                 onClick={() => setShowActivityForm(true)}
-                disabled={!project.stages || !project.stages[activeStage]}
+                disabled={!activeStage}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Nova Atividade
@@ -991,8 +995,8 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
 
           {/* Activities */}
           <div className="space-y-4">
-            {project.stages && project.stages[activeStage] && project.stages[activeStage].activities ?
-              project.stages[activeStage].activities.map(activity => {
+            {activeStage && activeStage.activities ?
+              activeStage.activities.map(activity => {
               const progress = calculateActivityProgress(activity);
 
               return (
@@ -1137,19 +1141,19 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
                 </Card>
               );
             }) : null}
-            
-            {(!project.stages || !project.stages[activeStage] || !project.stages[activeStage].activities || project.stages[activeStage].activities.length === 0) && (
+
+            {(!activeStage || !activeStage.activities || activeStage.activities.length === 0) && (
               <div className="text-center py-12">
                 <p className="text-gray-500">
-                  {!project.stages || !project.stages[activeStage] 
+                  {!activeStage
                     ? 'Este projeto não possui etapas. Adicione uma etapa primeiro para criar atividades.'
                     : 'Nenhuma atividade cadastrada nesta etapa.'
                   }
                 </p>
                 <ProtectedRoute requiredPermission="canCreateActivities">
-                  {project.stages && project.stages[activeStage] && (
-                    <Button 
-                      variant="outline" 
+                  {activeStage && (
+                    <Button
+                      variant="outline"
                       className="mt-4"
                       onClick={() => setShowActivityForm(true)}
                     >
