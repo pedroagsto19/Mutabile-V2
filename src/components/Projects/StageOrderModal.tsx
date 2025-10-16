@@ -18,7 +18,7 @@ const StageOrderModal: React.FC<StageOrderModalProps> = ({
   onSaveOrder
 }) => {
   const [orderedStages, setOrderedStages] = useState<string[]>(
-    project.stages.map(stage => stage.name)
+    [...project.stages].sort((a, b) => a.order - b.order).map(stage => stage.name)
   );
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
