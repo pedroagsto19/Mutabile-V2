@@ -10,7 +10,7 @@ interface ProjectContextType {
   currentProject: Project | null;
   addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Project>;
   updateProject: (id: string, updates: Partial<Project>, bypassPermissions?: boolean) => void;
-  deleteProject: (id: string) => void;
+  deleteProject: (id: string) => Promise<void>;
   setCurrentProject: (project: Project | null) => void;
   addStage: (projectId: string, stage: Omit<Stage, 'id' | 'projectId'>) => void;
   updateStage: (stageId: string, updates: Partial<Stage>) => void;
@@ -184,23 +184,22 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     );
   };
 
-  const deleteProject = (id: string) => {
+  const deleteProject = async (id: string): Promise<void> => {
     if (!hasPermission('canDeleteProjects')) {
       throw new Error('Sem permissão para excluir projetos');
     }
-    
-    projectOperations.delete(id)
-      .then(() => {
-        setProjects(prev => prev.filter(p => p.id !== id));
-        
-        if (currentProject?.id === id) {
-          setCurrentProject(null);
-        }
-      })
-      .catch(error => {
-        console.error('Error deleting project:', error);
-        throw error;
-      });
+
+    try {
+      await projectOperations.delete(id);
+      setProjects(prev => prev.filter(p => p.id !== id));
+
+      if (currentProject?.id === id) {
+        setCurrentProject(null);
+      }
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      throw error;
+    }
   };
 
   const addStage = (projectId: string, stageData: Omit<Stage, 'id' | 'projectId'>) => {

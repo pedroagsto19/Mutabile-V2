@@ -87,12 +87,13 @@ export function ProjectsTable({ onProjectSelect, onProjectGantt, onCreateProject
       type: 'danger',
       confirmText: 'Excluir',
       cancelText: 'Cancelar'
-    }).then((confirmed) => {
+    }).then(async (confirmed) => {
       if (confirmed) {
         try {
-          deleteProject(projectId);
+          await deleteProject(projectId);
           toast.success('Projeto excluído com sucesso!');
         } catch (error) {
+          console.error('Error deleting project:', error);
           toast.error('Erro ao excluir projeto', 'Tente novamente mais tarde.');
         }
       }
