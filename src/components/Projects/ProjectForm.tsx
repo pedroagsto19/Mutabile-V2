@@ -9,6 +9,7 @@ import { useClient } from '../../context/ClientContext';
 import { useConfirm } from '../../hooks/useConfirm';
 import type { Project } from '../../types';
 import { defaultActivityOperations } from '../../lib/database';
+import StageOrderModal from './StageOrderModal';
 
 interface ProjectFormProps {
   isOpen: boolean;
@@ -97,12 +98,14 @@ function CustomStageModal({ isOpen, onClose, onAdd }: CustomStageModalProps) {
 }
 
 export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormProps) {
-  const { addProject } = useProject();
+  const { addProject, updateProject } = useProject();
   const { getAllUsers } = useAuth();
   const { clients } = useClient();
   const { toast, confirm } = useNotification();
   const users = getAllUsers();
   const [showCustomStageModal, setShowCustomStageModal] = useState(false);
+  const [showStageOrderModal, setShowStageOrderModal] = useState(false);
+  const [newlyCreatedProject, setNewlyCreatedProject] = useState<Project | null>(null);
   const [defaultStages, setDefaultStages] = useState<Array<{name: string, isCustom: boolean}>>([]);
   const [defaultActivitiesByStage, setDefaultActivitiesByStage] = useState<Map<string, any[]>>(new Map());
   const [isLoadingDefaults, setIsLoadingDefaults] = useState(true);
@@ -124,19 +127,15 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
       try {
         setIsLoadingDefaults(true);
         const defaultActivitiesData = await defaultActivityOperations.getAll();
-        console.log('Raw data from defaultActivityOperations.getAll():', defaultActivitiesData);
 
         const stageNames = [...new Set(defaultActivitiesData.map(d => d.stageName))];
         const stages = stageNames.map(name => ({ name, isCustom: false }));
-        console.log('Extracted stages:', stages);
         setDefaultStages(stages);
 
         const activitiesMap = new Map();
         defaultActivitiesData.forEach(stageData => {
-          console.log(`Setting activities for stage "${stageData.stageName}":`, stageData.activities);
           activitiesMap.set(stageData.stageName, stageData.activities);
         });
-        console.log('Final activitiesMap:', Array.from(activitiesMap.entries()));
         setDefaultActivitiesByStage(activitiesMap);
 
         if (!project && formData.selectedStages.length === 0 && stages.length > 0) {
@@ -177,10 +176,7 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
     const allStages = formData.selectedStages;
 
     const loadDefaultActivities = (stageName: string) => {
-      const activities = defaultActivitiesByStage.get(stageName) || [];
-      console.log(`loadDefaultActivities("${stageName}"):`, activities);
-      console.log('defaultActivitiesByStage Map:', Array.from(defaultActivitiesByStage.entries()));
-      return activities;
+      return defaultActivitiesByStage.get(stageName) || [];
     };
     
     let stages;
@@ -257,7 +253,6 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
       // When creating new project, create stages with default activities
       stages = allStages.map((stageName, index) => {
         const defaultActivitiesForStage = loadDefaultActivities(stageName);
-        console.log(`Loading default activities for stage "${stageName}":`, defaultActivitiesForStage);
 
         return {
           id: Math.random().toString(36).substr(2, 9),
@@ -318,20 +313,18 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
       // Editing existing project
       onSubmit(projectData);
       toast.success('Projeto atualizado com sucesso!');
+      onClose();
     } else {
       // Creating new project
-      addProject(projectData);
+      const createdProject = addProject(projectData);
       const totalDefaultActivities = stages.reduce((sum, stage) => sum + stage.activities.length, 0);
       if (totalDefaultActivities > 0) {
         toast.success(`Projeto criado com sucesso! ${totalDefaultActivities} atividades padrão foram adicionadas automaticamente.`);
       } else {
         toast.success('Projeto criado com sucesso!');
       }
-    }
-    onSubmit(projectData);
-    
-    // Reset form only if creating new project
-    if (!project) {
+
+      // Reset form
       setFormData({
         name: '',
         client: '',
@@ -342,9 +335,12 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
         status: 'planning',
         selectedStages: defaultStages.length > 0 ? [defaultStages[0].name] : []
       });
+
+      // Store the created project and show stage order modal
+      setNewlyCreatedProject(createdProject);
+      onClose();
+      setShowStageOrderModal(true);
     }
-    
-    onClose();
   };
 
   const toggleStage = (stageName: string) => {
@@ -397,6 +393,23 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
     }));
     
     toast.success(`Etapa "${stageName}" criada!`, 'Esta etapa é específica deste projeto.');
+  };
+
+  const handleSaveStageOrder = (orderedStages: string[]) => {
+    if (!newlyCreatedProject) return;
+
+    // Reorder stages based on the new order
+    const reorderedStages = orderedStages.map((stageName, index) => {
+      const stage = newlyCreatedProject.stages.find(s => s.name === stageName);
+      return {
+        ...stage!,
+        order: index + 1
+      };
+    });
+
+    updateProject(newlyCreatedProject.id, { stages: reorderedStages });
+    setNewlyCreatedProject(null);
+    toast.success('Ordem das etapas definida!');
   };
 
   const deleteCustomStage = async (stageName: string) => {
@@ -683,6 +696,18 @@ export function ProjectForm({ isOpen, onClose, onSubmit, project }: ProjectFormP
         onClose={() => setShowCustomStageModal(false)}
         onAdd={addCustomStage}
       />
+
+      {newlyCreatedProject && (
+        <StageOrderModal
+          isOpen={showStageOrderModal}
+          onClose={() => {
+            setShowStageOrderModal(false);
+            setNewlyCreatedProject(null);
+          }}
+          project={newlyCreatedProject}
+          onSaveOrder={handleSaveStageOrder}
+        />
+      )}
     </>
   );
 }

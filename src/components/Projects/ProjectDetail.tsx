@@ -942,7 +942,7 @@ export function ProjectDetail({ projectId, initialTab = 'detail', onBack }: Proj
             <BarChart3 className="h-4 w-4 mr-2" />
             Cronograma
           </button>
-          {activeTab === 'stages' && project.stages.map((stage, index) => (
+          {activeTab === 'stages' && [...project.stages].sort((a, b) => a.order - b.order).map((stage, index) => (
             <button
               key={stage.id}
               onClick={() => setActiveStage(index)}
