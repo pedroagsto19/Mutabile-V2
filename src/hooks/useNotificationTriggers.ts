@@ -1,9 +1,9 @@
-import { useNotificationSystem } from '../context/NotificationSystemContext';
+import { useNotification } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
 import type { Project, Activity } from '../types';
 
 export function useNotificationTriggers() {
-  const { addNotification } = useNotificationSystem();
+  const { addNotification } = useNotification();
   const { user: currentUser, getAllUsers } = useAuth();
   const users = getAllUsers();
 

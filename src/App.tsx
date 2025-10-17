@@ -1,11 +1,8 @@
-// src/App.tsx
-import React, { useEffect } from "react";
+import React from "react";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/Auth/ProtectedRoute";
 import { MainMenu } from "./components/MainMenu/MainMenu";
-import { NotificationSystemProvider } from "./context/NotificationSystemContext";
-
-// Ajuste estes caminhos conforme seus arquivos
 import { WorksApp } from "./components/Works/WorksApp";
 import { SupplierApp } from "./components/Suppliers/SupplierApp";
 import { ClientApp } from "./components/Clients/ClientApp";
@@ -13,49 +10,58 @@ import { NotificationProvider } from "./context/NotificationContext";
 import { ProjectProvider } from "./context/ProjectContext";
 import { ClientProvider } from "./context/ClientContext";
 
-function AppContent() {
-  const [currentModule, setCurrentModule] = React.useState<string | null>(null);
-
-  const handleModuleSelect = (module: string) => setCurrentModule(module);
-  const handleBackToMenu = () => setCurrentModule(null);
-
-  const renderContent = () => {
-    switch (currentModule) {
-      case "obras":
-        return <WorksApp onBackToMenu={handleBackToMenu} />;
-      case "fornecedores":
-        return <SupplierApp onBackToMenu={handleBackToMenu} />;
-      case "clientes":
-        return <ClientApp onBackToMenu={handleBackToMenu} />;
-      default:
-        return (
-          <MainMenu
-            onModuleSelect={handleModuleSelect}
-            currentUser={{ name: "Usuário", authLevel: "admin", role: "Administrador" }}
-          />
-        );
-    }
-  };
-
+function AppRoutes() {
   return (
-    <ProtectedRoute>
-      {renderContent()}
-    </ProtectedRoute>
+    <Routes>
+      <Route
+        path="/"
+        element={(
+          <ProtectedRoute>
+            <MainMenu />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/obras/*"
+        element={(
+          <ProtectedRoute>
+            <WorksApp />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/fornecedores"
+        element={(
+          <ProtectedRoute>
+            <SupplierApp />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/clientes"
+        element={(
+          <ProtectedRoute>
+            <ClientApp />
+          </ProtectedRoute>
+        )}
+      />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
 
 export default function App() {
   return (
     <AuthProvider>
-      <NotificationSystemProvider>
-        <NotificationProvider>
+      <NotificationProvider>
+        <ProjectProvider>
           <ClientProvider>
-            <ProjectProvider>
-              <AppContent />
-            </ProjectProvider>
+            <BrowserRouter>
+              <AppRoutes />
+            </BrowserRouter>
           </ClientProvider>
-        </NotificationProvider>
-      </NotificationSystemProvider>
+        </ProjectProvider>
+      </NotificationProvider>
     </AuthProvider>
   );
 }

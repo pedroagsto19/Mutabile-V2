@@ -1,23 +1,29 @@
 import React from 'react';
-import { Building2, Settings, User, ArrowLeft, LogOut, Edit } from 'lucide-react';
+import { Settings, User, ArrowLeft, LogOut } from 'lucide-react';
 import { Button } from '../UI/Button';
 import { SettingsModal } from '../Settings/SettingsModal';
 import { ProfileModal } from '../Users/ProfileModal';
 import { NotificationCenter } from '../Notifications/NotificationCenter';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
-import { useProject } from '../../context/ProjectContext';
 
 interface WorksHeaderProps {
   currentView: string;
   onViewChange: (view: string) => void;
   onBackToMenu: () => void;
+  onNavigateToProject?: (projectId: string) => void;
+  onNavigateToActivity?: (projectId: string, activityId: string) => void;
 }
 
-export function WorksHeader({ currentView, onViewChange, onBackToMenu }: WorksHeaderProps) {
-  const { user: currentUser, hasPermission, logout } = useAuth();
+export function WorksHeader({
+  currentView,
+  onViewChange,
+  onBackToMenu,
+  onNavigateToProject,
+  onNavigateToActivity
+}: WorksHeaderProps) {
+  const { user: currentUser, logout } = useAuth();
   const { confirm } = useNotification();
-  const { setCurrentProject } = useProject();
   const [showSettings, setShowSettings] = React.useState(false);
   const [showProfile, setShowProfile] = React.useState(false);
 
@@ -38,19 +44,6 @@ export function WorksHeader({ currentView, onViewChange, onBackToMenu }: WorksHe
         logout();
       }
     });
-  };
-
-  const handleNavigateToProject = (projectId: string) => {
-    // Navigate to project detail
-    onViewChange('project-detail');
-    // You might need to set the selected project ID in a parent component
-    // This is a simplified version - you may need to adjust based on your routing logic
-  };
-
-  const handleNavigateToActivity = (projectId: string, activityId: string) => {
-    // Navigate to project detail with specific activity
-    onViewChange('project-detail');
-    // Similar to above, you may need to pass activity ID to focus on specific activity
   };
 
   if (!currentUser) return null;
@@ -91,9 +84,9 @@ export function WorksHeader({ currentView, onViewChange, onBackToMenu }: WorksHe
         </div>
 
         <div className="flex items-center space-x-3">
-          <NotificationCenter 
-            onNavigateToProject={handleNavigateToProject}
-            onNavigateToActivity={handleNavigateToActivity}
+          <NotificationCenter
+            onNavigateToProject={onNavigateToProject}
+            onNavigateToActivity={onNavigateToActivity}
           />
           <Button variant="ghost" size="sm" onClick={() => setShowSettings(true)}>
             <Settings className="h-4 w-4" />

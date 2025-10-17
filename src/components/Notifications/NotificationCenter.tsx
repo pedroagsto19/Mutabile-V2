@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Bell, X, Settings, Check, CheckCheck, Trash2, ExternalLink } from 'lucide-react';
 import { Button } from '../UI/Button';
 import { Modal } from '../UI/Modal';
-import { useNotificationSystem } from '../../context/NotificationSystemContext';
+import { useNotification } from '../../context/NotificationContext';
 import { useProject } from '../../context/ProjectContext';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -22,7 +22,7 @@ export function NotificationCenter({ onNavigateToProject, onNavigateToActivity }
     deleteNotification,
     updatePreferences,
     getNotificationsByImportance
-  } = useNotificationSystem();
+  } = useNotification();
   
   const { projects } = useProject();
   const [isOpen, setIsOpen] = useState(false);

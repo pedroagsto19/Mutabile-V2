@@ -25,25 +25,6 @@ interface ClientContextType {
 
 const ClientContext = createContext<ClientContextType | undefined>(undefined);
 
-// Helper function to convert local client to app client
-const convertLocalClient = (localClient: any): Client => ({
-  ...localClient,
-  createdAt: new Date(localClient.createdAt),
-  updatedAt: new Date(localClient.updatedAt)
-});
-
-const convertLocalProposal = (localProposal: any): Proposal => ({
-  ...localProposal,
-  createdAt: new Date(localProposal.createdAt),
-  updatedAt: new Date(localProposal.updatedAt)
-});
-
-const convertLocalActivity = (localActivity: any): CommercialActivity => ({
-  ...localActivity,
-  date: new Date(localActivity.date),
-  createdAt: new Date(localActivity.createdAt)
-});
-
 export function ClientProvider({ children }: { children: React.ReactNode }) {
   const [clients, setClients] = useState<Client[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);

@@ -90,17 +90,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const mapAuthUserToUser = (authUser: any): User => {
     const metadata = authUser.user_metadata || {};
     
-    // Definir authLevel baseado no email para usuários específicos
-    let authLevel: User['authLevel'] = metadata.auth_level || 'equipe';
-    
-    // Override para usuários específicos
-    if (authUser.email === 'admin@mutabile.com.br') {
-      authLevel = 'admin';
-    } else if (authUser.email === 'joao@mutabile.com.br') {
-      authLevel = 'gestor';
-    } else if (authUser.email === 'carlos@mutabile.com.br') {
-      authLevel = 'equipe';
-    }
+    // Definir authLevel baseado nos metadados persistidos no Supabase
+    const authLevel: User['authLevel'] = metadata.auth_level || metadata.authLevel || 'equipe';
     
     return {
       id: authUser.id,
