@@ -79,28 +79,19 @@ export function UserManagement() {
   };
 
   const handleUpdatePermissions = async (userId: string, newAuthLevel: string) => {
-    if (userId === currentUser?.id) {
-      try {
-        const user = users.find(u => u.id === userId);
-        if (!user) return;
-        
-        const updatedMetadata = {
-          name: user.name,
-          role: user.role,
-          auth_level: newAuthLevel,
-          team_id: user.teamId,
-          manager_id: user.managerId,
-          created_by: user.createdBy
-        };
-        
-        await updateUserMetadata(userId, updatedMetadata);
-        toast.success('Nível de acesso atualizado com sucesso!');
-      } catch (error: any) {
-        console.error('Erro ao atualizar permissões:', error);
-        toast.error('Erro ao atualizar permissões', error.message);
-      }
-    } else {
-      toast.warning('Funcionalidade não disponível', 'A alteração de permissões de outros usuários requer implementação de backend seguro. Entre em contato com o administrador do sistema.');
+    try {
+      const user = users.find(u => u.id === userId);
+      if (!user) return;
+
+      await userOperations.updateUser(userId, {
+        auth_level: newAuthLevel
+      });
+
+      await refreshUsers();
+      toast.success('Nível de acesso atualizado com sucesso!');
+    } catch (error: any) {
+      console.error('Erro ao atualizar permissões:', error);
+      toast.error('Erro ao atualizar permissões', error.message);
     }
   };
 
@@ -137,19 +128,19 @@ export function UserManagement() {
 
     const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
-      
+
       try {
         if (editingUser) {
-          // Atualizar usuário existente
-          const updateData = {
+          // Atualizar usuário existente diretamente na tabela users
+          // A trigger sync_user_to_auth() cuidará de sincronizar com auth.users
+          await userOperations.updateUser(editingUser.id, {
             name: formData.name,
             role: formData.role,
             auth_level: formData.authLevel,
-            team_id: formData.teamId || null,
-            manager_id: formData.managerId || null
-          };
+            teamId: formData.teamId || null,
+            managerId: formData.managerId || null
+          });
 
-          await updateUserMetadata(editingUser.id, updateData);
           toast.success('Usuário atualizado com sucesso!');
         } else {
           // Criar novo usuário
@@ -157,11 +148,11 @@ export function UserManagement() {
             toast.error('Erro de validação', 'Senha é obrigatória para novos usuários');
             return;
           }
-          
+
           await createAuthUser(formData);
           toast.success('Usuário criado e sincronizado com sucesso!');
         }
-        
+
         await refreshUsers();
         setShowUserForm(false);
         setEditingUser(null);
@@ -369,10 +360,10 @@ export function UserManagement() {
         <div className="flex items-start space-x-3">
           <Shield className="h-5 w-5 text-blue-600 mt-0.5" />
           <div>
-            <h3 className="text-sm font-medium text-blue-900">Sincronização Automática</h3>
+            <h3 className="text-sm font-medium text-blue-900">Sistema de Permissões</h3>
             <p className="text-sm text-blue-700 mt-1">
-              Os usuários são automaticamente sincronizados com a aba Authentication do Supabase. 
-              Defina os níveis de acesso aqui e eles serão salvos no user_metadata do Authentication.
+              <strong>Fluxo de cadastro:</strong> Novos usuários criados na aba Authentication do Supabase são automaticamente replicados aqui com permissão de "Leitor".
+              Administradores podem então ajustar as permissões conforme necessário usando a coluna "Alterar Nível".
             </p>
           </div>
         </div>

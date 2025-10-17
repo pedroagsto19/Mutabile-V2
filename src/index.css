@@ -1,3 +1,27 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Hide all Gantt scrollbars but keep scroll functionality */
+.gantt-scroll-container::-webkit-scrollbar {
+  display: none;
+}
+
+.gantt-scroll-container {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.gantt-scroll-header::-webkit-scrollbar {
+  display: none;
+}
+
+.gantt-scroll-header {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Shadow for sticky column */
+.sticky[class*="left-0"] {
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+}
