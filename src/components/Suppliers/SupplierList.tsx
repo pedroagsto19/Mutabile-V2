@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { Plus, Search, Filter, MapPin, Globe, Trash2, Edit } from 'lucide-react';
+import { Plus, Search, Filter, MapPin, Globe, Trash2, Edit, Package } from 'lucide-react';
 import { Button } from '../UI/Button';
 import { Card, CardHeader, CardContent } from '../UI/Card';
+import { EmptyState } from '../UI/EmptyState';
+import { Tooltip } from '../UI/Tooltip';
 import { SupplierForm } from './SupplierForm';
 import { useSupplier } from '../../context/SupplierContext';
 import { useProject } from '../../context/ProjectContext';
+import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import type { SupplierFilters } from '../../types/supplier';
 import { useNotification } from '../../context/NotificationContext';
 
@@ -52,6 +55,14 @@ export function SupplierList({ onSupplierSelect }: SupplierListProps) {
   const [showFilters, setShowFilters] = useState(false);
   const [countryFilter, setCountryFilter] = useState<'brasil' | 'outros' | ''>('');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+
+  useKeyboardShortcuts([
+    {
+      key: 'n',
+      action: () => setShowSupplierForm(true),
+      description: 'Novo fornecedor'
+    }
+  ]);
 
   const rankedSuppliers = getSuppliersByRanking();
 
@@ -490,6 +501,25 @@ export function SupplierList({ onSupplierSelect }: SupplierListProps) {
 
       {/* Suppliers Table */}
       <Card>
+        {suppliers.length === 0 ? (
+          <EmptyState
+            icon={Package}
+            title="Nenhum fornecedor cadastrado"
+            description="Comece adicionando fornecedores para avaliar qualidade, preço e criar um histórico de parcerias."
+            actionLabel="Adicionar Primeiro Fornecedor"
+            onAction={() => setShowSupplierForm(true)}
+          />
+        ) : filteredSuppliers.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500 text-lg mb-4">Nenhum fornecedor encontrado com os filtros aplicados</p>
+            <Button
+              variant="outline"
+              onClick={() => setFilters({})}
+            >
+              Limpar Filtros
+            </Button>
+          </div>
+        ) : (
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
@@ -568,24 +598,26 @@ export function SupplierList({ onSupplierSelect }: SupplierListProps) {
                     <td className="px-6 py-4">
                       <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
                         {canEditSupplier() && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditSupplier(supplier)}
-                            title="Editar fornecedor"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
+                          <Tooltip content="Editar fornecedor">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditSupplier(supplier)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </Tooltip>
                         )}
                         {canDeleteSupplier() && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteSupplier(supplier.id)}
-                            title="Excluir fornecedor"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <Tooltip content="Excluir fornecedor">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteSupplier(supplier.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </Tooltip>
                         )}
                       </div>
                     </td>
@@ -595,17 +627,8 @@ export function SupplierList({ onSupplierSelect }: SupplierListProps) {
             </tbody>
           </table>
         </div>
+        )}
       </Card>
-
-      {filteredSuppliers.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-gray-500 mb-4">Nenhum fornecedor encontrado.</p>
-          <Button onClick={() => setShowSupplierForm(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Cadastrar primeiro fornecedor
-          </Button>
-        </div>
-      )}
     </div>
   );
 }

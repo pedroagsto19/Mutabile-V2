@@ -25,3 +25,19 @@
 .sticky[class*="left-0"] {
   box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
 }
+
+/* Tooltip animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.15s ease-out;
+}

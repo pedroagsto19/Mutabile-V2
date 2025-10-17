@@ -1,7 +1,9 @@
 import React from 'react';
-import { Building2, Settings, User } from 'lucide-react';
+import { Building2, Settings, User, HelpCircle } from 'lucide-react';
 import { Button } from '../UI/Button';
+import { Tooltip } from '../UI/Tooltip';
 import { SettingsModal } from '../Settings/SettingsModal';
+import { HelpCenter } from '../Help/HelpCenter';
 import { useProject } from '../../context/ProjectContext';
 
 interface HeaderProps {
@@ -13,14 +15,18 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
   const { currentUser } = useProject();
 
   const [showSettings, setShowSettings] = React.useState(false);
+  const [showHelp, setShowHelp] = React.useState(false);
 
   const handleProfileClick = () => {
-    // TODO: Implement profile functionality
     alert('Funcionalidade de perfil será implementada em breve');
   };
 
   const handleSettingsClick = () => {
     setShowSettings(true);
+  };
+
+  const handleHelpClick = () => {
+    setShowHelp(true);
   };
 
   return (
@@ -55,21 +61,31 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
         </div>
 
         <div className="flex items-center space-x-3">
-          <Button variant="ghost" size="sm" onClick={handleSettingsClick}>
-            <Settings className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={handleProfileClick}>
-            <User className="h-4 w-4" />
-            <span className="ml-2">{currentUser.name}</span>
-            {currentUser.role === 'admin' && (
-              <span className="ml-1 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                Admin
-              </span>
-            )}
-          </Button>
+          <Tooltip content="Ajuda e suporte (Shift+?)">
+            <Button variant="ghost" size="sm" onClick={handleHelpClick}>
+              <HelpCircle className="h-4 w-4" />
+            </Button>
+          </Tooltip>
+          <Tooltip content="Configurações">
+            <Button variant="ghost" size="sm" onClick={handleSettingsClick}>
+              <Settings className="h-4 w-4" />
+            </Button>
+          </Tooltip>
+          <Tooltip content="Perfil do usuário">
+            <Button variant="ghost" size="sm" onClick={handleProfileClick}>
+              <User className="h-4 w-4" />
+              <span className="ml-2">{currentUser.name}</span>
+              {currentUser.role === 'admin' && (
+                <span className="ml-1 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                  Admin
+                </span>
+              )}
+            </Button>
+          </Tooltip>
         </div>
       </div>
       <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
+      <HelpCenter isOpen={showHelp} onClose={() => setShowHelp(false)} />
     </header>
   );
 }
