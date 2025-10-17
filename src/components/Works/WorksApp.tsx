@@ -59,7 +59,12 @@ export function WorksApp({ onBackToMenu }: WorksAppProps) {
 
     switch (currentView) {
       case "dashboard":
-        return <DashboardOverview onProjectSelect={handleProjectSelect} />;
+        return (
+          <DashboardOverview
+            onProjectSelect={handleProjectSelect}
+            onCreateProject={() => setShowProjectForm(true)}
+          />
+        );
 
       case "projects":
         // Todos os usuários autenticados podem ver a lista de projetos
@@ -75,7 +80,12 @@ export function WorksApp({ onBackToMenu }: WorksAppProps) {
         return <SupplierApp onBackToMenu={onBackToMenu} />;
 
       default:
-        return <DashboardOverview onProjectSelect={handleProjectSelect} />;
+        return (
+          <DashboardOverview
+            onProjectSelect={handleProjectSelect}
+            onCreateProject={() => setShowProjectForm(true)}
+          />
+        );
     }
   };
 

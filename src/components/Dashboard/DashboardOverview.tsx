@@ -1,21 +1,24 @@
 import React from 'react';
 import { useState } from 'react';
-import { TrendingUp, Clock, AlertTriangle, CheckCircle, Calendar, User } from 'lucide-react';
+import { TrendingUp, Clock, AlertTriangle, CheckCircle, Calendar, User, Plus } from 'lucide-react';
 import { Card, CardHeader, CardContent } from '../UI/Card';
 import { Modal } from '../UI/Modal';
 import { Button } from '../UI/Button';
 import { ProgressBar } from '../UI/ProgressBar';
 import { ProjectsGanttOverview } from './ProjectsGanttOverview';
 import { useProject } from '../../context/ProjectContext';
+import { useAuth } from '../../context/AuthContext';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface DashboardOverviewProps {
   onProjectSelect?: (projectId: string) => void;
+  onCreateProject?: () => void;
 }
 
-export function DashboardOverview({ onProjectSelect }: DashboardOverviewProps) {
+export function DashboardOverview({ onProjectSelect, onCreateProject }: DashboardOverviewProps) {
   const { projects } = useProject();
+  const { hasPermission } = useAuth();
   const [showActiveProjectsModal, setShowActiveProjectsModal] = useState(false);
   const [showRiskProjectsModal, setShowRiskProjectsModal] = useState(false);
   const [showCompletedProjectsModal, setShowCompletedProjectsModal] = useState(false);
@@ -251,11 +254,19 @@ export function DashboardOverview({ onProjectSelect }: DashboardOverviewProps) {
       />
 
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-          Dashboard
-        </h1>
-        <p className="text-gray-600 mt-1">Visão geral dos seus projetos</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+            Dashboard
+          </h1>
+          <p className="text-gray-600 mt-1">Visão geral dos seus projetos</p>
+        </div>
+        {hasPermission('canCreateProjects') && onCreateProject && (
+          <Button onClick={onCreateProject}>
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Projeto
+          </Button>
+        )}
       </div>
 
       {/* Stats Cards */}
