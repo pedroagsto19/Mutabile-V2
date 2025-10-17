@@ -87,12 +87,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const canSyncAuthUsers = useMemo(() => determineAuthSyncAvailability(), []);
 
   // Mapear usuário do Supabase Auth para nosso tipo User
-  const mapAuthUserToUser = (authUser: any): User => {
+  const mapAuthUserToUser = async (authUser: any): Promise<User> => {
+    // Buscar dados do usuário da tabela users, que contém o auth_level correto
+    try {
+      const { data: dbUser, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', authUser.id)
+        .maybeSingle();
+
+      if (!error && dbUser) {
+        return {
+          id: dbUser.id,
+          name: dbUser.name,
+          email: dbUser.email,
+          role: dbUser.role,
+          authLevel: dbUser.auth_level,
+          teamId: dbUser.team_id,
+          managerId: dbUser.manager_id,
+          createdBy: dbUser.created_by,
+          createdAt: new Date(dbUser.created_at),
+          updatedAt: new Date(dbUser.updated_at)
+        };
+      }
+    } catch (err) {
+      console.error('Erro ao buscar usuário do banco:', err);
+    }
+
+    // Fallback para metadados se não encontrar no banco
     const metadata = authUser.user_metadata || {};
-    
-    // Definir authLevel baseado nos metadados persistidos no Supabase
     const authLevel: User['authLevel'] = metadata.auth_level || metadata.authLevel || 'equipe';
-    
+
     return {
       id: authUser.id,
       name: metadata.name || authUser.email?.split('@')[0] || 'Usuário',
@@ -159,8 +184,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [canSyncAuthUsers, loadUsersFromDatabase]);
 
-  const resolveUserProfile = useCallback((authUser: any): User => {
-    const mappedUser = mapAuthUserToUser(authUser);
+  const resolveUserProfile = useCallback(async (authUser: any): Promise<User> => {
+    const mappedUser = await mapAuthUserToUser(authUser);
     upsertUsers([mappedUser]);
     syncUsersWithAuth(mappedUser).catch(console.error);
     return mappedUser;
@@ -182,7 +207,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!mounted) return;
 
         if (session?.user) {
-          const userProfile = resolveUserProfile(session.user);
+          const userProfile = await resolveUserProfile(session.user);
           setUser(userProfile);
           setIsAuthenticated(true);
           setError(null);
@@ -216,7 +241,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('Auth event:', event);
 
         if (session?.user) {
-          const userProfile = resolveUserProfile(session.user);
+          const userProfile = await resolveUserProfile(session.user);
           setUser(userProfile);
           setIsAuthenticated(true);
           setError(null);
@@ -225,7 +250,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setIsAuthenticated(false);
           setError(null);
         }
-        
+
         setIsLoading(false);
       }
     );
