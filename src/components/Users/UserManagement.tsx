@@ -74,8 +74,25 @@ export function UserManagement() {
       toast.warning('Ação não permitida', 'Você não pode excluir sua própria conta');
       return;
     }
-    
-    toast.warning('Funcionalidade não disponível', 'A exclusão de usuários requer implementação de backend seguro. Entre em contato com o administrador do sistema.');
+
+    const user = users.find(u => u.id === userId);
+    if (!user) return;
+
+    const confirmed = await confirm(
+      'Confirmar Exclusão',
+      `Tem certeza que deseja excluir o usuário "${user.name}"?\n\nEsta ação é PERMANENTE e não pode ser desfeita. O usuário será removido do Authentication e todos os dados relacionados serão afetados.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await userOperations.deleteUser(userId);
+      await refreshUsers();
+      toast.success('Usuário excluído com sucesso!');
+    } catch (error: any) {
+      console.error('Erro ao excluir usuário:', error);
+      toast.error('Erro ao excluir usuário', error.message || 'Verifique suas permissões e tente novamente.');
+    }
   };
 
   const handleUpdatePermissions = async (userId: string, newAuthLevel: string) => {

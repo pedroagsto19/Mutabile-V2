@@ -441,6 +441,15 @@ export const userOperations = {
   async syncFromAuth(): Promise<void> {
     const { error } = await supabase.rpc('sync_auth_users');
     if (error) throw error;
+  },
+
+  async deleteUser(userId: string): Promise<void> {
+    const { error } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', userId);
+
+    if (error) throw error;
   }
 };
 
