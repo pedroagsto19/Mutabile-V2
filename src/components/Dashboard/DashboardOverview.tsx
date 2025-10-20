@@ -18,7 +18,14 @@ interface DashboardOverviewProps {
 
 export function DashboardOverview({ onProjectSelect, onCreateProject }: DashboardOverviewProps) {
   const { projects } = useProject();
-  const { hasPermission } = useAuth();
+  const { hasPermission, user } = useAuth();
+
+  // Debug: verificar permissões
+  React.useEffect(() => {
+    console.log('Dashboard - User:', user);
+    console.log('Dashboard - Auth Level:', user?.authLevel);
+    console.log('Dashboard - Can Create Projects:', hasPermission('canCreateProjects'));
+  }, [user, hasPermission]);
   const [showActiveProjectsModal, setShowActiveProjectsModal] = useState(false);
   const [showRiskProjectsModal, setShowRiskProjectsModal] = useState(false);
   const [showCompletedProjectsModal, setShowCompletedProjectsModal] = useState(false);
