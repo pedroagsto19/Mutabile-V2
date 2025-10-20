@@ -117,7 +117,8 @@ export function UserManagement() {
       admin: 'bg-red-100 text-red-800',
       gestor: 'bg-blue-100 text-blue-800',
       equipe: 'bg-green-100 text-green-800',
-      leitor: 'bg-gray-100 text-gray-800'
+      leitor: 'bg-gray-100 text-gray-800',
+      inativo: 'bg-orange-100 text-orange-800'
     };
     return colors[level as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
@@ -127,7 +128,8 @@ export function UserManagement() {
       admin: 'Administrador',
       gestor: 'Gestor',
       equipe: 'Equipe',
-      leitor: 'Leitor'
+      leitor: 'Leitor',
+      inativo: 'Inativo'
     };
     return labels[level as keyof typeof labels] || level;
   };
@@ -257,6 +259,7 @@ export function UserManagement() {
               <option value="equipe">Equipe - Executa atividades</option>
               <option value="gestor">Gestor - Gerencia projetos</option>
               <option value="admin">Administrador - Acesso total</option>
+              <option value="inativo">Inativo - Conta desativada</option>
             </select>
             {(!canChangeAuthLevel || isEditingOwnAccount) && (
               <p className="text-xs text-gray-500 mt-1">
@@ -410,6 +413,7 @@ export function UserManagement() {
               <option value="gestor">Gestor</option>
               <option value="equipe">Equipe</option>
               <option value="leitor">Leitor</option>
+              <option value="inativo">Inativo</option>
             </select>
           </div>
         </CardContent>
@@ -488,6 +492,7 @@ export function UserManagement() {
                         <option value="equipe">Equipe</option>
                         <option value="gestor">Gestor</option>
                         <option value="admin">Admin</option>
+                        <option value="inativo">Inativo</option>
                       </select>
                     ) : (
                       <span className="text-xs text-gray-500">

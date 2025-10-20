@@ -192,10 +192,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (session?.user) {
           const userProfile = resolveUserProfile(session.user);
-          setUser(userProfile);
-          setIsAuthenticated(true);
-          setError(null);
-          console.log('Usuário autenticado:', session.user.email);
+
+          if (userProfile.authLevel === 'inativo') {
+            await supabase.auth.signOut();
+            setUser(null);
+            setIsAuthenticated(false);
+            setError('Sua conta está desativada. Entre em contato com o administrador do sistema.');
+            console.log('Tentativa de login com conta inativa:', session.user.email);
+          } else {
+            setUser(userProfile);
+            setIsAuthenticated(true);
+            setError(null);
+            console.log('Usuário autenticado:', session.user.email);
+          }
         } else {
           setUser(null);
           setIsAuthenticated(false);
@@ -226,15 +235,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (session?.user) {
           const userProfile = resolveUserProfile(session.user);
-          setUser(userProfile);
-          setIsAuthenticated(true);
-          setError(null);
+
+          if (userProfile.authLevel === 'inativo') {
+            await supabase.auth.signOut();
+            setUser(null);
+            setIsAuthenticated(false);
+            setError('Sua conta está desativada. Entre em contato com o administrador do sistema.');
+          } else {
+            setUser(userProfile);
+            setIsAuthenticated(true);
+            setError(null);
+          }
         } else {
           setUser(null);
           setIsAuthenticated(false);
           setError(null);
         }
-        
+
         setIsLoading(false);
       }
     );

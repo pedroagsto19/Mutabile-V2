@@ -3,7 +3,7 @@ export interface User {
   name: string;
   email: string;
   role: string; // cargo/função
-  authLevel: 'admin' | 'gestor' | 'equipe' | 'leitor';
+  authLevel: 'admin' | 'gestor' | 'equipe' | 'leitor' | 'inativo';
   password?: string; // Only used during creation/update
   createdAt: Date;
   updatedAt: Date;
