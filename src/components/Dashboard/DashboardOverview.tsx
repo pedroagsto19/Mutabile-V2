@@ -18,7 +18,7 @@ interface DashboardOverviewProps {
 
 export function DashboardOverview({ onProjectSelect, onCreateProject }: DashboardOverviewProps) {
   const { projects } = useProject();
-  const { hasPermission } = useAuth();
+  const { hasPermission, user } = useAuth();
   const [showActiveProjectsModal, setShowActiveProjectsModal] = useState(false);
   const [showRiskProjectsModal, setShowRiskProjectsModal] = useState(false);
   const [showCompletedProjectsModal, setShowCompletedProjectsModal] = useState(false);
@@ -221,7 +221,10 @@ export function DashboardOverview({ onProjectSelect, onCreateProject }: Dashboar
               <TrendingUp className="h-16 w-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum projeto disponível</h3>
               <p className="text-gray-500">
-                Não existem projetos cadastrados no sistema no momento.
+                {user?.authLevel === 'admin'
+                  ? 'Não existem projetos cadastrados no sistema no momento.'
+                  : 'Não existem projetos atribuídos a você no momento.'
+                }
               </p>
               {hasPermission('canCreateProjects') && onCreateProject && (
                 <Button onClick={onCreateProject} className="mt-4">

@@ -19,7 +19,7 @@ interface ProjectsTableProps {
 
 export function ProjectsTable({ onProjectSelect, onProjectGantt, onCreateProject }: ProjectsTableProps) {
   const { projects, deleteProject, updateProject } = useProject();
-  const { hasPermission } = useAuth();
+  const { hasPermission, user } = useAuth();
   const { toast, confirm } = useNotification();
   const [filters, setFilters] = useState<ProjectFilters>({});
   const [showFilters, setShowFilters] = useState(false);
@@ -130,7 +130,10 @@ export function ProjectsTable({ onProjectSelect, onProjectGantt, onCreateProject
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center bg-white rounded-lg shadow-sm px-8 py-6">
             <p className="text-lg text-blue-600">
-              Não existem projetos atribuídos a você no momento.
+              {user?.authLevel === 'admin'
+                ? 'Não existem projetos cadastrados no sistema no momento.'
+                : 'Não existem projetos atribuídos a você no momento.'
+              }
             </p>
           </div>
         </div>
