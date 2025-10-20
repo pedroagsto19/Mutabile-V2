@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LoginForm } from './LoginForm';
+import { InactiveAccountScreen } from './InactiveAccountScreen';
 import { useAuth } from '../../context/AuthContext';
 
 interface ProtectedRouteProps {
@@ -71,26 +72,28 @@ export function ProtectedRoute({
   if (error && !isAuthenticated) {
     const isInactiveAccount = error.includes('desativada');
 
+    if (isInactiveAccount) {
+      return <InactiveAccountScreen message={error} />;
+    }
+
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center max-w-md">
-          <div className={`border rounded-lg p-6 ${isInactiveAccount ? 'bg-orange-50 border-orange-200' : 'bg-red-50 border-red-200'}`}>
-            <h3 className={`text-lg font-medium mb-2 ${isInactiveAccount ? 'text-orange-900' : 'text-red-900'}`}>
-              {isInactiveAccount ? 'Conta Desativada' : 'Erro de Conexão'}
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+            <h3 className="text-lg font-medium text-red-900 mb-2">
+              Erro de Conexão
             </h3>
-            <p className={`text-sm mb-4 ${isInactiveAccount ? 'text-orange-700' : 'text-red-700'}`}>{error}</p>
+            <p className="text-sm text-red-700 mb-4">{error}</p>
             <div className="space-y-3">
               <button
                 onClick={() => window.location.reload()}
-                className={`w-full px-4 py-2 text-white rounded-lg transition-colors ${isInactiveAccount ? 'bg-orange-600 hover:bg-orange-700' : 'bg-red-600 hover:bg-red-700'}`}
+                className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
               >
-                {isInactiveAccount ? 'Voltar ao Login' : 'Tentar Novamente'}
+                Tentar Novamente
               </button>
-              {!isInactiveAccount && (
-                <p className="text-xs text-red-600">
-                  Se o problema persistir, verifique se o Supabase está configurado corretamente.
-                </p>
-              )}
+              <p className="text-xs text-red-600">
+                Se o problema persistir, verifique se o Supabase está configurado corretamente.
+              </p>
             </div>
           </div>
         </div>

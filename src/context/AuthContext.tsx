@@ -205,7 +205,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setError(null);
             console.log('Usuário autenticado:', session.user.email);
           }
-        } else {
+        } else if (!error || !error.includes('desativada')) {
           setUser(null);
           setIsAuthenticated(false);
           setError(null);
@@ -228,31 +228,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Listener para mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!mounted) return;
+      (event, session) => {
+        (async () => {
+          if (!mounted) return;
 
-        console.log('Auth event:', event);
+          console.log('Auth event:', event);
 
-        if (session?.user) {
-          const userProfile = resolveUserProfile(session.user);
+          if (session?.user) {
+            const userProfile = resolveUserProfile(session.user);
 
-          if (userProfile.authLevel === 'inativo') {
-            await supabase.auth.signOut();
-            setUser(null);
-            setIsAuthenticated(false);
-            setError('Sua conta está desativada. Entre em contato com o administrador do sistema.');
+            if (userProfile.authLevel === 'inativo') {
+              await supabase.auth.signOut();
+              setUser(null);
+              setIsAuthenticated(false);
+              setError('Sua conta está desativada. Entre em contato com o administrador do sistema.');
+            } else {
+              setUser(userProfile);
+              setIsAuthenticated(true);
+              setError(null);
+            }
           } else {
-            setUser(userProfile);
-            setIsAuthenticated(true);
-            setError(null);
+            const currentError = error;
+            if (!currentError || !currentError.includes('desativada')) {
+              setUser(null);
+              setIsAuthenticated(false);
+              setError(null);
+            }
           }
-        } else {
-          setUser(null);
-          setIsAuthenticated(false);
-          setError(null);
-        }
 
-        setIsLoading(false);
+          setIsLoading(false);
+        })();
       }
     );
 
