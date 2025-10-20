@@ -18,14 +18,7 @@ interface DashboardOverviewProps {
 
 export function DashboardOverview({ onProjectSelect, onCreateProject }: DashboardOverviewProps) {
   const { projects } = useProject();
-  const { hasPermission, user } = useAuth();
-
-  // Debug: verificar permissões
-  React.useEffect(() => {
-    console.log('Dashboard - User:', user);
-    console.log('Dashboard - Auth Level:', user?.authLevel);
-    console.log('Dashboard - Can Create Projects:', hasPermission('canCreateProjects'));
-  }, [user, hasPermission]);
+  const { hasPermission } = useAuth();
   const [showActiveProjectsModal, setShowActiveProjectsModal] = useState(false);
   const [showRiskProjectsModal, setShowRiskProjectsModal] = useState(false);
   const [showCompletedProjectsModal, setShowCompletedProjectsModal] = useState(false);
@@ -207,11 +200,19 @@ export function DashboardOverview({ onProjectSelect, onCreateProject }: Dashboar
   if (projects.length === 0) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-            Dashboard
-          </h1>
-          <p className="text-gray-600 mt-1">Visão geral dos seus projetos</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+              Dashboard
+            </h1>
+            <p className="text-gray-600 mt-1">Visão geral dos seus projetos</p>
+          </div>
+          {hasPermission('canCreateProjects') && onCreateProject && (
+            <Button onClick={onCreateProject}>
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Projeto
+            </Button>
+          )}
         </div>
 
         <Card>
@@ -222,6 +223,12 @@ export function DashboardOverview({ onProjectSelect, onCreateProject }: Dashboar
               <p className="text-gray-500">
                 Não existem projetos cadastrados no sistema no momento.
               </p>
+              {hasPermission('canCreateProjects') && onCreateProject && (
+                <Button onClick={onCreateProject} className="mt-4">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Criar Primeiro Projeto
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>

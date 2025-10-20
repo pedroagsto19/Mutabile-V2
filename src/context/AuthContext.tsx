@@ -330,14 +330,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const hasPermission = (permission: string): boolean => {
-    console.log('hasPermission called - user:', user, 'permission:', permission);
-
-    if (!user) {
-      console.log('hasPermission: no user');
-      return false;
-    }
-
-    console.log('hasPermission: user.authLevel =', user.authLevel);
+    if (!user) return false;
 
     const permissions = {
       canCreateProjects: user.authLevel === 'admin' || user.authLevel === 'gestor',
@@ -355,10 +348,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       canAccessSettings: user.authLevel === 'admin' || user.authLevel === 'gestor'
     };
 
-    const result = permissions[permission as keyof typeof permissions] || false;
-    console.log(`hasPermission: ${permission} =`, result);
-
-    return result;
+    return permissions[permission as keyof typeof permissions] || false;
   };
 
   const canEditUser = (targetUser: User): boolean => {
