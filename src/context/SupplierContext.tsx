@@ -16,18 +16,6 @@ interface SupplierContextType {
 
 const SupplierContext = createContext<SupplierContextType | undefined>(undefined);
 
-// Helper function to convert local supplier to app supplier
-const convertLocalSupplier = (localSupplier: any): Supplier => ({
-  ...localSupplier,
-  evaluations: (localSupplier.evaluations || []).map((evaluation: any) => ({
-    ...evaluation,
-    evaluationDate: new Date(evaluation.evaluationDate),
-    createdAt: new Date(evaluation.createdAt)
-  })),
-  createdAt: new Date(localSupplier.createdAt),
-  updatedAt: new Date(localSupplier.updatedAt)
-});
-
 export function SupplierProvider({ children }: { children: React.ReactNode }) {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const { user: currentUser, hasPermission } = useAuth();

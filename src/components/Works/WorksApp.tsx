@@ -1,49 +1,91 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { WorksHeader } from "../Layout/WorksHeader";
 import { DashboardOverview } from "../Dashboard/DashboardOverview";
 import { ProjectsTable } from "../Projects/ProjectsTable";
 import { ProjectDetail } from "../Projects/ProjectDetail";
 import { ProjectForm } from "../Projects/ProjectForm";
-import { SupplierApp } from "../Suppliers/SupplierApp";
 import { ProtectedRoute } from "../Auth/ProtectedRoute";
-import { ClientProvider } from "../../context/ClientContext";
+import { useLocation, useNavigate } from "react-router-dom";
+import type { Project } from "../../types";
 
-type View =
-  | "dashboard"
-  | "projects"
-  | "project-detail"
-  | "fornecedores";
+type View = "dashboard" | "projects" | "project-detail";
 
-interface WorksAppProps {
-  onBackToMenu: () => void;
-}
-
-export function WorksApp({ onBackToMenu }: WorksAppProps) {
-  const [currentView, setCurrentView] = useState<View>("dashboard");
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  const [projectViewMode, setProjectViewMode] = useState<"detail" | "gantt">("detail");
+export function WorksApp({ onBackToMenu }: { onBackToMenu?: () => void } = {}) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [showProjectForm, setShowProjectForm] = useState(false);
 
+  const { currentView, selectedProjectId, projectViewMode } = useMemo(() => {
+    const path = location.pathname;
+    const projectMatch = path.match(/\/obras\/projects\/([^/]+)(?:\/(gantt))?/);
+
+    if (projectMatch) {
+      return {
+        currentView: "project-detail" as View,
+        selectedProjectId: decodeURIComponent(projectMatch[1]),
+        projectViewMode: projectMatch[2] === "gantt" ? "gantt" : "detail" as const
+      };
+    }
+
+    if (path.startsWith("/obras/projects")) {
+      return {
+        currentView: "projects" as View,
+        selectedProjectId: null,
+        projectViewMode: "detail" as const
+      };
+    }
+
+    return {
+      currentView: "dashboard" as View,
+      selectedProjectId: null,
+      projectViewMode: "detail" as const
+    };
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (location.pathname === "/obras" || location.pathname === "/obras/") {
+      navigate("/obras/dashboard", { replace: true });
+    }
+  }, [location.pathname, navigate]);
+
+  const handleBackToMenu = () => {
+    if (onBackToMenu) {
+      onBackToMenu();
+    } else {
+      navigate("/", { replace: false });
+    }
+  };
+
   const handleProjectSelect = (projectId: string) => {
-    setSelectedProjectId(projectId);
-    setProjectViewMode("detail");
-    setCurrentView("project-detail");
+    navigate(`/obras/projects/${encodeURIComponent(projectId)}`);
   };
 
   const handleProjectGantt = (projectId: string) => {
-    setSelectedProjectId(projectId);
-    setProjectViewMode("gantt");
-    setCurrentView("project-detail");
+    navigate(`/obras/projects/${encodeURIComponent(projectId)}/gantt`);
   };
 
   const handleBackToProjects = () => {
-    setSelectedProjectId(null);
-    setProjectViewMode("detail");
-    setCurrentView("projects");
+    navigate("/obras/projects");
   };
 
-  const handleProjectCreated = (_projectData: any) => {
+  const handleProjectCreated = (_project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => {
     setShowProjectForm(false);
+  };
+
+  const handleViewChange = (view: View) => {
+    if (view === "dashboard") {
+      navigate("/obras/dashboard");
+    } else if (view === "projects") {
+      navigate("/obras/projects");
+    }
+  };
+
+  const handleNavigateToProject = (projectId: string) => {
+    handleProjectSelect(projectId);
+  };
+
+  const handleNavigateToActivity = (projectId: string, activityId: string) => {
+    navigate(`/obras/projects/${encodeURIComponent(projectId)}?activity=${encodeURIComponent(activityId)}`);
   };
 
   const renderContent = () => {
@@ -57,48 +99,38 @@ export function WorksApp({ onBackToMenu }: WorksAppProps) {
       );
     }
 
-    switch (currentView) {
-      case "dashboard":
-        return <DashboardOverview onProjectSelect={handleProjectSelect} />;
-
-      case "projects":
-        // Todos os usuários autenticados podem ver a lista de projetos
-        return (
-          <ProjectsTable
-            onProjectSelect={handleProjectSelect}
-            onProjectGantt={handleProjectGantt}
-            onCreateProject={() => setShowProjectForm(true)}
-          />
-        );
-
-      case "fornecedores":
-        return <SupplierApp onBackToMenu={onBackToMenu} />;
-
-      default:
-        return <DashboardOverview onProjectSelect={handleProjectSelect} />;
+    if (currentView === "projects") {
+      return (
+        <ProjectsTable
+          onProjectSelect={handleProjectSelect}
+          onProjectGantt={handleProjectGantt}
+          onCreateProject={() => setShowProjectForm(true)}
+        />
+      );
     }
+
+    return <DashboardOverview onProjectSelect={handleProjectSelect} />;
   };
 
   return (
-    <ClientProvider>
-      <div className="min-h-screen bg-gray-50" style={{ fontFamily: "Heebo, sans-serif" }}>
-        <WorksHeader
-          currentView={currentView}
-          onViewChange={setCurrentView}
-          onBackToMenu={onBackToMenu}
+    <div className="min-h-screen bg-gray-50" style={{ fontFamily: "Heebo, sans-serif" }}>
+      <WorksHeader
+        currentView={currentView}
+        onViewChange={handleViewChange}
+        onBackToMenu={handleBackToMenu}
+        onNavigateToProject={handleNavigateToProject}
+        onNavigateToActivity={handleNavigateToActivity}
+      />
+
+      <main className="max-w-7xl mx-auto px-6 py-8">{renderContent()}</main>
+
+      <ProtectedRoute requiredPermission="canCreateProjects">
+        <ProjectForm
+          isOpen={showProjectForm}
+          onClose={() => setShowProjectForm(false)}
+          onSubmit={handleProjectCreated}
         />
-
-        <main className="max-w-7xl mx-auto px-6 py-8">{renderContent()}</main>
-
-        {/* Gate de criação por permissão específica */}
-        <ProtectedRoute requiredPermission="canCreateProjects">
-          <ProjectForm
-            isOpen={showProjectForm}
-            onClose={() => setShowProjectForm(false)}
-            onSubmit={handleProjectCreated}
-          />
-        </ProtectedRoute>
-      </div>
-    </ClientProvider>
+      </ProtectedRoute>
+    </div>
   );
 }

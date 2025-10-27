@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import type { Project, Stage, Activity } from '../types';
+import type { Project, Stage, Activity, Timer } from '../types';
 import { useTimer } from '../hooks/useTimer';
 import { useAuth } from './AuthContext';
 import { useNotificationTriggers } from '../hooks/useNotificationTriggers';
@@ -17,12 +17,12 @@ interface ProjectContextType {
   addActivity: (stageId: string, activity: Omit<Activity, 'id' | 'stageId'>) => void;
   updateActivity: (activityId: string, updates: Partial<Activity>) => void;
   startActivityTimer: (activityId: string) => void;
-  stopActivityTimer: (activityId: string) => void;
-  activeTimer: any;
-  getElapsedTime: () => number;
-  startActivityTimer: (activityId: string) => void;
   stopActivityTimer: () => number;
+  activeTimer: Timer | null;
+  getElapsedTime: () => number;
   calculateActivityProgress: (activity: Activity) => number;
+  calculateStageProgressByTaskCount: (stage: Stage) => number;
+  calculateStageProgressByAverage: (stage: Stage) => number;
   canUserEditActivity: (activity: Activity) => boolean;
 }
 

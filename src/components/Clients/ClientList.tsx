@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { Plus, Search, Filter, MapPin, Mail, Phone, Edit, Trash2, TrendingUp } from 'lucide-react';
+import { Plus, Search, Filter, MapPin, Mail, Phone, Edit, Trash2, TrendingUp, Users } from 'lucide-react';
 import { Button } from '../UI/Button';
 import { Card, CardHeader, CardContent } from '../UI/Card';
+import { EmptyState } from '../UI/EmptyState';
+import { Tooltip } from '../UI/Tooltip';
 import { ClientForm } from './ClientForm';
 import { FunnelOverview } from './FunnelOverview';
 import { useClient } from '../../context/ClientContext';
+import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import type { ClientFilters } from '../../types/client';
 import { useNotification } from '../../context/NotificationContext';
 
@@ -55,6 +58,14 @@ export function ClientList({ onClientSelect }: ClientListProps) {
   const [editingClient, setEditingClient] = useState(null);
   const [filters, setFilters] = useState<ClientFilters>({});
   const [showFilters, setShowFilters] = useState(false);
+
+  useKeyboardShortcuts([
+    {
+      key: 'n',
+      action: () => setShowClientForm(true),
+      description: 'Novo cliente'
+    }
+  ]);
 
   const funnelStats = getFunnelStats();
 
@@ -229,6 +240,25 @@ export function ClientList({ onClientSelect }: ClientListProps) {
 
       {/* Clients Table */}
       <Card>
+        {clients.length === 0 ? (
+          <EmptyState
+            icon={Users}
+            title="Nenhum cliente cadastrado"
+            description="Comece adicionando seu primeiro cliente para gerenciar leads, propostas e o funil comercial."
+            actionLabel="Adicionar Primeiro Cliente"
+            onAction={() => setShowClientForm(true)}
+          />
+        ) : filteredClients.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500 text-lg mb-4">Nenhum cliente encontrado com os filtros aplicados</p>
+            <Button
+              variant="outline"
+              onClick={() => setFilters({})}
+            >
+              Limpar Filtros
+            </Button>
+          </div>
+        ) : (
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
@@ -303,24 +333,26 @@ export function ClientList({ onClientSelect }: ClientListProps) {
                   <td className="px-6 py-4">
                     <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
                       {canEditClient() && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditClient(client)}
-                          title="Editar cliente"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
+                        <Tooltip content="Editar cliente">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditClient(client)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </Tooltip>
                       )}
                       {canDeleteClient() && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteClient(client.id)}
-                          title="Excluir cliente"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <Tooltip content="Excluir cliente">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteClient(client.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </Tooltip>
                       )}
                     </div>
                   </td>
@@ -329,17 +361,8 @@ export function ClientList({ onClientSelect }: ClientListProps) {
             </tbody>
           </table>
         </div>
+        )}
       </Card>
-
-      {filteredClients.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-gray-500 mb-4">Nenhum cliente encontrado.</p>
-          <Button onClick={() => setShowClientForm(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Cadastrar primeiro cliente
-          </Button>
-        </div>
-      )}
     </div>
   );
 }

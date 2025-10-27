@@ -9,21 +9,17 @@ import {
   User as UserIcon,
   Settings,
   LogOut,
-  Edit
 } from 'lucide-react';
 import { Card } from '../UI/Card';
 import { Button } from '../UI/Button';
 import { SettingsModal } from '../Settings/SettingsModal';
 import { NotificationCenter } from '../Notifications/NotificationCenter';
 import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
-interface MainMenuProps {
-  onModuleSelect: (module: string) => void;
-  currentUser: { name: string; authLevel: string; role: string };
-}
-
-export function MainMenu({ onModuleSelect, currentUser }: MainMenuProps) {
-  const { logout } = useAuth();
+export function MainMenu() {
+  const navigate = useNavigate();
+  const { logout, user: currentUser } = useAuth();
   const [showSettings, setShowSettings] = React.useState(false);
 
   const handleLogout = () => {
@@ -87,7 +83,19 @@ export function MainMenu({ onModuleSelect, currentUser }: MainMenuProps) {
 
   const handleModuleClick = (moduleId: string, available: boolean) => {
     if (available) {
-      onModuleSelect(moduleId);
+      switch (moduleId) {
+        case 'obras':
+          navigate('/obras/dashboard');
+          break;
+        case 'fornecedores':
+          navigate('/fornecedores');
+          break;
+        case 'clientes':
+          navigate('/clientes');
+          break;
+        default:
+          break;
+      }
     } else {
       alert('Este módulo estará disponível em breve!');
     }
@@ -119,15 +127,17 @@ export function MainMenu({ onModuleSelect, currentUser }: MainMenuProps) {
                 <UserIcon className="w-5 h-5 text-gray-500" />
                 <div className="text-right">
                   <p className="text-sm font-medium text-gray-900">
-                    {currentUser.name}
+                    {currentUser?.name ?? 'Usuário'}
                   </p>
+                  {currentUser?.email && (
+                    <p className="text-xs text-gray-500">
+                      {currentUser.email}
+                    </p>
+                  )}
                   <p className="text-xs text-gray-500">
-                    {currentUser.email}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {currentUser.authLevel === 'admin' ? 'Administrador' :
-                     currentUser.authLevel === 'gestor' ? 'Gestor' :
-                     currentUser.authLevel === 'equipe' ? 'Equipe' : 'Leitor'}
+                    {currentUser?.authLevel === 'admin' ? 'Administrador' :
+                     currentUser?.authLevel === 'gestor' ? 'Gestor' :
+                     currentUser?.authLevel === 'equipe' ? 'Equipe' : 'Leitor'}
                   </p>
                 </div>
               </button>

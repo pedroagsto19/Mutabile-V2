@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import { Eye, Edit, Trash2, Plus, Filter, Search, BarChart3 } from 'lucide-react';
+import { Eye, Edit, Trash2, Plus, Filter, Search, BarChart3, FolderOpen, ArrowUpDown } from 'lucide-react';
 import { Button } from '../UI/Button';
 import { Card } from '../UI/Card';
 import { ProgressBar } from '../UI/ProgressBar';
+import { EmptyState } from '../UI/EmptyState';
+import { Tooltip } from '../UI/Tooltip';
 import { ProjectForm } from './ProjectForm';
 import { useProject } from '../../context/ProjectContext';
 import { useAuth } from '../../context/AuthContext';
 import { ProtectedRoute } from '../Auth/ProtectedRoute';
+import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import type { Project } from '../../types';
 import type { ProjectFilters } from '../../types';
 import { useNotification } from '../../context/NotificationContext';
@@ -25,8 +28,27 @@ export function ProjectsTable({ onProjectSelect, onProjectGantt, onCreateProject
   const [showFilters, setShowFilters] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [showEditForm, setShowEditForm] = useState(false);
+  const [sortField, setSortField] = useState<keyof Project | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
-  const filteredProjects = projects.filter(project => {
+  useKeyboardShortcuts([
+    {
+      key: 'n',
+      action: () => hasPermission('canCreateProjects') && onCreateProject(),
+      description: 'Novo projeto'
+    }
+  ]);
+
+  const handleSort = (field: keyof Project) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  let filteredProjects = projects.filter(project => {
     if (filters.search && !project.name.toLowerCase().includes(filters.search.toLowerCase()) && 
         !project.client.toLowerCase().includes(filters.search.toLowerCase())) {
       return false;
@@ -36,6 +58,25 @@ export function ProjectsTable({ onProjectSelect, onProjectGantt, onCreateProject
     if (filters.responsible && project.responsible !== filters.responsible) return false;
     return true;
   });
+
+  if (sortField) {
+    filteredProjects = [...filteredProjects].sort((a, b) => {
+      const aValue = a[sortField];
+      const bValue = b[sortField];
+
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortDirection === 'asc'
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      }
+
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+      }
+
+      return 0;
+    });
+  }
 
   const getStatusColor = (status: string) => {
     const colors = {
@@ -226,7 +267,15 @@ export function ProjectsTable({ onProjectSelect, onProjectGantt, onCreateProject
 
       {/* Projects Table */}
       <Card>
-        {filteredProjects.length === 0 ? (
+        {projects.length === 0 ? (
+          <EmptyState
+            icon={FolderOpen}
+            title="Nenhum projeto cadastrado"
+            description="Comece criando seu primeiro projeto para gerenciar atividades, etapas e acompanhar o progresso."
+            actionLabel="Criar Primeiro Projeto"
+            onAction={hasPermission('canCreateProjects') ? onCreateProject : undefined}
+          />
+        ) : filteredProjects.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500 text-lg mb-4">Nenhum projeto encontrado com os filtros aplicados</p>
             <Button
@@ -241,20 +290,44 @@ export function ProjectsTable({ onProjectSelect, onProjectGantt, onCreateProject
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Projeto
+                  <th
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                    onClick={() => handleSort('name')}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span>Projeto</span>
+                      <ArrowUpDown className="h-3 w-3" />
+                    </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Cliente
+                  <th
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                    onClick={() => handleSort('client')}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span>Cliente</span>
+                      <ArrowUpDown className="h-3 w-3" />
+                    </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Responsável
+                  <th
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                    onClick={() => handleSort('responsible')}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span>Responsável</span>
+                      <ArrowUpDown className="h-3 w-3" />
+                    </div>
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Progresso
+                  <th
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                    onClick={() => handleSort('progress')}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span>Progresso</span>
+                      <ArrowUpDown className="h-3 w-3" />
+                    </div>
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Risco
@@ -297,41 +370,45 @@ export function ProjectsTable({ onProjectSelect, onProjectGantt, onCreateProject
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onProjectSelect(project.id)}
-                          title="Ver detalhes do projeto"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onProjectGantt(project.id)}
-                          title="Ver cronograma Gantt"
-                        >
-                          <BarChart3 className="h-4 w-4" />
-                        </Button>
-                        {hasPermission('canEditProjects') && (
+                        <Tooltip content="Ver detalhes do projeto">
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleEditProject(project)}
-                            title="Editar projeto"
+                            onClick={() => onProjectSelect(project.id)}
                           >
-                            <Edit className="h-4 w-4" />
+                            <Eye className="h-4 w-4" />
                           </Button>
+                        </Tooltip>
+                        <Tooltip content="Ver cronograma Gantt">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onProjectGantt(project.id)}
+                          >
+                            <BarChart3 className="h-4 w-4" />
+                          </Button>
+                        </Tooltip>
+                        {hasPermission('canEditProjects') && (
+                          <Tooltip content="Editar projeto">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditProject(project)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </Tooltip>
                         )}
                         {hasPermission('canDeleteProjects') && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteProject(project.id)}
-                            title="Excluir projeto"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <Tooltip content="Excluir projeto">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteProject(project.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </Tooltip>
                         )}
                       </div>
                     </td>
